@@ -8,6 +8,7 @@ C_SRCS = \
         d3dadapter9.c \
         device_wrap.c \
         present.c \
-        dri3.c
+        dri3.c \
+        wndproc.c
 
 RC_SRCS = version.rc

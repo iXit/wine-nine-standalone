@@ -31,6 +31,7 @@
 #include <d3dadapter/d3dadapter9.h>
 
 #include "d3dadapter9.h"
+#include "wndproc.h"
 
 WINE_DEFAULT_DEBUG_CHANNEL(d3d9nine);
 
@@ -89,6 +90,12 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, void *reserved)
             }
 
             fcntl( ConnectionNumber(gdi_display), F_SETFD, 1 ); /* set close on exec flag */
+
+            nine_dll_init(inst);
+            break;
+        case DLL_PROCESS_DETACH:
+            if (!reserved)
+                return nine_dll_destroy(inst);
             break;
     }
 
