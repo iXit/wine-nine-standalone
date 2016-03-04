@@ -31,6 +31,7 @@ WINE_DEFAULT_DEBUG_CHANNEL(d3d9nine);
 #include <wingdi.h>
 #include <d3dadapter/d3dadapter9.h>
 #include "present.h"
+#include "device_wrap.h"
 
 /* this represents a snapshot taken at the moment of creation */
 struct output
@@ -470,6 +471,14 @@ static HRESULT WINAPI DECLSPEC_HOTPATCH d3dadapter9_CreateDeviceEx(struct d3dada
         ID3DPresentGroup_Release(present);
     }
 
+    /* Nine returns different vtables for Ex, non Ex and
+     * if you use the multithread flag or not. This prevents
+     * things like Steam overlay to work, in addition to the problem
+     * that functions nine side are not recognized by wine as
+     * hotpatch-able. If possible, we use our vtable wrapper,
+     * which solves the problem described above. */
+    if (enable_device_vtable_wrapper())
+        (*ppReturnedDeviceInterface)->lpVtbl = get_device_vtable();
     return hr;
 }
 

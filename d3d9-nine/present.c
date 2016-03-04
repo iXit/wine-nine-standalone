@@ -1213,3 +1213,15 @@ cleanup:
     return FALSE;
 }
 
+BOOL enable_device_vtable_wrapper(void)
+{
+    if (!d3d9_drm)
+    {
+        ERR("enable_device_vtable_wrapper call before init.\n");
+        return FALSE;
+    }
+    /* Since minor version 1, we can assume a copy of the internal vtable is stored in second pos.
+     * For now always enable if possible the wrapper (enables Steam overlay for example),
+     * we might in the future let user choose. */
+    return d3d9_drm->minor_version >= 1;
+}

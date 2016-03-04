@@ -1,7 +1,5 @@
 /*
- * Wine present interface
- *
- * Copyright 2015 Patrick Rudolph
+ * Copyright 2016 Axel Davy
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -18,22 +16,11 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
  */
 
-#ifndef __WINE_PRESENT_H
-#define __WINE_PRESENT_H
+#ifndef __NINE_DEVICE_WRAP_H
+#define __NINE_DEVICE_WRAP_H
 
-#ifndef __WINE_CONFIG_H
-# error You must include config.h to use this header
-#endif
+#include <d3dadapter/d3dadapter9.h>
 
-#include <X11/Xlib.h>
+IDirect3DDevice9ExVtbl *get_device_vtable(void);
 
-HRESULT present_create_present_group(Display *gdi_display, const WCHAR *device_name, UINT adapter,
-        HWND focus, D3DPRESENT_PARAMETERS *params, unsigned nparams, ID3DPresentGroup **group);
-
-HRESULT present_create_adapter9(Display *gdi_display, HDC hdc, ID3DAdapter9 **adapter);
-
-BOOL present_has_d3dadapter(Display *gdi_display);
-
-BOOL enable_device_vtable_wrapper(void);
-
-#endif /* __WINE_PRESENT_H */
+#endif /* __NINE_DEVICE_WRAP_H */

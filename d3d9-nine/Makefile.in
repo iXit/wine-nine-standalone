@@ -6,6 +6,7 @@ EXTRALIBS = $(D3D9NINE_LIBS)
 C_SRCS = \
         d3d9_main.c \
         d3dadapter9.c \
+        device_wrap.c \
         present.c \
         dri3.c
 
