@@ -715,6 +715,7 @@ LRESULT device_process_message(struct DRI3Present *present, HWND window, BOOL un
         current_mode.dmSize = sizeof(current_mode);
         if (!present->ex &&
             !present->params.Windowed &&
+            present->params.hDeviceWindow &&
             EnumDisplaySettingsW(present->devname, ENUM_CURRENT_SETTINGS, &current_mode) &&
             (current_mode.dmPelsWidth != present->params.BackBufferWidth ||
              current_mode.dmPelsHeight != present->params.BackBufferHeight))
