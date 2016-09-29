@@ -647,6 +647,14 @@ static HRESULT DRI3Present_ChangeDisplaySettingsIfNeccessary(struct DRI3Present 
     DEVMODEW current_mode;
     LONG hr;
 
+    /* Filter invalid resolution */
+    if (!new_mode->dmPelsWidth || !new_mode->dmPelsHeight)
+        return D3DERR_INVALIDCALL;
+
+    /* Ignore invalid frequency requested */
+    if (new_mode->dmDisplayFrequency > 1000)
+        new_mode->dmDisplayFrequency = 0;
+
     ZeroMemory(&current_mode, sizeof(DEVMODEW));
     current_mode.dmSize = sizeof(DEVMODEW);
     /* Only change the mode if necessary. */
