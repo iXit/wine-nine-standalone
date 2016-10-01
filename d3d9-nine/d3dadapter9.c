@@ -469,6 +469,7 @@ static HRESULT WINAPI DECLSPEC_HOTPATCH d3dadapter9_CreateDeviceEx(struct d3dada
     {
         WARN("ADAPTER_PROC failed.\n");
         ID3DPresentGroup_Release(present);
+        return hr;
     }
 
     /* Nine returns different vtables for Ex, non Ex and
