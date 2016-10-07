@@ -9,6 +9,7 @@ C_SRCS = \
         device_wrap.c \
         present.c \
         dri3.c \
-        wndproc.c
+        wndproc.c \
+        shader_validator.c
 
 RC_SRCS = version.rc

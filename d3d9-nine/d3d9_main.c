@@ -32,6 +32,7 @@
 
 #include "d3dadapter9.h"
 #include "wndproc.h"
+#include "shader_validator.h"
 
 WINE_DEFAULT_DEBUG_CHANNEL(d3d9nine);
 
@@ -67,12 +68,18 @@ HRESULT WINAPI DECLSPEC_HOTPATCH Direct3DCreate9Ex(UINT sdk_version, IDirect3D9E
  * No documentation available for this function.
  * SDK only says it is internal and shouldn't be used.
  */
+
 void* WINAPI Direct3DShaderValidatorCreate9(void)
 {
-    static int once;
+    IDirect3DShaderValidator9Impl* object =
+            HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY,
+                    sizeof(IDirect3DShaderValidator9Impl));
 
-    if (!once++) FIXME("stub\n");
-    return NULL;
+    object->lpVtbl = &IDirect3DShaderValidator9Vtbl;
+    object->ref = 1;
+
+    FIXME("Returning interface %p\n", object);
+    return (void*) object;
 }
 
 /*******************************************************************
