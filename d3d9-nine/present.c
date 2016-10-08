@@ -307,19 +307,32 @@ static HRESULT WINAPI DRI3Present_D3DWindowBufferFromDmaBuf(struct DRI3Present *
     {
         *out = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY,
                 sizeof(struct D3DWindowBuffer));
-        DRI2FallbackPRESENTPixmap(This->present_priv, This->dri2_priv,
+        if (!DRI2FallbackPRESENTPixmap(This->present_priv, This->dri2_priv,
                 dmaBufFd, width, height, stride, depth,
-                bpp, &((*out)->present_pixmap_priv));
+                bpp, &((*out)->present_pixmap_priv)))
+        {
+            ERR("DRI2FallbackPRESENTPixmap failed\n");
+            HeapFree(GetProcessHeap(), 0, *out);
+            return D3DERR_DRIVERINTERNALERROR;
+        }
         return D3D_OK;
     }
 #endif
     if (!DRI3PixmapFromDmaBuf(This->gdi_display, DefaultScreen(This->gdi_display),
             dmaBufFd, width, height, stride, depth, bpp, &pixmap))
+    {
+        ERR("DRI3PixmapFromDmaBuf failed\n");
         return D3DERR_DRIVERINTERNALERROR;
+    }
 
     *out = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY,
             sizeof(struct D3DWindowBuffer));
-    PRESENTPixmapInit(This->present_priv, pixmap, &((*out)->present_pixmap_priv));
+    if (!PRESENTPixmapInit(This->present_priv, pixmap, &((*out)->present_pixmap_priv)))
+    {
+        ERR("PRESENTPixmapInit failed\n");
+        HeapFree(GetProcessHeap(), 0, *out);
+        return D3DERR_DRIVERINTERNALERROR;
+    }
     return D3D_OK;
 }
 
@@ -337,7 +350,11 @@ static HRESULT WINAPI DRI3Present_DestroyD3DWindowBuffer(struct DRI3Present *Thi
 static HRESULT WINAPI DRI3Present_WaitBufferReleased(struct DRI3Present *This,
         struct D3DWindowBuffer *buffer)
 {
-    PRESENTWaitPixmapReleased(buffer->present_pixmap_priv);
+    if(!PRESENTWaitPixmapReleased(buffer->present_pixmap_priv))
+    {
+        ERR("PRESENTWaitPixmapReleased failed\n");
+        return D3DERR_DRIVERINTERNALERROR;
+    }
     return D3D_OK;
 }
 
@@ -1143,8 +1160,8 @@ static HRESULT DRI3Present_new(Display *gdi_display, const WCHAR *devname,
 
     PRESENTInit(gdi_display, &(This->present_priv));
 #ifdef D3D9NINE_DRI2
-    if (is_dri2_fallback)
-        DRI2FallbackInit(gdi_display, &(This->dri2_priv));
+    if (is_dri2_fallback && !DRI2FallbackInit(gdi_display, &(This->dri2_priv)))
+        return D3DERR_INVALIDCALL;
 #endif
     *out = This;
 
