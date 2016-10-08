@@ -25,12 +25,12 @@
 
 WINE_DEFAULT_DEBUG_CHANNEL(d3d9nine);
 
-#include <d3dadapter/d3dadapter9.h>
+#include <d3d9.h>
+#include "dri3.h"
+
 #include <fcntl.h>
 #include <unistd.h>
 #include <pthread.h>
-
-#include "dri3.h"
 
 #include <X11/Xlib-xcb.h>
 #include <xcb/dri3.h>
@@ -63,7 +63,12 @@ WINE_DEFAULT_DEBUG_CHANNEL(d3d9nine);
 #define GL_GLEXT_PROTOTYPES 1
 #define EGL_EGLEXT_PROTOTYPES 1
 #define GL_GLEXT_LEGACY 1
+
+/* workaround for broken ABI on x86_64 due to windef.h */
+#undef APIENTRY
+#undef APIENTRYP
 #include <GL/gl.h>
+
 /* workaround gl header bug */
 #define glBlendColor glBlendColorLEV
 #define glBlendEquation glBlendEquationLEV
@@ -72,20 +77,6 @@ WINE_DEFAULT_DEBUG_CHANNEL(d3d9nine);
 #include <EGL/eglext.h>
 #include <libdrm/drm_fourcc.h>
 #include <libdrm/drm.h>
-/*GLAPI void GLAPIENTRY glFlush( void );
-
-GLAPI void APIENTRY glGenFramebuffers (GLsizei n, GLuint *framebuffers);
-GLAPI void APIENTRY glBindFramebufferEXT (GLenum target, GLuint framebuffer);
-GLAPI void APIENTRY glBlitFramebuffer (GLint srcX0, GLint srcY0, GLint srcX1, GLint srcY1, GLint dstX0, GLint dstY0, GLint dstX1, GLint dstY1, GLbitfield mask, GLenum filter);
-GLAPI void APIENTRY glFramebufferTexture2DEXT (GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level);
-GLAPI void APIENTRY glBindFramebuffer (GLenum target, GLuint framebuffer);
-GLAPI void APIENTRY glFramebufferTexture2D (GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level);
-GLAPI void APIENTRY glDeleteTexturesEXT (GLsizei n, const GLuint *textures);
-EGLAPI EGLBoolean EGLAPIENTRY eglDestroyImageKHR (EGLDisplay dpy, EGLImageKHR image);*/
-
-typedef void (APIENTRYP PFNGLEGLIMAGETARGETTEXTURE2DOESPROC) (GLenum target, GLeglImageOES image);
-typedef EGLImageKHR (EGLAPIENTRYP PFNEGLCREATEIMAGEKHRPROC) (EGLDisplay dpy, EGLContext ctx, EGLenum target, EGLClientBuffer buffer, const EGLint *attrib_list);
-typedef EGLDisplay (EGLAPIENTRYP PFNEGLGETPLATFORMDISPLAYEXTPROC) (EGLenum platform, void *native_display, const EGLint *attrib_list);
 
 static EGLDisplay display = NULL;
 static int display_ref = 0;
