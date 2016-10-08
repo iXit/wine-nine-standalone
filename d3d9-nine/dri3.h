@@ -26,6 +26,7 @@
 #endif
 
 #include <X11/Xlib.h>
+#include <wingdi.h>
 
 BOOL DRI3CheckExtension(Display *dpy, int major, int minor);
 

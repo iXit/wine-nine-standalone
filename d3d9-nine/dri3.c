@@ -25,7 +25,6 @@
 
 WINE_DEFAULT_DEBUG_CHANNEL(d3d9nine);
 
-#include <d3d9.h>
 #include "dri3.h"
 
 #include <fcntl.h>
