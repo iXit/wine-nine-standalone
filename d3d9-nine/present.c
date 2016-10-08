@@ -29,7 +29,6 @@
 
 WINE_DEFAULT_DEBUG_CHANNEL(d3d9nine);
 
-#include <d3dadapter/d3dadapter9.h>
 #include <d3dadapter/drm.h>
 #include <X11/Xutil.h>
 

@@ -28,7 +28,6 @@
 
 WINE_DEFAULT_DEBUG_CHANNEL(d3d9nine);
 
-#include <wingdi.h>
 #include <d3dadapter/d3dadapter9.h>
 #include "present.h"
 #include "device_wrap.h"

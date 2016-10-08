@@ -23,12 +23,10 @@
  */
 
 #include "config.h"
-#include "initguid.h"
 #include "wine/debug.h"
 
 #include <fcntl.h>
-
-#include <d3dadapter/d3dadapter9.h>
+#include <d3d9.h>
 
 #include "d3dadapter9.h"
 #include "wndproc.h"
