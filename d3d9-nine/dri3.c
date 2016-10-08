@@ -1146,8 +1146,8 @@ BOOL PRESENTHelperCopyFront(Display *dpy, PRESENTPixmapPriv *present_pixmap_priv
 }
 
 BOOL PRESENTPixmap(Display *dpy, XID window, PRESENTPixmapPriv *present_pixmap_priv,
-        D3DPRESENT_PARAMETERS *pPresentationParameters, const RECT *pSourceRect,
-        const RECT *pDestRect, const RGNDATA *pDirtyRegion)
+        const UINT PresentationInterval, const BOOL PresentAsync, const BOOL SwapEffectCopy,
+        const RECT *pSourceRect, const RECT *pDestRect, const RGNDATA *pDirtyRegion)
 {
     PRESENTpriv *present_priv = present_pixmap_priv->present_priv;
 #ifdef D3D9NINE_DRI2
@@ -1206,27 +1206,13 @@ BOOL PRESENTPixmap(Display *dpy, XID window, PRESENTPixmapPriv *present_pixmap_p
     }
 #endif
     target_msc = present_priv->last_msc;
-    switch(pPresentationParameters->PresentationInterval)
-    {
-        case D3DPRESENT_INTERVAL_DEFAULT:
-        case D3DPRESENT_INTERVAL_ONE:
-            presentationInterval = 1;
-            break;
-        case D3DPRESENT_INTERVAL_TWO:
-            presentationInterval = 2;
-            break;
-        case D3DPRESENT_INTERVAL_THREE:
-            presentationInterval = 3;
-            break;
-        case D3DPRESENT_INTERVAL_FOUR:
-            presentationInterval = 4;
-            break;
-        case D3DPRESENT_INTERVAL_IMMEDIATE:
-        default:
-            presentationInterval = 0;
-            options |= XCB_PRESENT_OPTION_ASYNC;
-            break;
-    }
+
+    presentationInterval = PresentationInterval;
+    if (PresentAsync)
+        options |= XCB_PRESENT_OPTION_ASYNC;
+    if (SwapEffectCopy)
+        options |= XCB_PRESENT_OPTION_COPY;
+
     target_msc += presentationInterval * (present_priv->pixmap_present_pending + 1);
 
     /* Note: PRESENT defines some way to do partial copy:
@@ -1293,8 +1279,7 @@ BOOL PRESENTPixmap(Display *dpy, XID window, PRESENTPixmapPriv *present_pixmap_p
         } else
             xcb_xfixes_create_region(present_priv->xcb_connection_bis, update, 1, &rect_update);
     }
-    if (pPresentationParameters->SwapEffect == D3DSWAPEFFECT_COPY)
-        options |= XCB_PRESENT_OPTION_COPY;
+
     cookie = xcb_present_pixmap_checked(present_priv->xcb_connection_bis,
             window, present_pixmap_priv->pixmap, present_pixmap_priv->serial,
             valid, update, x_off, y_off, None, None, None, options,
@@ -1329,10 +1314,8 @@ BOOL PRESENTPixmap(Display *dpy, XID window, PRESENTPixmapPriv *present_pixmap_p
                 (int) reply->width, (int) reply->height,
                 (int) reply->depth, (int) reply->x, (int) reply->y);
 
-        ERR("Present parameter: PresentationInterval=%d, BackBufferCount=%d, Pending presentations=%d\n",
-                pPresentationParameters->PresentationInterval,
-                pPresentationParameters->BackBufferCount,
-                present_priv->pixmap_present_pending);
+        ERR("Present parameter: PresentationInterval=%d, Pending presentations=%d\n",
+                PresentationInterval, present_priv->pixmap_present_pending);
 
         if (present_pixmap_priv->depth != reply->depth)
             ERR("Depths are different. PRESENT needs the pixmap and the window have same depth\n");

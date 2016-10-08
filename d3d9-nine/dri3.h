@@ -78,8 +78,8 @@ BOOL PRESENTTryFreePixmap(Display *dpy, PRESENTPixmapPriv *present_pixmap_priv);
 BOOL PRESENTHelperCopyFront(Display *dpy, PRESENTPixmapPriv *present_pixmap_priv);
 
 BOOL PRESENTPixmap(Display *dpy, XID window, PRESENTPixmapPriv *present_pixmap_priv,
-        D3DPRESENT_PARAMETERS *pPresentationParameters, const RECT *pSourceRect,
-        const RECT *pDestRect, const RGNDATA *pDirtyRegion);
+        const UINT PresentationInterval, const BOOL PresentAsync, const BOOL SwapEffectCopy,
+        const RECT *pSourceRect, const RECT *pDestRect, const RGNDATA *pDirtyRegion);
 
 BOOL PRESENTWaitPixmapReleased(PRESENTPixmapPriv *present_pixmap_priv);
 

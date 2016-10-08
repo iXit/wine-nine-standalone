@@ -126,6 +126,10 @@ struct DRI3Present
     BOOL drop_wnd_messages;
     BOOL no_window_changes;
     Display *gdi_display;
+
+    UINT present_interval;
+    BOOL present_async;
+    BOOL present_swapeffectcopy;
     struct d3d_drawable *d3d;
 };
 
@@ -390,7 +394,8 @@ static HRESULT WINAPI DRI3Present_PresentBuffer( struct DRI3Present *This,
     }
 
     if (!PRESENTPixmap(This->gdi_display, d3d->drawable, buffer->present_pixmap_priv,
-            &This->params, pSourceRect, pDestRect, pDirtyRegion))
+            This->present_interval, This->present_async, This->present_swapeffectcopy,
+            pSourceRect, pDestRect, pDirtyRegion))
     {
         release_d3d_drawable(d3d);
         return D3DERR_DRIVERINTERNALERROR;
@@ -886,6 +891,43 @@ static void restore_fullscreen_window(struct DRI3Present *This,
     This->style_ex = 0;
 }
 
+static void DRI3Present_UpdatePresentationInterval(struct DRI3Present *This)
+{
+    switch(This->params.PresentationInterval)
+    {
+        case D3DPRESENT_INTERVAL_DEFAULT:
+        case D3DPRESENT_INTERVAL_ONE:
+            This->present_interval = 1;
+            This->present_async = FALSE;
+            break;
+        case D3DPRESENT_INTERVAL_TWO:
+            This->present_interval = 2;
+            This->present_async = FALSE;
+            break;
+        case D3DPRESENT_INTERVAL_THREE:
+            This->present_interval = 3;
+            This->present_async = FALSE;
+            break;
+        case D3DPRESENT_INTERVAL_FOUR:
+            This->present_interval = 4;
+            This->present_async = FALSE;
+            break;
+        case D3DPRESENT_INTERVAL_IMMEDIATE:
+        default:
+            This->present_interval = 0;
+            This->present_async = TRUE;
+            break;
+    }
+
+    /* D3DSWAPEFFECT_COPY: Force Copy.
+     * This->present_interval == 0: Force Copy to have buffers
+     * release as soon as possible (the display server/compositor
+     * won't hold any buffer) */
+    This->present_swapeffectcopy =
+        This->params.SwapEffect == D3DSWAPEFFECT_COPY ||
+        This->present_async;
+}
+
 static HRESULT DRI3Present_ChangePresentParameters(struct DRI3Present *This,
         D3DPRESENT_PARAMETERS *params)
 {
@@ -1003,6 +1045,8 @@ static HRESULT DRI3Present_ChangePresentParameters(struct DRI3Present *This,
     This->params.MultiSampleType = params->MultiSampleType;
     This->params.MultiSampleQuality = params->MultiSampleQuality;
 
+    DRI3Present_UpdatePresentationInterval(This);
+
     return D3D_OK;
 }
 
@@ -1093,6 +1137,8 @@ static HRESULT DRI3Present_new(Display *gdi_display, const WCHAR *devname,
     }
 
     This->params = *params;
+
+    DRI3Present_UpdatePresentationInterval(This);
 
     strcpyW(This->devname, devname);
 
