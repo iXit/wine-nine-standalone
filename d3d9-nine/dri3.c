@@ -35,7 +35,7 @@ WINE_DEFAULT_DEBUG_CHANNEL(d3d9nine);
 #include <xcb/dri3.h>
 #include <xcb/present.h>
 
-#include "winbase.h" /* for Sleep */
+#include "winbase.h"
 
 #ifdef D3D9NINE_DRI2
 #include <sys/ioctl.h>
@@ -253,7 +253,8 @@ BOOL DRI2FallbackInit(Display *dpy, struct DRI2priv **priv)
 
     eglMakeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
 
-    *priv = calloc(1, sizeof(struct DRI2priv));
+    *priv = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY,
+            sizeof(struct DRI2priv));
     if (!*priv)
         goto clean_egl;
     (*priv)->dpy = dpy;
@@ -291,7 +292,7 @@ void DRI2FallbackDestroy(struct DRI2priv *priv)
         }
     }
     eglBindAPI(current_api);
-    free(priv);
+    HeapFree(GetProcessHeap(), 0, priv);
 }
 
 BOOL DRI2FallbackCheckSupport(Display *dpy)
@@ -721,7 +722,9 @@ static struct xcb_connection_t *create_xcb_connection(Display *dpy)
 
 BOOL PRESENTInit(Display *dpy, PRESENTpriv **present_priv)
 {
-    *present_priv = (PRESENTpriv *) calloc(1, sizeof(PRESENTpriv));
+    *present_priv = (PRESENTpriv *) HeapAlloc(GetProcessHeap(),
+            HEAP_ZERO_MEMORY, sizeof(PRESENTpriv));
+
     if (!*present_priv)
         return FALSE;
 
@@ -898,7 +901,7 @@ void PRESENTDestroy(Display *dpy, PRESENTpriv *present_priv)
     {
         PRESENTPixmapPriv *next = current->next;
         PRESENTDestroyPixmapContent(dpy, current);
-        free(current);
+        HeapFree(GetProcessHeap(), 0, current);
         current = next;
     }
 
@@ -910,7 +913,7 @@ void PRESENTDestroy(Display *dpy, PRESENTpriv *present_priv)
     pthread_mutex_destroy(&present_priv->mutex_present);
     pthread_mutex_destroy(&present_priv->mutex_xcb_wait);
 
-    free(present_priv);
+    HeapFree(GetProcessHeap(), 0, present_priv);
 }
 
 BOOL PRESENTPixmapInit(PRESENTpriv *present_priv, Pixmap pixmap, PRESENTPixmapPriv **present_pixmap_priv)
@@ -924,7 +927,9 @@ BOOL PRESENTPixmapInit(PRESENTpriv *present_priv, Pixmap pixmap, PRESENTPixmapPr
     if (!reply)
         return FALSE;
 
-    *present_pixmap_priv = (PRESENTPixmapPriv *) calloc(1, sizeof(PRESENTPixmapPriv));
+    *present_pixmap_priv = (PRESENTPixmapPriv *) HeapAlloc(GetProcessHeap(),
+            HEAP_ZERO_MEMORY, sizeof(PRESENTPixmapPriv));
+
     if (!*present_pixmap_priv)
     {
         free(reply);
@@ -1049,7 +1054,9 @@ BOOL DRI2FallbackPRESENTPixmap(PRESENTpriv *present_priv, struct DRI2priv *dri2_
 
     eglMakeCurrent(dri2_priv->display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
 
-    *present_pixmap_priv = (PRESENTPixmapPriv *) calloc(1, sizeof(PRESENTPixmapPriv));
+    *present_pixmap_priv = (PRESENTPixmapPriv *) HeapAlloc(GetProcessHeap(),
+             HEAP_ZERO_MEMORY, sizeof(PRESENTPixmapPriv));
+
     if (!*present_pixmap_priv)
         goto fail;
 
@@ -1109,7 +1116,7 @@ BOOL PRESENTTryFreePixmap(Display *dpy, PRESENTPixmapPriv *present_pixmap_priv)
     current->next = present_pixmap_priv->next;
 free_priv:
     PRESENTDestroyPixmapContent(dpy, present_pixmap_priv);
-    free(present_pixmap_priv);
+    HeapFree(GetProcessHeap(), 0, present_pixmap_priv);
     pthread_mutex_unlock(&present_priv->mutex_present);
     return TRUE;
 }
@@ -1262,7 +1269,9 @@ BOOL PRESENTPixmap(Display *dpy, XID window, PRESENTPixmapPriv *present_pixmap_p
         xcb_xfixes_create_region(present_priv->xcb_connection_bis, valid, 1, &rect_update);
         if (pDirtyRegion && pDirtyRegion->rdh.nCount)
         {
-            rect_updates = (void *) calloc(pDirtyRegion->rdh.nCount, sizeof(xcb_rectangle_t));
+            rect_updates = (void *) HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY,
+                    sizeof(xcb_rectangle_t) * pDirtyRegion->rdh.nCount);
+
             for (i = 0; i < pDirtyRegion->rdh.nCount; i++)
             {
                 RECT rc;
@@ -1274,7 +1283,7 @@ BOOL PRESENTPixmap(Display *dpy, XID window, PRESENTPixmapPriv *present_pixmap_p
                 memcpy(rect_updates + i * sizeof(xcb_rectangle_t), &rect_update, sizeof(xcb_rectangle_t));
             }
             xcb_xfixes_create_region(present_priv->xcb_connection_bis, update, pDirtyRegion->rdh.nCount, rect_updates);
-            free(rect_updates);
+            HeapFree(GetProcessHeap(), 0, rect_updates);
         } else
             xcb_xfixes_create_region(present_priv->xcb_connection_bis, update, 1, &rect_update);
     }
