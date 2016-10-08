@@ -173,8 +173,6 @@ BOOL DRI3CheckExtension(Display *dpy, int major, int minor)
 
 #ifdef D3D9NINE_DRI2
 
-/* TODO: We don't free memory properly. When exiting, eglTerminate doesn't work well(crash), and things are freed automatically. Rely on it */
-
 BOOL DRI2FallbackInit(Display *dpy, struct DRI2priv **priv)
 {
     PFNGLEGLIMAGETARGETTEXTURE2DOESPROC glEGLImageTargetTexture2DOES_func;
@@ -248,7 +246,7 @@ BOOL DRI2FallbackInit(Display *dpy, struct DRI2priv **priv)
             !eglDestroyImageKHR_func)
     {
         ERR("eglGetProcAddress failed !");
-        goto clean_egl_display;
+        goto clean_egl;
     }
 
     eglMakeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
@@ -267,6 +265,8 @@ BOOL DRI2FallbackInit(Display *dpy, struct DRI2priv **priv)
     return TRUE;
 
 clean_egl:
+    eglDestroyContext(display, context);
+
 clean_egl_display:
     eglTerminate(display);
     eglBindAPI(current_api);
