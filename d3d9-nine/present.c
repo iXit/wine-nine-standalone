@@ -1079,7 +1079,7 @@ static HRESULT DRI3Present_ChangePresentParameters(struct DRI3Present *This,
 
 static HRESULT DRI3Present_new(Display *gdi_display, const WCHAR *devname,
         D3DPRESENT_PARAMETERS *params, HWND focus_wnd, struct DRI3Present **out,
-        boolean ex)
+        boolean ex, boolean no_window_changes)
 {
     struct DRI3Present *This;
     HWND focus_window;
@@ -1106,7 +1106,7 @@ static HRESULT DRI3Present_new(Display *gdi_display, const WCHAR *devname,
     This->refs = 1;
     This->focus_wnd = focus_wnd;
     This->ex = ex;
-    This->no_window_changes = params->Flags & D3DCREATE_NOWINDOWCHANGES;
+    This->no_window_changes = no_window_changes;
 
     /* store current resolution */
     ZeroMemory(&(This->initial_mode), sizeof(This->initial_mode));
@@ -1186,6 +1186,7 @@ struct DRI3PresentGroup
     struct DRI3Present **present_backends;
     unsigned npresent_backends;
     Display *gdi_display;
+    boolean no_window_changes;
 };
 
 static ULONG WINAPI DRI3PresentGroup_AddRef(struct DRI3PresentGroup *This)
@@ -1260,7 +1261,8 @@ static HRESULT WINAPI DRI3PresentGroup_CreateAdditionalPresent(struct DRI3Presen
 {
     HRESULT hr;
     hr = DRI3Present_new(This->gdi_display, This->present_backends[0]->devname,
-            pPresentationParameters, 0, (struct DRI3Present **)ppPresent, This->ex);
+            pPresentationParameters, 0, (struct DRI3Present **)ppPresent,
+            This->ex, This->no_window_changes);
 
     return hr;
 }
@@ -1284,7 +1286,7 @@ static ID3DPresentGroupVtbl DRI3PresentGroup_vtable = {
 
 HRESULT present_create_present_group(Display *gdi_display, const WCHAR *device_name,
         UINT adapter, HWND focus_wnd, D3DPRESENT_PARAMETERS *params,
-        unsigned nparams, ID3DPresentGroup **group, boolean ex)
+        unsigned nparams, ID3DPresentGroup **group, boolean ex, DWORD BehaviorFlags)
 {
     struct DRI3PresentGroup *This;
     DISPLAY_DEVICEW dd;
@@ -1304,6 +1306,7 @@ HRESULT present_create_present_group(Display *gdi_display, const WCHAR *device_n
     This->refs = 1;
     This->ex = ex;
     This->npresent_backends = nparams;
+    This->no_window_changes = !!(BehaviorFlags & D3DCREATE_NOWINDOWCHANGES);
     This->present_backends = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY,
             This->npresent_backends * sizeof(struct DRI3Present *));
     if (!This->present_backends)
@@ -1329,7 +1332,7 @@ HRESULT present_create_present_group(Display *gdi_display, const WCHAR *device_n
 
         /* create an ID3DPresent for it */
         hr = DRI3Present_new(gdi_display, dd.DeviceName, &params[i],
-                focus_wnd, &This->present_backends[i], ex);
+                focus_wnd, &This->present_backends[i], ex, This->no_window_changes);
         if (FAILED(hr))
         {
             DRI3PresentGroup_Release(This);
