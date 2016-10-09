@@ -976,6 +976,9 @@ static HRESULT DRI3Present_ChangePresentParameters(struct DRI3Present *This,
 
         if (!params->Windowed)
         {
+            TRACE("Setting fullscreen mode: %dx%d@%d\n", params->BackBufferWidth,
+                     params->BackBufferHeight, params->FullScreen_RefreshRateInHz);
+
             /* switch display mode */
             ZeroMemory(&new_mode, sizeof(DEVMODEW));
             new_mode.dmPelsWidth = params->BackBufferWidth;
@@ -991,6 +994,9 @@ static HRESULT DRI3Present_ChangePresentParameters(struct DRI3Present *This,
         }
         else
         {
+            TRACE("Setting fullscreen mode: %dx%d@%d\n", This->initial_mode.dmPelsWidth,
+                    This->initial_mode.dmPelsHeight, This->initial_mode.dmDisplayFrequency);
+
             hr = DRI3Present_ChangeDisplaySettingsIfNeccessary(This, &This->initial_mode);
         }
 
@@ -1039,6 +1045,10 @@ static HRESULT DRI3Present_ChangePresentParameters(struct DRI3Present *This,
     else if (!params->Windowed)
     {
         move_fullscreen_window(This, params->hDeviceWindow, params->BackBufferWidth, params->BackBufferHeight);
+    }
+    else
+    {
+        TRACE("Nothing changed.\n");
     }
     if (!params->BackBufferWidth || !params->BackBufferHeight) {
         if (!params->Windowed)
