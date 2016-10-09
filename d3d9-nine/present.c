@@ -1012,9 +1012,7 @@ static HRESULT DRI3Present_ChangePresentParameters(struct DRI3Present *This,
                 if (!nine_register_window(focus_window, This))
                     return D3DERR_INVALIDCALL;
 
-                /* Wine thinks to always call SetWindowPos */
-                if (This->focus_wnd != params->hDeviceWindow)
-                    SetWindowPos(focus_window, 0, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE);
+                SetWindowPos(focus_window, 0, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE);
 
                 setup_fullscreen_window(This, params->hDeviceWindow,
                         params->BackBufferWidth, params->BackBufferHeight);
@@ -1124,9 +1122,7 @@ static HRESULT DRI3Present_new(Display *gdi_display, const WCHAR *devname,
         if (!nine_register_window(focus_window, This))
             return D3DERR_INVALIDCALL;
 
-        /* Wine thinks to always call SetWindowPos */
-        if (This->focus_wnd != params->hDeviceWindow)
-            SetWindowPos(focus_window, 0, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE);
+        SetWindowPos(focus_window, 0, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE);
 
         /* switch display mode */
         ZeroMemory(&new_mode, sizeof(DEVMODEW));
