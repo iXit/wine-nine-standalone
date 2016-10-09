@@ -991,17 +991,18 @@ static HRESULT DRI3Present_ChangePresentParameters(struct DRI3Present *This,
             }
             new_mode.dmSize = sizeof(DEVMODEW);
             hr = DRI3Present_ChangeDisplaySettingsIfNeccessary(This, &new_mode);
+            if (FAILED(hr))
+                return hr;
         }
-        else
+        else if(!This->params.Windowed && params->Windowed)
         {
             TRACE("Setting fullscreen mode: %dx%d@%d\n", This->initial_mode.dmPelsWidth,
                     This->initial_mode.dmPelsHeight, This->initial_mode.dmDisplayFrequency);
 
             hr = DRI3Present_ChangeDisplaySettingsIfNeccessary(This, &This->initial_mode);
+            if (FAILED(hr))
+                return hr;
         }
-
-        if (hr != D3D_OK)
-            return hr;
 
         if (This->params.Windowed)
         {
