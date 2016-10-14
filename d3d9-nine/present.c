@@ -993,6 +993,9 @@ static HRESULT DRI3Present_ChangePresentParameters(struct DRI3Present *This,
             hr = DRI3Present_ChangeDisplaySettingsIfNeccessary(This, &new_mode);
             if (FAILED(hr))
                 return hr;
+
+            /* Dirty as BackBufferWidth and BackBufferHeight hasn't been set yet */
+            This->resolution_mismatch = FALSE;
         }
         else if(!This->params.Windowed && params->Windowed)
         {
@@ -1002,6 +1005,9 @@ static HRESULT DRI3Present_ChangePresentParameters(struct DRI3Present *This,
             hr = DRI3Present_ChangeDisplaySettingsIfNeccessary(This, &This->initial_mode);
             if (FAILED(hr))
                 return hr;
+
+            /* Dirty as BackBufferWidth and BackBufferHeight hasn't been set yet */
+            This->resolution_mismatch = FALSE;
         }
 
         if (This->params.Windowed)
@@ -1063,6 +1069,7 @@ static HRESULT DRI3Present_ChangePresentParameters(struct DRI3Present *This,
             params->BackBufferHeight = rect.bottom - rect.top;
     }
 
+    /* Set as last in case of failed reset those aren't updated */
     This->params.BackBufferWidth = params->BackBufferWidth;
     This->params.BackBufferHeight = params->BackBufferHeight;
     This->params.BackBufferFormat = params->BackBufferFormat;
@@ -1144,9 +1151,12 @@ static HRESULT DRI3Present_new(Display *gdi_display, const WCHAR *devname,
             HeapFree(GetProcessHeap(), 0, This);
             return hr;
         }
+
+        /* Dirty as BackBufferWidth and BackBufferHeight hasn't been set yet */
+        This->resolution_mismatch = FALSE;
+
         setup_fullscreen_window(This, params->hDeviceWindow,
                 params->BackBufferWidth, params->BackBufferHeight);
-
     } else {
         GetClientRect(params->hDeviceWindow, &rect);
         if (!params->BackBufferWidth || !params->BackBufferHeight) {
