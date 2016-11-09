@@ -421,11 +421,51 @@ static HRESULT WINAPI DRI3Present_PresentBuffer( struct DRI3Present *This,
     return D3D_OK;
 }
 
+/* Based on wine's wined3d_get_adapter_raster_status. */
 static HRESULT WINAPI DRI3Present_GetRasterStatus( struct DRI3Present *This,
         D3DRASTER_STATUS *pRasterStatus )
 {
-    FIXME("(%p, %p), stub!\n", This, pRasterStatus);
-    return D3DERR_INVALIDCALL;
+    LONGLONG freq_per_frame, freq_per_line;
+    LARGE_INTEGER counter, freq_per_sec;
+    unsigned refresh_rate, height;
+
+    TRACE("This=%p, pRasterStatus=%p\n", This, pRasterStatus);
+
+    if (!QueryPerformanceCounter(&counter) || !QueryPerformanceFrequency(&freq_per_sec))
+        return D3DERR_INVALIDCALL;
+
+    if (This->params.Windowed)
+    {
+        refresh_rate = This->initial_mode.dmDisplayFrequency;
+        height = This->initial_mode.dmPelsHeight;
+    }
+    else
+    {
+        refresh_rate = This->params.FullScreen_RefreshRateInHz;
+        height = This->params.BackBufferHeight;
+    }
+
+    if (refresh_rate == 0)
+        refresh_rate = 60;
+
+    TRACE("refresh_rate=%u, height=%u\n", refresh_rate, height);
+
+    freq_per_frame = freq_per_sec.QuadPart / refresh_rate;
+    /* Assume 20 scan lines in the vertical blank. */
+    freq_per_line = freq_per_frame / (height + 20);
+    pRasterStatus->ScanLine = (counter.QuadPart % freq_per_frame) / freq_per_line;
+    if (pRasterStatus->ScanLine < height)
+        pRasterStatus->InVBlank = FALSE;
+    else
+    {
+        pRasterStatus->ScanLine = 0;
+        pRasterStatus->InVBlank = TRUE;
+    }
+
+    TRACE("Returning fake value, InVBlank %u, ScanLine %u.\n",
+            pRasterStatus->InVBlank, pRasterStatus->ScanLine);
+
+    return D3D_OK;
 }
 
 static HRESULT WINAPI DRI3Present_GetDisplayMode( struct DRI3Present *This,
