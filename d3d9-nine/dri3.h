@@ -84,4 +84,8 @@ BOOL PRESENTPixmap(Display *dpy, XID window, PRESENTPixmapPriv *present_pixmap_p
 
 BOOL PRESENTWaitPixmapReleased(PRESENTPixmapPriv *present_pixmap_priv);
 
+BOOL PRESENTIsPixmapReleased(PRESENTPixmapPriv *present_pixmap_priv);
+
+BOOL PRESENTWaitReleaseEvent(PRESENTpriv *present_priv);
+
 #endif /* __WINE_DRI3_H */

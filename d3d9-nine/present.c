@@ -43,7 +43,9 @@ WINE_DEFAULT_DEBUG_CHANNEL(d3d9nine);
 #endif
 
 #define WINE_D3DADAPTER_DRIVER_PRESENT_VERSION_MAJOR 1
-#if defined (ID3DPresent_ResolutionMismatch)
+#if defined (ID3DPresent_SetPresentParameters2)
+#define WINE_D3DADAPTER_DRIVER_PRESENT_VERSION_MINOR 3
+#elif defined (ID3DPresent_ResolutionMismatch)
 #define WINE_D3DADAPTER_DRIVER_PRESENT_VERSION_MINOR 2
 #elif defined (ID3DPresent_GetWindowOccluded)
 #define WINE_D3DADAPTER_DRIVER_PRESENT_VERSION_MINOR 1
@@ -129,6 +131,8 @@ struct DRI3Present
     UINT present_interval;
     BOOL present_async;
     BOOL present_swapeffectcopy;
+    BOOL allow_discard_delayed_release;
+    BOOL tear_free_discard;
     struct d3d_drawable *d3d;
 };
 
@@ -653,6 +657,26 @@ static BOOL WINAPI DRI3Present_WaitForThread( struct DRI3Present *This, HANDLE t
 }
 #endif
 
+#if WINE_D3DADAPTER_DRIVER_PRESENT_VERSION_MINOR >= 3
+static HRESULT WINAPI DRI3Present_SetPresentParameters2( struct DRI3Present *This, D3DPRESENT_PARAMETERS2 *pParams )
+{
+    This->allow_discard_delayed_release = pParams->AllowDISCARDDelayedRelease;
+    This->tear_free_discard = pParams->AllowDISCARDDelayedRelease && pParams->TearFreeDISCARD;
+    return D3D_OK;
+}
+
+static BOOL WINAPI DRI3Present_IsBufferReleased( struct DRI3Present *This, struct D3DWindowBuffer *buffer )
+{
+    return PRESENTIsPixmapReleased(buffer->present_pixmap_priv);
+}
+
+static HRESULT WINAPI DRI3Present_WaitBufferReleaseEvent( struct DRI3Present *This )
+{
+    PRESENTWaitReleaseEvent(This->present_priv);
+    return D3D_OK;
+}
+#endif
+
 /*----------*/
 
 static ID3DPresentVtbl DRI3Present_vtable = {
@@ -680,6 +704,11 @@ static ID3DPresentVtbl DRI3Present_vtable = {
     (void *)DRI3Present_ResolutionMismatch,
     (void *)DRI3Present_CreateThread,
     (void *)DRI3Present_WaitForThread,
+#endif
+#if WINE_D3DADAPTER_DRIVER_PRESENT_VERSION_MINOR >= 3
+    (void *)DRI3Present_SetPresentParameters2,
+    (void *)DRI3Present_IsBufferReleased,
+    (void *)DRI3Present_WaitBufferReleaseEvent,
 #endif
 };
 
@@ -971,17 +1000,22 @@ static void DRI3Present_UpdatePresentationInterval(struct DRI3Present *This)
         case D3DPRESENT_INTERVAL_IMMEDIATE:
         default:
             This->present_interval = 0;
-            This->present_async = TRUE;
+            This->present_async =
+                !(This->params.SwapEffect == D3DSWAPEFFECT_DISCARD &&
+                  This->tear_free_discard);
             break;
     }
 
     /* D3DSWAPEFFECT_COPY: Force Copy.
      * This->present_interval == 0: Force Copy to have buffers
      * release as soon as possible (the display server/compositor
-     * won't hold any buffer) */
+     * won't hold any buffer), unless DISCARD and
+     * allow_discard_delayed_release */
     This->present_swapeffectcopy =
         This->params.SwapEffect == D3DSWAPEFFECT_COPY ||
-        This->present_async;
+        (This->present_interval == 0 &&
+        !(This->params.SwapEffect == D3DSWAPEFFECT_DISCARD &&
+          This->allow_discard_delayed_release));
 }
 
 static HRESULT DRI3Present_ChangePresentParameters(struct DRI3Present *This,

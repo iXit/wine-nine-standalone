@@ -100,6 +100,7 @@ struct PRESENTPriv {
     xcb_special_event_t *special_event;
     PRESENTPixmapPriv *first_present_priv;
     int pixmap_present_pending;
+    BOOL idle_notify_since_last_check;
     BOOL notify_with_serial_pending;
     CRITICAL_SECTION mutex_present; /* protect readind/writing present_priv things */
     CRITICAL_SECTION mutex_xcb_wait;
@@ -657,6 +658,7 @@ static void PRESENThandle_events(PRESENTpriv *present_priv, xcb_present_generic_
                 return;
             }
             present_pixmap_priv->released = TRUE;
+            present_priv->idle_notify_since_last_check = TRUE;
             break;
         }
     }
@@ -1348,6 +1350,8 @@ BOOL PRESENTWaitPixmapReleased(PRESENTPixmapPriv *present_pixmap_priv)
 
     PRESENTflush_events(present_priv, FALSE);
 
+    /* The part with present_pixmap_priv->present_complete_pending is legacy behaviour.
+     * It matters for SwapEffectCopy with swapinterval > 0. */
     while (!present_pixmap_priv->released || present_pixmap_priv->present_complete_pending)
     {
         /* Note: following if should not happen because we'll never
@@ -1369,6 +1373,54 @@ BOOL PRESENTWaitPixmapReleased(PRESENTPixmapPriv *present_pixmap_priv)
             return FALSE;
         }
     }
+    LeaveCriticalSection(&present_priv->mutex_present);
+    return TRUE;
+}
+
+BOOL PRESENTIsPixmapReleased(PRESENTPixmapPriv *present_pixmap_priv)
+{
+    PRESENTpriv *present_priv = present_pixmap_priv->present_priv;
+    BOOL ret;
+
+    EnterCriticalSection(&present_priv->mutex_present);
+
+    PRESENTflush_events(present_priv, FALSE);
+
+    ret = present_pixmap_priv->released;
+
+    LeaveCriticalSection(&present_priv->mutex_present);
+    return ret;
+}
+
+BOOL PRESENTWaitReleaseEvent(PRESENTpriv *present_priv)
+{
+
+    EnterCriticalSection(&present_priv->mutex_present);
+
+    while (!present_priv->idle_notify_since_last_check)
+    {
+        /* Note: following if should not happen because we'll never
+         * use two PRESENTWaitPixmapReleased in parallels on same window.
+         * However it would make it work in that case */
+        if (present_priv->xcb_wait)
+        {
+            /* we allow only one thread to dispatch events */
+            EnterCriticalSection(&present_priv->mutex_xcb_wait);
+            /* here the other thread got an event but hasn't treated it yet */
+            LeaveCriticalSection(&present_priv->mutex_xcb_wait);
+            LeaveCriticalSection(&present_priv->mutex_present);
+            Sleep(10); /* Let it treat the event */
+            EnterCriticalSection(&present_priv->mutex_present);
+        }
+        else if (!PRESENTwait_events(present_priv, TRUE))
+        {
+            ERR("Issue in PRESENTWaitReleaseEvent\n");
+            LeaveCriticalSection(&present_priv->mutex_present);
+            return FALSE;
+        }
+    }
+    present_priv->idle_notify_since_last_check = FALSE;
+
     LeaveCriticalSection(&present_priv->mutex_present);
     return TRUE;
 }
