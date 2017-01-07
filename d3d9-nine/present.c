@@ -58,6 +58,7 @@ static const struct D3DAdapter9DRM *d3d9_drm = NULL;
 static int is_dri2_fallback = 0;
 #endif
 
+/* Start section of x11drv.h */
 #define X11DRV_ESCAPE 6789
 enum x11drv_escape_codes
 {
@@ -74,8 +75,8 @@ struct x11drv_escape_get_drawable
     Drawable                 drawable;     /* X drawable */
     Drawable                 gl_drawable;  /* GL drawable */
     int                      pixel_format; /* internal GL pixel format */
-    RECT                     dc_rect;      /* DC rectangle relative to drawable */
 };
+/* End section x11drv.h */
 
 static XContext d3d_hwnd_context;
 static CRITICAL_SECTION context_section;
@@ -93,7 +94,6 @@ const GUID IID_ID3DPresentGroup = { 0xB9C3016E, 0xF32A, 0x11DF, { 0x9C, 0x18, 0x
 struct d3d_drawable
 {
     Drawable drawable; /* X11 drawable */
-    RECT dc_rect; /* rect relative to the X11 drawable */
     HDC hdc;
     HWND wnd; /* HWND (for convenience) */
 };
@@ -161,6 +161,27 @@ static void destroy_d3dadapter_drawable(Display *gdi_display, HWND hwnd)
     LeaveCriticalSection(&context_section);
 }
 
+static RECT DRI3Present_GetClientRecWindowRelative(HWND hwnd)
+{
+    RECT rect;
+    RECT wnd;
+
+    /* Get client space dimensions */
+    GetClientRect(hwnd, &rect);
+
+    /* Get window in screen space */
+    GetWindowRect(hwnd, &wnd);
+
+    /* Transform to offset */
+    MapWindowPoints(HWND_DESKTOP, hwnd, (LPPOINT) &wnd, 2);
+    wnd.top *= -1;
+    wnd.left *= -1;
+    wnd.bottom = wnd.top + rect.bottom;
+    wnd.right = wnd.left + rect.right;
+
+    return wnd;
+}
+
 static struct d3d_drawable *create_d3dadapter_drawable(HWND hwnd)
 {
     struct x11drv_escape_get_drawable extesc = { X11DRV_GET_DRAWABLE };
@@ -185,7 +206,6 @@ static struct d3d_drawable *create_d3dadapter_drawable(HWND hwnd)
 
     d3d->drawable = extesc.drawable;
     d3d->wnd = hwnd;
-    d3d->dc_rect = extesc.dc_rect;
 
     return d3d;
 }
@@ -197,19 +217,6 @@ static struct d3d_drawable *get_d3d_drawable(Display *gdi_display, HWND hwnd)
     EnterCriticalSection(&context_section);
     if (!XFindContext(gdi_display, (XID)hwnd, d3d_hwnd_context, (char **)&d3d))
     {
-        struct x11drv_escape_get_drawable extesc = { X11DRV_GET_DRAWABLE };
-
-        /* check if the window has moved since last we used it */
-        if (ExtEscape(d3d->hdc, X11DRV_ESCAPE, sizeof(extesc), (LPCSTR)&extesc,
-                sizeof(extesc), (LPSTR)&extesc) <= 0)
-        {
-            WARN("Window update check failed (hwnd=%p, hdc=%p)\n",
-                 hwnd, d3d->hdc);
-        }
-
-        if (!EqualRect(&d3d->dc_rect, &extesc.dc_rect))
-            d3d->dc_rect = extesc.dc_rect;
-
         return d3d;
     }
     LeaveCriticalSection(&context_section);
@@ -369,11 +376,74 @@ static HRESULT WINAPI DRI3Present_FrontBufferCopy(struct DRI3Present *This,
     if (is_dri2_fallback)
         return D3DERR_DRIVERINTERNALERROR;
 #endif
-    /* TODO: use dc_rect */
     if (PRESENTHelperCopyFront(This->gdi_display, buffer->present_pixmap_priv))
         return D3D_OK;
     else
         return D3DERR_DRIVERINTERNALERROR;
+}
+
+/* Try to detect client side window decorations by walking the X Drawable up.
+ * In case there's an intermediate Drawable, server side window decorations are used.
+ * TODO: Find a X11 function to query for window decorations.
+ */
+static BOOL DRI3Present_HasClientSideWindowDecorations(struct DRI3Present *This,
+        HWND hwnd)
+{
+    struct x11drv_escape_get_drawable extesc = { X11DRV_GET_DRAWABLE };
+    Window Wroot;
+    Window Wparent;
+    Window *Wchildren;
+    unsigned int numchildren;
+    HWND parent;
+    HDC hdc;
+    BOOL ret = TRUE;
+
+    parent = GetParent(hwnd);
+    if (!parent)
+        parent = GetDesktopWindow();
+    if (!parent)
+    {
+        ERR("Unexpected error getting the parent hwnd (hwnd=%p)\n", hwnd);
+        return FALSE;
+    }
+
+    hdc = GetDCEx(hwnd, 0, DCX_CACHE | DCX_CLIPSIBLINGS);
+    if (!hdc)
+        return FALSE;
+    if (ExtEscape(hdc, X11DRV_ESCAPE, sizeof(extesc), (LPCSTR)&extesc,
+            sizeof(extesc), (LPSTR)&extesc) <= 0)
+    {
+        ERR("Unexpected error in X Drawable lookup (hwnd=%p, hdc=%p)\n", hwnd, hdc);
+        ReleaseDC(hwnd, hdc);
+        return FALSE;
+    }
+    ReleaseDC(hwnd, hdc);
+
+    if (XQueryTree(This->gdi_display, extesc.drawable, &Wroot, &Wparent, &Wchildren, &numchildren))
+    {
+        hdc = GetDCEx(parent, 0, DCX_CACHE | DCX_CLIPSIBLINGS);
+        if (!hdc)
+            return FALSE;
+
+        if (ExtEscape(hdc, X11DRV_ESCAPE, sizeof(extesc), (LPCSTR)&extesc,
+                sizeof(extesc), (LPSTR)&extesc) <= 0)
+        {
+            ERR("Unexpected error in X Drawable lookup (hwnd=%p, hdc=%p)\n", parent, hdc);
+            ReleaseDC(parent, hdc);
+            return FALSE;
+        }
+        ReleaseDC(parent, hdc);
+
+        if (Wparent != extesc.drawable)
+        {
+            /* Found at least one intermediate window */
+            ret = FALSE;
+        }
+        if (Wchildren)
+            free(Wchildren);
+    }
+
+    return ret;
 }
 
 static HRESULT WINAPI DRI3Present_PresentBuffer( struct DRI3Present *This,
@@ -382,13 +452,17 @@ static HRESULT WINAPI DRI3Present_PresentBuffer( struct DRI3Present *This,
 {
     struct d3d_drawable *d3d;
     RECT dest_translate;
+    RECT offset;
+    HWND hwnd;
 
     if (hWndOverride)
-        d3d = get_d3d_drawable(This->gdi_display, hWndOverride);
+        hwnd = hWndOverride;
     else if (This->params.hDeviceWindow)
-        d3d = get_d3d_drawable(This->gdi_display, This->params.hDeviceWindow);
+        hwnd = This->params.hDeviceWindow;
     else
-        d3d = get_d3d_drawable(This->gdi_display, This->focus_wnd);
+        hwnd = This->focus_wnd;
+
+    d3d = get_d3d_drawable(This->gdi_display, hwnd);
 
     if (!d3d)
         return D3DERR_DRIVERINTERNALERROR;
@@ -399,17 +473,25 @@ static HRESULT WINAPI DRI3Present_PresentBuffer( struct DRI3Present *This,
 
     This->d3d = d3d;
 
-    if ((d3d->dc_rect.top != 0) && (d3d->dc_rect.left != 0))
+    /* In case of client side window decorations we need to add an offset within
+     * the X drawable.
+     * FIXME: Call once on window style / size change */
+    if (DRI3Present_HasClientSideWindowDecorations(This, hwnd))
     {
-        if (!pDestRect)
-            pDestRect = (const RECT *) &(d3d->dc_rect);
-        else
+        offset = DRI3Present_GetClientRecWindowRelative(hwnd);
+
+        if ((offset.top != 0) || (offset.left != 0))
         {
-            dest_translate.top = pDestRect->top + d3d->dc_rect.top;
-            dest_translate.left = pDestRect->left + d3d->dc_rect.left;
-            dest_translate.bottom = pDestRect->bottom + d3d->dc_rect.bottom;
-            dest_translate.right = pDestRect->right + d3d->dc_rect.right;
-            pDestRect = (const RECT *) &dest_translate;
+            if (!pDestRect)
+                pDestRect = (const RECT *) &offset;
+            else
+            {
+                dest_translate.top = pDestRect->top + offset.top;
+                dest_translate.left = pDestRect->left + offset.left;
+                dest_translate.bottom = pDestRect->bottom + offset.bottom;
+                dest_translate.right = pDestRect->right + offset.right;
+                pDestRect = (const RECT *) &dest_translate;
+            }
         }
     }
 
