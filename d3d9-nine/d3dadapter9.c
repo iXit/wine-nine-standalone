@@ -396,23 +396,68 @@ static HRESULT WINAPI DECLSPEC_HOTPATCH d3dadapter9_CreateDevice(struct d3dadapt
 static UINT WINAPI d3dadapter9_GetAdapterModeCountEx(struct d3dadapter9 *This,
         UINT Adapter, const D3DDISPLAYMODEFILTER *pFilter)
 {
-    FIXME("(%p, %u, %p), stub!\n", This, Adapter, pFilter);
-    return 1;
+    FIXME("(%p, %u, %p), half stub!\n", This, Adapter, pFilter);
+    return d3dadapter9_GetAdapterModeCount(This, Adapter, pFilter->Format);
 }
 
 static HRESULT WINAPI d3dadapter9_EnumAdapterModesEx(struct d3dadapter9 *This,
         UINT Adapter, const D3DDISPLAYMODEFILTER *pFilter, UINT Mode,
         D3DDISPLAYMODEEX *pMode)
 {
-    FIXME("(%p, %u, %p, %u, %p), stub!\n", This, Adapter, pFilter, Mode, pMode);
-    return D3DERR_INVALIDCALL;
+    HRESULT hr;
+
+    FIXME("(%p, %u, %p, %u, %p), half stub!\n", This, Adapter, pFilter, Mode, pMode);
+
+    if (Adapter >= d3dadapter9_GetAdapterCount(This))
+        return D3DERR_INVALIDCALL;
+
+    hr = d3dadapter9_CheckDeviceFormat(This, Adapter, D3DDEVTYPE_HAL,
+            pFilter->Format, D3DUSAGE_RENDERTARGET, D3DRTYPE_SURFACE, pFilter->Format);
+
+    if (FAILED(hr))
+    {
+        TRACE("DeviceFormat not available.\n");
+        return hr;
+    }
+
+    if (Mode >= ADAPTER_OUTPUT.nmodes)
+    {
+        WARN("Mode %u does not exist.\n", Mode);
+        return D3DERR_INVALIDCALL;
+    }
+
+    pMode->Size = ADAPTER_OUTPUT.modes[Mode].Size;
+    pMode->Width = ADAPTER_OUTPUT.modes[Mode].Width;
+    pMode->Height = ADAPTER_OUTPUT.modes[Mode].Height;
+    pMode->RefreshRate = ADAPTER_OUTPUT.modes[Mode].RefreshRate;
+    pMode->Format = ADAPTER_OUTPUT.modes[Mode].Format;
+    pMode->ScanLineOrdering = ADAPTER_OUTPUT.modes[Mode].ScanLineOrdering;
+
+    return D3D_OK;
 }
 
 static HRESULT WINAPI d3dadapter9_GetAdapterDisplayModeEx(struct d3dadapter9 *This,
         UINT Adapter, D3DDISPLAYMODEEX *pMode, D3DDISPLAYROTATION *pRotation)
 {
-    FIXME("(%p, %u, %p, %p), stub!\n", This, Adapter, pMode, pRotation);
-    return D3DERR_INVALIDCALL;
+    UINT Mode;
+
+    if (Adapter >= d3dadapter9_GetAdapterCount(This))
+        return D3DERR_INVALIDCALL;
+
+    if (pMode)
+    {
+        Mode = ADAPTER_OUTPUT.current;
+        pMode->Size = sizeof(D3DDISPLAYMODEEX);
+        pMode->Width = ADAPTER_OUTPUT.modes[Mode].Width;
+        pMode->Height = ADAPTER_OUTPUT.modes[Mode].Height;
+        pMode->RefreshRate = ADAPTER_OUTPUT.modes[Mode].RefreshRate;
+        pMode->Format = ADAPTER_OUTPUT.modes[Mode].Format;
+        pMode->ScanLineOrdering = ADAPTER_OUTPUT.modes[Mode].ScanLineOrdering;
+    }
+    if (pRotation)
+        *pRotation = ADAPTER_OUTPUT.rotation;
+
+    return D3D_OK;
 }
 
 static HRESULT WINAPI DECLSPEC_HOTPATCH d3dadapter9_CreateDeviceEx(struct d3dadapter9 *This,
