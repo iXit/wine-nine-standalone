@@ -1601,15 +1601,46 @@ BOOL present_has_d3dadapter(Display *gdi_display)
             ERR("Failed to read Direct3DNine registry\n");
             goto cleanup;
         }
-        handle = wine_dlopen(path,
-                RTLD_GLOBAL | RTLD_NOW, errbuf, sizeof(errbuf));
-        if (!handle)
+        /* Split colon separated path for multi-arch support */
+        if (strstr(path, ":"))
         {
-            ERR("Failed to load %s: %s\n", path, errbuf);
-            goto cleanup;
+            char *tmp_path = strstr(path, ":");
+
+            /* Replace colon by string terminate */
+            *tmp_path = 0;
+            tmp_path ++;
+            handle = wine_dlopen(path,
+                    RTLD_GLOBAL | RTLD_NOW, errbuf, sizeof(errbuf));
+            if (!handle)
+            {
+                TRACE("Failed to load '%s': %s\n", path, errbuf);
+
+                handle = wine_dlopen(tmp_path,
+                        RTLD_GLOBAL | RTLD_NOW, errbuf, sizeof(errbuf));
+                if (!handle)
+                {
+                    TRACE("Failed to load '%s': %s\n", tmp_path, errbuf);
+                    ERR("Failed to load '%s' and '%s' set by ModulePath.\n",
+                            path, tmp_path);
+                    goto cleanup;
+                }
+            }
+        }
+        else
+        {
+            handle = wine_dlopen(path,
+                    RTLD_GLOBAL | RTLD_NOW, errbuf, sizeof(errbuf));
+            if (!handle)
+            {
+                TRACE("Failed to load %s: %s\n", path, errbuf);
+                ERR("Failed to load '%s' set by ModulePath.\n", path);
+                goto cleanup;
+            }
         }
         memcpy(pathbuf, path, size >= sizeof(pathbuf) ? (sizeof(pathbuf)-1) : size);
         pathbuf[sizeof(pathbuf)-1] = 0;
+
+        HeapFree(GetProcessHeap(), 0, path);
     }
 
 use_default_path:
@@ -1627,7 +1658,7 @@ use_default_path:
                 RTLD_GLOBAL | RTLD_NOW, errbuf, sizeof(errbuf));
         if (!handle)
         {
-            ERR("Failed to load %s: %s\n", D3D9NINE_MODULEPATH, errbuf);
+            ERR("Failed to load '%s': %s\n", D3D9NINE_MODULEPATH, errbuf);
             goto cleanup;
         }
         memcpy(pathbuf, D3D9NINE_MODULEPATH,
@@ -1685,7 +1716,6 @@ use_default_path:
         }
 #endif
     }
-    HeapFree(GetProcessHeap(), 0, path);
 
     return TRUE;
 
