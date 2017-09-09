@@ -1,0 +1,80 @@
+/*
+ * WineCfg resources
+ *
+ * Copyright 2002 Jaco Greeff
+ * Copyright 2003 Dimitrie O. Paun
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
+ *
+ */
+
+#include "config.h"   /* Needed for the PACKAGE_STRING definition */
+#include "resource.h"
+
+#pragma makedep po
+
+LANGUAGE LANG_ENGLISH, SUBLANG_DEFAULT
+
+STRINGTABLE
+BEGIN
+    IDS_TAB_MAIN                             "Global options"
+    IDS_TAB_ABOUT                            "About"
+    
+    IDS_NINECFG_TITLE                        "Nine configuration"
+    IDS_NINECFG_TITLE_APP                    "ninecfg"
+    IDS_NINECFG_NINE_SUPPORT_NOT_COMPILED    "Tip: Run ./configure and enable nine. Make sure to set PKG_CONFIG_PATH."
+    IDS_NINECFG_NINE_LOADABLE                "Tip: Make sure d3d9-nine.dll has the correct ARCH."
+    IDS_NINECFG_D3D_ERROR                    "Tip: Make sure that d3dadapter9.so is installed."
+    
+END
+
+IDD_ABOUT DIALOG  0, 0, 260, 220
+STYLE WS_CHILD | WS_DISABLED
+FONT 8, "MS Shell Dlg"
+BEGIN
+    GROUPBOX    "License Wine (d3d9-nine.dll)",IDC_STATIC,8,4,244,36
+    LTEXT       "GNU Lesser General Public License, version 2.1\n",IDC_STATIC,16,16,230,8
+    GROUPBOX    "License MESA",IDC_STATIC,8,44,244,36
+    LTEXT       "MIT License\n",IDC_STATIC,16,60,230,8
+
+    GROUPBOX    "Authors",IDC_STATIC,8,88,244,120
+    LTEXT       "Joakim Sindholt\nChristoph Bumiller\nTiziano Bacocco\nDavid Heidelberger\nAxel Davy\nNick Sarnie\nPatrick Rudolph\n\n\n\n",IDC_STATIC,16,100,230,92
+END
+
+IDD_NINE DIALOG  0, 0, 260, 220
+STYLE WS_CHILD | WS_DISABLED
+FONT 8, "MS Shell Dlg"
+BEGIN
+    GROUPBOX    "Gallium Nine settings",IDC_STATIC,8,4,244,60
+    LTEXT       "The following settings are experimental and may break stuff!\nMake sure to reset them again in case of a problem.\nGallium Nine requires MESA graphic drivers and AMD/Nvidia GPU.\n",IDC_STATIC,16,16,230,24
+    CONTROL     "Enable &Gallium Nine for better D3D9 graphic performance.",IDC_ENABLE_NATIVE_D3D9,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,16,44,230,8
+
+    GROUPBOX    "Install state",IDC_STATIC,8,74,244,134
+    CONTROL     "Support for Gallium Nine compiled in",IDC_NINE_STATE1,"Button",BS_AUTOCHECKBOX | WS_DISABLED,16,90,230,8
+    LTEXT       "Tip",IDC_NINE_STATE_TIP1,32,98,210,8
+    CONTROL     "d3dadapter module path is set",IDC_NINE_STATE2,"Button",BS_AUTOCHECKBOX | WS_DISABLED,16,106,230,8
+    LTEXT       "Tip",IDC_NINE_STATE_TIP2,32,114,210,8
+    CONTROL     "Loading of d3d9adapter succeeded",IDC_NINE_STATE3,"Button",BS_AUTOCHECKBOX | WS_DISABLED,16,122,230,8
+    LTEXT       "Tip",IDC_NINE_STATE_TIP3,32,130,210,16
+    CONTROL     "d3d9-nine.dll is loadable",IDC_NINE_STATE4,"Button",BS_AUTOCHECKBOX | WS_DISABLED,16,146,230,8
+    LTEXT       "Tip",IDC_NINE_STATE_TIP4,32,154,210,8
+    CONTROL     "Creating a D3D9 device succeeded",IDC_NINE_STATE5,"Button",BS_AUTOCHECKBOX | WS_DISABLED,16,162,230,8
+    LTEXT       "Tip",IDC_NINE_STATE_TIP5,32,170,210,8
+END
+
+LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
+
+/* @makedep: ninewinecfg.manifest */
+1 RT_MANIFEST ninewinecfg.manifest
