@@ -1580,12 +1580,16 @@ BOOL present_has_d3dadapter(Display *gdi_display)
 
         rc = RegQueryValueExA(regkey, "ModulePath", 0, &type, NULL, &size);
         if (rc == ERROR_FILE_NOT_FOUND)
+        {
+            RegCloseKey(regkey);
             goto use_default_path;
+        }
 
         TRACE("Reading registry key for module path\n");
         if (rc != ERROR_SUCCESS  || type != REG_SZ)
         {
             ERR("Failed to read Direct3DNine ModulePath registry key: Invalid content\n");
+            RegCloseKey(regkey);
             goto cleanup;
         }
 
@@ -1593,12 +1597,14 @@ BOOL present_has_d3dadapter(Display *gdi_display)
         if (!path)
         {
             ERR("Out of memory\n");
+            RegCloseKey(regkey);
             return FALSE;
         }
         rc = RegQueryValueExA(regkey, "ModulePath", 0, &type, (LPBYTE)path, &size);
         if (rc != ERROR_SUCCESS)
         {
             ERR("Failed to read Direct3DNine registry\n");
+            RegCloseKey(regkey);
             goto cleanup;
         }
         /* Split colon separated path for multi-arch support */
@@ -1622,6 +1628,7 @@ BOOL present_has_d3dadapter(Display *gdi_display)
                     TRACE("Failed to load '%s': %s\n", tmp_path, errbuf);
                     ERR("Failed to load '%s' and '%s' set by ModulePath.\n",
                             path, tmp_path);
+                    RegCloseKey(regkey);
                     goto cleanup;
                 }
             }
@@ -1634,6 +1641,7 @@ BOOL present_has_d3dadapter(Display *gdi_display)
             {
                 TRACE("Failed to load %s: %s\n", path, errbuf);
                 ERR("Failed to load '%s' set by ModulePath.\n", path);
+                RegCloseKey(regkey);
                 goto cleanup;
             }
         }
@@ -1641,6 +1649,7 @@ BOOL present_has_d3dadapter(Display *gdi_display)
         pathbuf[sizeof(pathbuf)-1] = 0;
 
         HeapFree(GetProcessHeap(), 0, path);
+        RegCloseKey(regkey);
     }
 
 use_default_path:
