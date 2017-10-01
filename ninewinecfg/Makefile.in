@@ -1,6 +1,7 @@
 MODULE    = ninewinecfg.exe
 APPMODE   = -mwindows
 IMPORTS   = shell32 gdi32 advapi32 user32 comctl32 ole32
+EXTRALIBS = -ldl
 
 C_SRCS = main.c
 

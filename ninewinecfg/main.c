@@ -30,12 +30,177 @@
 #include <windows.h>
 #include <commctrl.h>
 #include <objbase.h>
+#include <winternl.h>
 #include <wine/debug.h>
 #include <wine/library.h>
+
+#include <wine/svcctl.h>
+#include <wine/unicode.h>
+#include <wine/library.h>
+#include <wine/debug.h>
 
 #include "resource.h"
 
 WINE_DEFAULT_DEBUG_CHANNEL(ninecfg);
+
+#ifndef WINE_STAGING
+#warning DO NOT DEFINE WINE_STAGING TO 1 ON STABLE BRANCHES, ONLY ON WINE-STAGING ENABLED WINES
+#define WINE_STAGING 1
+#endif
+
+#if !WINE_STAGING
+
+#define STATUS_SUCCESS                   ((NTSTATUS) 0x00000000)
+#define STATUS_NO_SUCH_FILE              ((NTSTATUS) 0xC000000F)
+#define STATUS_OBJECT_NAME_EXISTS        ((NTSTATUS) 0x40000000)
+
+#if HAVE_DLADDR
+#define _GNU_SOURCE
+#include <dlfcn.h>
+#else
+#error neither HAVE_DLADDR nor WINE_STAGING is set
+#endif
+
+/* helper functions taken from NTDLL and KERNEL32 */
+static LPWSTR FILE_name_AtoW(LPCSTR name, int optarg)
+{
+    ANSI_STRING str;
+    UNICODE_STRING strW, *pstrW;
+    NTSTATUS status;
+
+    RtlInitAnsiString( &str, name );
+    pstrW = &strW ;
+    status = RtlAnsiStringToUnicodeString( pstrW, &str, TRUE );
+    if (status == STATUS_SUCCESS) return pstrW->Buffer;
+    return NULL;
+}
+
+static BOOL WINAPI CreateSymLinkW(LPCWSTR lpFileName, LPCSTR existingUnixFileName,
+    LPSECURITY_ATTRIBUTES lpSecurityAttributes)
+{
+    NTSTATUS status;
+    UNICODE_STRING ntDest;
+    ANSI_STRING unixDest;
+    BOOL ret = FALSE;
+
+    TRACE("(%s, %s, %p)\n", debugstr_w(lpFileName),
+         existingUnixFileName, lpSecurityAttributes);
+
+    ntDest.Buffer = NULL;
+    if (!RtlDosPathNameToNtPathName_U( lpFileName, &ntDest, NULL, NULL ))
+    {
+        SetLastError( ERROR_PATH_NOT_FOUND );
+        goto err;
+    }
+
+    unixDest.Buffer = NULL;
+    status = wine_nt_to_unix_file_name( &ntDest, &unixDest, FILE_CREATE, FALSE );
+    if (!status) /* destination must not exist */
+    {
+        status = STATUS_OBJECT_NAME_EXISTS;
+    } else if (status == STATUS_NO_SUCH_FILE)
+    {
+        status = STATUS_SUCCESS;
+    }
+
+    if (status)
+         SetLastError( RtlNtStatusToDosError(status) );
+    else if (!symlink( existingUnixFileName, unixDest.Buffer ))
+    {
+        TRACE("Symlinked '%s' to '%s'\n", debugstr_a( unixDest.Buffer ),
+            existingUnixFileName);
+        ret = TRUE;
+    }
+
+    RtlFreeAnsiString( &unixDest );
+
+err:
+    RtlFreeUnicodeString( &ntDest );
+    return ret;
+}
+
+static BOOL WINAPI CreateSymLinkA(LPCSTR lpFileName, LPCSTR lpExistingUnixFileName,
+    LPSECURITY_ATTRIBUTES lpSecurityAttributes)
+{
+    WCHAR *destW;
+    BOOL res;
+
+    if (!(destW = FILE_name_AtoW( lpFileName, TRUE )))
+    {
+        return FALSE;
+    }
+
+    res = CreateSymLinkW( destW, lpExistingUnixFileName, lpSecurityAttributes );
+
+    HeapFree( GetProcessHeap(), 0, destW );
+
+    return res;
+}
+
+static BOOL WINAPI IsFileSymLinkW(LPCWSTR lpExistingFileName)
+{
+    NTSTATUS status;
+    UNICODE_STRING ntSource;
+    ANSI_STRING unixSource;
+    BOOL ret = FALSE;
+    struct stat sb;
+
+    TRACE("(%s)\n", debugstr_w(lpExistingFileName));
+
+    ntSource.Buffer = NULL;
+    if (!RtlDosPathNameToNtPathName_U( lpExistingFileName, &ntSource, NULL, NULL ))
+    {
+        SetLastError( ERROR_PATH_NOT_FOUND );
+        goto err;
+    }
+
+    unixSource.Buffer = NULL;
+    status = wine_nt_to_unix_file_name( &ntSource, &unixSource, FILE_OPEN, FALSE );
+    if (status == STATUS_NO_SUCH_FILE)
+    {
+        SetLastError( ERROR_PATH_NOT_FOUND );
+        goto err;
+    }
+
+    if (!lstat( unixSource.Buffer, &sb) && (sb.st_mode & S_IFMT) == S_IFLNK)
+    {
+        ret = TRUE;
+    }
+
+    RtlFreeAnsiString( &unixSource );
+
+err:
+    RtlFreeUnicodeString( &ntSource );
+    return ret;
+}
+
+static BOOL WINAPI IsFileSymLinkA(LPCSTR lpExistingFileName)
+{
+    WCHAR *sourceW;
+    BOOL res;
+
+    if (!(sourceW = FILE_name_AtoW( lpExistingFileName, TRUE )))
+    {
+        return FALSE;
+    }
+
+    res = IsFileSymLinkW( sourceW );
+
+    HeapFree( GetProcessHeap(), 0, sourceW );
+
+    return res;
+}
+
+static BOOL nine_get_system_path(CHAR *pOut, DWORD SizeOut)
+{
+    if (isWoW64()) {
+        return !!GetSystemWow64DirectoryA((LPSTR)pOut, SizeOut);
+    } else {
+        return !!GetSystemDirectoryA((LPSTR)pOut, SizeOut);
+    }
+}
+
+#endif
 
 /*
  * Winecfg
@@ -55,7 +220,6 @@ void set_window_title(HWND dialog)
     WINE_TRACE("setting title to %s\n", wine_dbgstr_w (newtitle));
     SendMessageW (GetParent(dialog), PSM_SETTITLEW, 0, (LPARAM) newtitle);
 }
-
 
 WCHAR* load_string (UINT id)
 {
@@ -80,6 +244,7 @@ static BOOL nine_get(void)
     BOOL ret = 0;
     HKEY regkey;
 
+#if WINE_STAGING
     if (!RegOpenKeyA(HKEY_CURRENT_USER, "Software\\Wine\\DllRedirects", &regkey))
     {
         DWORD type;
@@ -115,7 +280,52 @@ static BOOL nine_get(void)
     {
         WINE_ERR("Failed to open path 'HKCU\\Software\\Wine\\DllRedirects'\n");
     }
+#else
 
+    CHAR buf[MAX_PATH];
+
+    if (!RegOpenKeyA(HKEY_CURRENT_USER, "Software\\Wine\\DllOverrides", &regkey))
+    {
+        DWORD type;
+        DWORD size = 0;
+        LSTATUS rc;
+        rc = RegQueryValueExA(regkey, "d3d9", 0, &type, NULL, &size);
+        if (rc != ERROR_FILE_NOT_FOUND && type == REG_SZ)
+        {
+            char *val = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, size + 1);
+            if (!val)
+            {
+                RegCloseKey(regkey);
+                return 0;
+            }
+            rc = RegQueryValueExA(regkey, "d3d9", 0, &type, (LPBYTE)val, &size);
+            if (rc == ERROR_SUCCESS)
+            {
+                ret = !!val && !strcmp(val, "native");
+            }
+            else
+                ret = FALSE;
+
+            HeapFree(GetProcessHeap(), 0, val);
+        }
+        else
+            ret = FALSE;
+
+        RegCloseKey(regkey);
+    }
+    else
+    {
+        WINE_ERR("Failed to open path 'HKCU\\Software\\Wine\\DllOverrides'\n");
+    }
+
+    if (!ret)
+        return ret;
+
+    GetSystemDirectoryA((LPSTR)&buf, sizeof(buf));
+    strcat(buf, "\\d3d9.dll");
+    /* FIXME: Test symlink destination */
+    ret = IsFileSymLinkA(buf);
+#endif
     return ret;
 }
 
@@ -123,6 +333,8 @@ static void nine_set(BOOL status)
 {
     HKEY regkey;
 
+#if WINE_STAGING
+    /* Active dll redirect */
     if (!RegOpenKeyA(HKEY_CURRENT_USER, "Software\\Wine\\DllRedirects", &regkey))
     {
         LSTATUS rc;
@@ -145,6 +357,68 @@ static void nine_set(BOOL status)
     {
         WINE_ERR("Failed to open path 'HKCU\\Software\\Wine\\DllRedirects'\n");
     }
+#else
+    CHAR dst[MAX_PATH];
+
+    /* enable native dll */
+    if (!RegOpenKeyA(HKEY_CURRENT_USER, "Software\\Wine\\DllOverrides", &regkey))
+    {
+        LSTATUS rc;
+
+        if (!status)
+        {
+            rc = RegDeleteValueA(regkey, "d3d9");
+        }
+        else
+        {
+            rc = RegSetValueExA(regkey, "d3d9", 0, REG_SZ, (LPBYTE)"native", strlen("native"));
+        }
+        if (rc != NO_ERROR)
+        {
+            WINE_ERR("Failed to write 'HKCU\\Software\\Wine\\DllOverrides\\d3d9'. rc = %d\n", rc);
+        }
+        RegCloseKey(regkey);
+    }
+    else
+    {
+        WINE_ERR("Failed to open path 'HKCU\\Software\\Wine\\DllRedirects'\n");
+    }
+
+    /* set symlink */
+    GetSystemDirectoryA((LPSTR)&dst, sizeof(dst));
+    strcat(dst, "\\d3d9.dll");
+    /* FIXME: Test symlink destination */
+    if (IsFileSymLinkA(dst))
+        return;
+
+    /* Just in case native dll has been installed */
+    DeleteFileA(dst);
+
+    if (status) {
+        HMODULE hmod;
+
+        hmod = LoadLibraryExA("d3d9-nine.dll", NULL, DONT_RESOLVE_DLL_REFERENCES);
+        if (hmod)
+        {
+#if HAVE_DLADDR
+            Dl_info info;
+
+            if (dladdr(hmod, &info) && info.dli_fname)
+            {
+                if (!CreateSymLinkA(dst, info.dli_fname, NULL))
+                    WINE_ERR("CreateSymLinkA(%s,%s) failed\n", dst, info.dli_fname);
+
+            }
+            else
+                WINE_ERR("dladdr failed to get file path\n");
+#endif
+
+            FreeLibrary(hmod);
+        }
+        else
+            WINE_ERR("d3d9-nine.dll not found\n");
+    }
+#endif
 }
 
 typedef HRESULT (WINAPI *LPDIRECT3DCREATE9EX)( UINT, void **);
@@ -256,6 +530,7 @@ static void load_staging_settings(HWND dialog)
         goto out;
     }
 
+    /* FIXME: don't leak iface here ... */
     ret = Direct3DCreate9ExPtr(0, &iface);
     if (!ret && iface)
     {
@@ -267,6 +542,9 @@ static void load_staging_settings(HWND dialog)
                 (LPARAM)load_string (IDS_NINECFG_D3D_ERROR));
         goto out;
     }
+
+    if (hmod)
+        FreeLibrary(hmod);
 
     return;
 out:
