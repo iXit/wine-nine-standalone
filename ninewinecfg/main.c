@@ -29,6 +29,7 @@
 #include <wine/port.h>
 #include <windows.h>
 #include <commctrl.h>
+#include <shellapi.h>
 #include <objbase.h>
 #include <winternl.h>
 #include <wine/debug.h>
@@ -60,6 +61,86 @@ WINE_DEFAULT_DEBUG_CHANNEL(ninecfg);
 #else
 #error neither HAVE_DLADDR nor WINE_STAGING is set
 #endif
+
+static BOOL isWin64(void)
+{
+    return sizeof(void*) == 8;
+}
+
+static BOOL Call32bitNineWineCfg(BOOL state)
+{
+    STARTUPINFOA si;
+    PROCESS_INFORMATION pi;
+    CHAR buf[MAX_PATH];
+
+    ZeroMemory( &si, sizeof(si) );
+    si.cb = sizeof(si);
+    ZeroMemory( &pi, sizeof(pi) );
+
+    if (!GetSystemWow64DirectoryA((LPSTR)buf, sizeof(buf)))
+        return FALSE;
+
+    strcat(buf, "\\ninewinecfg.exe");
+
+    if (state)
+        strcat(buf, " -e -n");
+    else
+        strcat(buf, " -d -n");
+
+    if (!CreateProcessA(NULL, buf, NULL, NULL,
+        FALSE, 0, NULL, NULL, &si, &pi )) {
+        WINE_ERR("Failed to call CreateProcess, error=%d", GetLastError());
+        return FALSE;
+    }
+    else
+        WaitForSingleObject( pi.hProcess, INFINITE );
+
+    return TRUE;
+}
+
+static BOOL isWoW64(void)
+{
+    BOOL is_wow64;
+
+    return IsWow64Process( GetCurrentProcess(), &is_wow64 ) && is_wow64;
+}
+
+static BOOL Call64bitNineWineCfg(BOOL state)
+{
+    STARTUPINFOA si;
+    PROCESS_INFORMATION pi;
+    void *redir;
+    DWORD exit_code;
+    CHAR buf[MAX_PATH];
+
+    Wow64DisableWow64FsRedirection( &redir );
+
+    ZeroMemory( &si, sizeof(si) );
+    si.cb = sizeof(si);
+    ZeroMemory( &pi, sizeof(pi) );
+
+    if (!GetSystemDirectoryA((LPSTR)buf, sizeof(buf)))
+        return FALSE;
+
+    strcat(buf, "\\ninewinecfg.exe");
+
+    if (state)
+        strcat(buf, " -e -n");
+    else
+        strcat(buf, " -d -n");
+ 
+    if (!CreateProcessA(NULL, buf, NULL, NULL,
+        FALSE, 0, NULL, NULL, &si, &pi )) {
+        WINE_ERR("Failed to call CreateProcess, error=%d", GetLastError());
+        return FALSE;
+    }
+    else
+        WaitForSingleObject( pi.hProcess, INFINITE );
+    GetExitCodeProcess( pi.hProcess, &exit_code );
+
+    Wow64RevertWow64FsRedirection( redir );
+    return TRUE;
+}
 
 /* helper functions taken from NTDLL and KERNEL32 */
 static LPWSTR FILE_name_AtoW(LPCSTR name, int optarg)
@@ -236,6 +317,15 @@ WCHAR* load_string (UINT id)
     return newStr;
 }
 
+static BOOL nine_get_system_path(CHAR *pOut, DWORD SizeOut)
+{
+    if (isWoW64()) {
+        return !!GetSystemWow64DirectoryA((LPSTR)pOut, SizeOut);
+    } else {
+        return !!GetSystemDirectoryA((LPSTR)pOut, SizeOut);
+    }
+}
+
 /*
  * Gallium nine
  */
@@ -271,9 +361,8 @@ static BOOL nine_get(void)
             HeapFree(GetProcessHeap(), 0, val);
         }
         else
-        {
-            WINE_ERR("Failed to read value 'd3d9'. rc = %d\n", rc);
-        }
+            WINE_WARN("Failed to read value 'd3d9'. rc = %d\n", rc);
+
         RegCloseKey(regkey);
     }
     else
@@ -314,14 +403,16 @@ static BOOL nine_get(void)
         RegCloseKey(regkey);
     }
     else
-    {
-        WINE_ERR("Failed to open path 'HKCU\\Software\\Wine\\DllOverrides'\n");
-    }
+        WINE_WARN("Failed to open path 'HKCU\\Software\\Wine\\DllOverrides'\n");
 
     if (!ret)
         return ret;
 
-    GetSystemDirectoryA((LPSTR)&buf, sizeof(buf));
+    if (!nine_get_system_path(buf, sizeof(buf))) {
+        WINE_ERR("Failed to get system path\n");
+        return FALSE;
+    }
+
     strcat(buf, "\\d3d9.dll");
     /* FIXME: Test symlink destination */
     ret = IsFileSymLinkA(buf);
@@ -329,7 +420,7 @@ static BOOL nine_get(void)
     return ret;
 }
 
-static void nine_set(BOOL status)
+static void nine_set(BOOL status, BOOL NoOtherArch)
 {
     HKEY regkey;
 
@@ -354,11 +445,19 @@ static void nine_set(BOOL status)
         RegCloseKey(regkey);
     }
     else
-    {
         WINE_ERR("Failed to open path 'HKCU\\Software\\Wine\\DllRedirects'\n");
-    }
 #else
     CHAR dst[MAX_PATH];
+
+    /* Prevent infinite recursion if called from other arch already */
+    if (!NoOtherArch) {
+        /* Started as 64bit, call 32bit process */
+        if (isWin64())
+            Call32bitNineWineCfg(status);
+        /* Started as 32bit, call 64bit process */
+        else if (isWoW64())
+            Call64bitNineWineCfg(status);
+    }
 
     /* enable native dll */
     if (!RegOpenKeyA(HKEY_CURRENT_USER, "Software\\Wine\\DllOverrides", &regkey))
@@ -374,28 +473,28 @@ static void nine_set(BOOL status)
             rc = RegSetValueExA(regkey, "d3d9", 0, REG_SZ, (LPBYTE)"native", strlen("native"));
         }
         if (rc != NO_ERROR)
-        {
-            WINE_ERR("Failed to write 'HKCU\\Software\\Wine\\DllOverrides\\d3d9'. rc = %d\n", rc);
-        }
+            WINE_WARN("Failed to write 'HKCU\\Software\\Wine\\DllOverrides\\d3d9'. rc = %d\n", rc);
+
         RegCloseKey(regkey);
     }
     else
-    {
-        WINE_ERR("Failed to open path 'HKCU\\Software\\Wine\\DllRedirects'\n");
-    }
+        WINE_WARN("Failed to open path 'HKCU\\Software\\Wine\\DllRedirects'\n");
 
-    /* set symlink */
-    GetSystemDirectoryA((LPSTR)&dst, sizeof(dst));
-    strcat(dst, "\\d3d9.dll");
-    /* FIXME: Test symlink destination */
-    if (IsFileSymLinkA(dst))
+    if (!nine_get_system_path(dst, sizeof(dst))) {
+        WINE_ERR("Failed to get system path\n");
         return;
-
-    /* Just in case native dll has been installed */
-    DeleteFileA(dst);
+    }
+    strcat(dst, "\\d3d9.dll");
 
     if (status) {
         HMODULE hmod;
+
+        /* FIXME: Test symlink destination */
+        if (IsFileSymLinkA(dst))
+            return;
+
+        /* Just in case native dll has been installed */
+        DeleteFileA(dst);
 
         hmod = LoadLibraryExA("d3d9-nine.dll", NULL, DONT_RESOLVE_DLL_REFERENCES);
         if (hmod)
@@ -416,8 +515,11 @@ static void nine_set(BOOL status)
             FreeLibrary(hmod);
         }
         else
-            WINE_ERR("d3d9-nine.dll not found\n");
+            WINE_ERR("d3d9-nine.dll not found.\n");
     }
+    else
+        DeleteFileA(dst);
+
 #endif
 }
 
@@ -554,7 +656,68 @@ out:
         FreeLibrary(hmod);
 }
 
+BOOL ProcessCmdLine(WCHAR *cmdline)
+{
+    WCHAR **argv;
+    int argc, i;
+    BOOL NoOtherArch = FALSE;
+    BOOL NineSet = FALSE;
+    BOOL NineClear = FALSE;
 
+    argv = CommandLineToArgvW(cmdline, &argc);
+
+    if (!argv)
+        return FALSE;
+
+    if (argc == 1)
+    {
+        LocalFree(argv);
+        return FALSE;
+    }
+
+    for (i = 1; i < argc; i++)
+    {
+        if (argv[i][0] != '/' && argv[i][0] != '-')
+            break; /* No flags specified. */
+
+        if (!argv[i][1] && argv[i][0] == '-')
+            break; /* '-' is a filename. It indicates we should use stdin. */
+
+        if (argv[i][1] && argv[i][2] && argv[i][2] != ':')
+            break; /* This is a file path beginning with '/'. */
+
+        switch (toupperW(argv[i][1]))
+        {
+        case '?':
+            WINE_ERR("\nSupported arguments: [ -e | -d ][ -n ]\n-e Enable nine\n-d Disable nine\n-n Do not call other arch exe\n");
+            return TRUE;
+        case 'E':
+            NineSet = TRUE;
+            break;
+        case 'D':
+            NineClear = TRUE;
+            break;
+        case 'N':
+            NoOtherArch = TRUE;
+            break;
+        default:
+            return FALSE;
+        }
+    }
+
+    if (NineSet && !NineClear)
+    {
+        nine_set(TRUE, NoOtherArch);
+        return TRUE;
+    }
+    else if (NineClear && !NineSet)
+    {
+        nine_set(FALSE, NoOtherArch);
+        return TRUE;
+    }
+
+    return FALSE;
+}
 
 static INT_PTR CALLBACK AppDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
@@ -580,7 +743,7 @@ static INT_PTR CALLBACK AppDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM l
         switch (LOWORD(wParam))
         {
         case IDC_ENABLE_NATIVE_D3D9:
-            nine_set(IsDlgButtonChecked(hDlg, IDC_ENABLE_NATIVE_D3D9) == BST_CHECKED);
+            nine_set(IsDlgButtonChecked(hDlg, IDC_ENABLE_NATIVE_D3D9) == BST_CHECKED, FALSE);
             SendMessageW(GetParent(hDlg), PSM_CHANGED, 0, 0);
             return TRUE;
         }
@@ -652,6 +815,7 @@ doPropertySheet (HINSTANCE hInstance, HWND hOwner)
 int WINAPI
 WinMain (HINSTANCE hInstance, HINSTANCE hPrev, LPSTR szCmdLine, int nShow)
 {
+#if 0
     BOOL is_wow64;
 
     if (IsWow64Process( GetCurrentProcess(), &is_wow64 ) && is_wow64)
@@ -676,6 +840,10 @@ WinMain (HINSTANCE hInstance, HINSTANCE hPrev, LPSTR szCmdLine, int nShow)
         }
         else WINE_ERR( "failed to restart 64-bit %s, err %d\n", wine_dbgstr_w(filename), GetLastError() );
         Wow64RevertWow64FsRedirection( redir );
+    }
+#endif
+    if (ProcessCmdLine(GetCommandLineW())) {
+        return 0;
     }
 
     /*
