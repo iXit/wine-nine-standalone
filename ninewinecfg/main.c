@@ -32,6 +32,7 @@
 #include <windows.h>
 #include <commctrl.h>
 #include <shellapi.h>
+#include <shlwapi.h>
 #include <objbase.h>
 #include <winternl.h>
 #include <wine/debug.h>
@@ -153,6 +154,65 @@ static LPWSTR FILE_name_AtoW(LPCSTR name, int optarg)
     status = RtlAnsiStringToUnicodeString( pstrW, &str, TRUE );
     if (status == STATUS_SUCCESS) return pstrW->Buffer;
     return NULL;
+}
+
+static BOOL WINAPI DeleteSymLinkW(LPCWSTR lpFileName)
+{
+    NTSTATUS status;
+    UNICODE_STRING ntDest;
+    ANSI_STRING unixDest;
+    BOOL ret = FALSE;
+
+    TRACE("(%s)\n", debugstr_w(lpFileName));
+
+    ntDest.Buffer = NULL;
+    if (!RtlDosPathNameToNtPathName_U( lpFileName, &ntDest, NULL, NULL ))
+    {
+        SetLastError( ERROR_PATH_NOT_FOUND );
+        goto err;
+    }
+
+    unixDest.Buffer = NULL;
+    status = wine_nt_to_unix_file_name( &ntDest, &unixDest, 0, FALSE );
+    if (!status)
+    {
+        if (!unlink(unixDest.Buffer))
+        {
+            TRACE("Removed symlink '%s'\n", debugstr_a( unixDest.Buffer ));
+            ret = TRUE;
+            status = STATUS_SUCCESS;
+        }
+        else
+        {
+            ERR("Failed to remove symlink\n");
+        }
+    }
+
+    if (status)
+         SetLastError( RtlNtStatusToDosError(status) );
+
+    RtlFreeAnsiString( &unixDest );
+
+err:
+    RtlFreeUnicodeString( &ntDest );
+    return ret;
+}
+
+static BOOL WINAPI DeleteSymLinkA(LPCSTR lpFileName)
+{
+    WCHAR *destW;
+    BOOL res;
+
+    if (!(destW = FILE_name_AtoW( lpFileName, TRUE )))
+    {
+        return FALSE;
+    }
+
+    res = DeleteSymLinkW( destW );
+
+    HeapFree( GetProcessHeap(), 0, destW );
+
+    return res;
 }
 
 static BOOL WINAPI CreateSymLinkW(LPCWSTR lpFileName, LPCSTR existingUnixFileName,
@@ -399,16 +459,32 @@ static BOOL nine_get(void)
         WINE_WARN("Failed to open path 'HKCU\\Software\\Wine\\DllOverrides'\n");
 
     if (!ret)
-        return ret;
-
-    if (!nine_get_system_path(buf, sizeof(buf))) {
+    {
+        /* Sanity: Remove symlink if any */
+        if (nine_get_system_path(buf, sizeof(buf)))
+        {
+            strcat(buf, "\\d3d9.dll");
+            ERR("removing obsolete symlink");
+            DeleteSymLinkA(buf);
+        }
+        return FALSE;
+    }
+    if (!nine_get_system_path(buf, sizeof(buf)))
+    {
         WINE_ERR("Failed to get system path\n");
         return FALSE;
     }
 
     strcat(buf, "\\d3d9.dll");
-    /* FIXME: Test symlink destination */
+
     ret = IsFileSymLinkA(buf);
+    if (ret && !PathFileExistsA(buf))
+    {
+        /* broken symlink */
+        DeleteSymLinkA(buf);
+        ERR("removing dead symlink\n");
+        return FALSE;
+    }
 #endif
     return ret;
 }
@@ -484,12 +560,8 @@ static void nine_set(BOOL status, BOOL NoOtherArch)
     {
         HMODULE hmod;
 
-        /* FIXME: Test symlink destination */
-        if (IsFileSymLinkA(dst))
-            return;
-
-        /* Just in case native dll has been installed */
-        DeleteFileA(dst);
+        /* Sanity: Always recreate symlink */
+        DeleteSymLinkA(dst);
 
         hmod = LoadLibraryExA("d3d9-nine.dll", NULL, DONT_RESOLVE_DLL_REFERENCES);
         if (hmod)
@@ -513,7 +585,7 @@ static void nine_set(BOOL status, BOOL NoOtherArch)
             WINE_ERR("d3d9-nine.dll not found.\n");
     }
     else
-        DeleteFileA(dst);
+        DeleteSymLinkA(dst);
 
 #endif
 }
@@ -810,6 +882,11 @@ doPropertySheet (HINSTANCE hInstance, HWND hOwner)
 int WINAPI
 WinMain (HINSTANCE hInstance, HINSTANCE hPrev, LPSTR szCmdLine, int nShow)
 {
+#if !HAVE_DLADDR && !WINE_STAGING
+    WINE_ERR("Compiled without dladdr support.\n");
+    return 1;
+#endif
+
     if (ProcessCmdLine(GetCommandLineW()))
     {
         return 0;
