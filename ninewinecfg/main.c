@@ -273,9 +273,12 @@ static BOOL WINAPI IsFileSymLinkA(LPCSTR lpExistingFileName)
 
 static BOOL nine_get_system_path(CHAR *pOut, DWORD SizeOut)
 {
-    if (isWoW64()) {
+    if (isWoW64())
+    {
         return !!GetSystemWow64DirectoryA((LPSTR)pOut, SizeOut);
-    } else {
+    }
+    else
+    {
         return !!GetSystemDirectoryA((LPSTR)pOut, SizeOut);
     }
 }
@@ -440,7 +443,8 @@ static void nine_set(BOOL status, BOOL NoOtherArch)
     CHAR dst[MAX_PATH];
 
     /* Prevent infinite recursion if called from other arch already */
-    if (!NoOtherArch) {
+    if (!NoOtherArch)
+    {
         /* Started as 64bit, call 32bit process */
         if (isWin64())
             Call32bitNineWineCfg(status);
@@ -476,7 +480,8 @@ static void nine_set(BOOL status, BOOL NoOtherArch)
     }
     strcat(dst, "\\d3d9.dll");
 
-    if (status) {
+    if (status)
+    {
         HMODULE hmod;
 
         /* FIXME: Test symlink destination */
@@ -525,7 +530,6 @@ static void load_staging_settings(HWND dialog)
     char have_modpath = 0;
     char *mod_path = NULL;
     LPDIRECT3DCREATE9 Direct3DCreate9Ptr = NULL;
-    HRESULT ret = -1;
     IDirect3D9 *iface = NULL;
     HKEY regkey;
     void *handle;
@@ -806,34 +810,8 @@ doPropertySheet (HINSTANCE hInstance, HWND hOwner)
 int WINAPI
 WinMain (HINSTANCE hInstance, HINSTANCE hPrev, LPSTR szCmdLine, int nShow)
 {
-#if 0
-    BOOL is_wow64;
-
-    if (IsWow64Process( GetCurrentProcess(), &is_wow64 ) && is_wow64)
+    if (ProcessCmdLine(GetCommandLineW()))
     {
-        STARTUPINFOW si;
-        PROCESS_INFORMATION pi;
-        WCHAR filename[MAX_PATH];
-        void *redir;
-        DWORD exit_code;
-
-        memset( &si, 0, sizeof(si) );
-        si.cb = sizeof(si);
-        GetModuleFileNameW( 0, filename, MAX_PATH );
-
-        Wow64DisableWow64FsRedirection( &redir );
-        if (CreateProcessW( filename, GetCommandLineW(), NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi ))
-        {
-            WINE_TRACE( "restarting %s\n", wine_dbgstr_w(filename) );
-            WaitForSingleObject( pi.hProcess, INFINITE );
-            GetExitCodeProcess( pi.hProcess, &exit_code );
-            ExitProcess( exit_code );
-        }
-        else WINE_ERR( "failed to restart 64-bit %s, err %d\n", wine_dbgstr_w(filename), GetLastError() );
-        Wow64RevertWow64FsRedirection( redir );
-    }
-#endif
-    if (ProcessCmdLine(GetCommandLineW())) {
         return 0;
     }
 
@@ -843,9 +821,12 @@ WinMain (HINSTANCE hInstance, HINSTANCE hPrev, LPSTR szCmdLine, int nShow)
      */
     InitCommonControls ();
     CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
-    if (doPropertySheet (hInstance, NULL) > 0) {
+    if (doPropertySheet (hInstance, NULL) > 0)
+    {
         WINE_TRACE("OK\n");
-    } else {
+    }
+    else
+    {
         WINE_TRACE("Cancel\n");
     }
     CoUninitialize();
