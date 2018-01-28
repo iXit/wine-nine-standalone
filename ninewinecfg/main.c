@@ -41,6 +41,7 @@
 #include <wine/unicode.h>
 #include <wine/library.h>
 #include <wine/debug.h>
+#include <d3d9.h>
 
 #include "resource.h"
 
@@ -512,7 +513,8 @@ static void nine_set(BOOL status, BOOL NoOtherArch)
 #endif
 }
 
-typedef HRESULT (WINAPI *LPDIRECT3DCREATE9EX)( UINT, void **);
+
+typedef IDirect3D9* (WINAPI *LPDIRECT3DCREATE9)( UINT );
 
 static const WCHAR emptyW[1];
 
@@ -522,9 +524,9 @@ static void load_staging_settings(HWND dialog)
     char have_d3d9nine = 0;
     char have_modpath = 0;
     char *mod_path = NULL;
-    LPDIRECT3DCREATE9EX Direct3DCreate9ExPtr = NULL;
+    LPDIRECT3DCREATE9 Direct3DCreate9Ptr = NULL;
     HRESULT ret = -1;
-    void *iface = NULL;
+    IDirect3D9 *iface = NULL;
     HKEY regkey;
     void *handle;
     char errbuf[1024];
@@ -604,10 +606,10 @@ static void load_staging_settings(HWND dialog)
 
     hmod = LoadLibraryA("d3d9-nine.dll");
     if (hmod)
-        Direct3DCreate9ExPtr = (LPDIRECT3DCREATE9EX)
-                GetProcAddress(hmod, "Direct3DCreate9Ex");
+        Direct3DCreate9Ptr = (LPDIRECT3DCREATE9)
+                GetProcAddress(hmod, "Direct3DCreate9");
 
-    if (hmod && Direct3DCreate9ExPtr)
+    if (hmod && Direct3DCreate9Ptr)
     {
         CheckDlgButton(dialog, IDC_NINE_STATE4, BST_CHECKED);
     }
@@ -621,10 +623,10 @@ static void load_staging_settings(HWND dialog)
         goto out;
     }
 
-    /* FIXME: don't leak iface here ... */
-    ret = Direct3DCreate9ExPtr(0, &iface);
-    if (!ret && iface)
+    iface = Direct3DCreate9Ptr(0);
+    if (iface)
     {
+        IDirect3DDevice9_Release(iface);
         CheckDlgButton(dialog, IDC_NINE_STATE5, BST_CHECKED);
     }
     else
