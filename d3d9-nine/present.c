@@ -150,6 +150,7 @@ static void free_d3dadapter_drawable(struct d3d_drawable *d3d)
 static void destroy_d3dadapter_drawable(Display *gdi_display, HWND hwnd)
 {
     struct d3d_drawable *d3d;
+    TRACE("This=%p hwnd=%p\n", gdi_display, hwnd);
 
     EnterCriticalSection(&context_section);
     if (!XFindContext(gdi_display, (XID)hwnd,
@@ -213,6 +214,8 @@ static struct d3d_drawable *create_d3dadapter_drawable(HWND hwnd)
 static struct d3d_drawable *get_d3d_drawable(Display *gdi_display, HWND hwnd)
 {
     struct d3d_drawable *d3d, *race;
+
+    TRACE("hwnd=%p\n", hwnd);
 
     EnterCriticalSection(&context_section);
     if (!XFindContext(gdi_display, (XID)hwnd, d3d_hwnd_context, (char **)&d3d))
@@ -344,6 +347,8 @@ static HRESULT WINAPI DRI3Present_D3DWindowBufferFromDmaBuf(struct DRI3Present *
         HeapFree(GetProcessHeap(), 0, *out);
         return D3DERR_DRIVERINTERNALERROR;
     }
+
+    TRACE("This=%p buffer=%p\n", This, *out);
     return D3D_OK;
 }
 
@@ -353,6 +358,7 @@ static HRESULT WINAPI DRI3Present_DestroyD3DWindowBuffer(struct DRI3Present *Thi
     /* the pixmap is managed by the PRESENT backend.
      * But if it can delete it right away, we may have
      * better performance */
+    TRACE("This=%p buffer=%p of priv %p\n", This, buffer, buffer->present_pixmap_priv);
     PRESENTTryFreePixmap(This->gdi_display, buffer->present_pixmap_priv);
     HeapFree(GetProcessHeap(), 0, buffer);
     return D3D_OK;
@@ -361,6 +367,7 @@ static HRESULT WINAPI DRI3Present_DestroyD3DWindowBuffer(struct DRI3Present *Thi
 static HRESULT WINAPI DRI3Present_WaitBufferReleased(struct DRI3Present *This,
         struct D3DWindowBuffer *buffer)
 {
+    TRACE("This=%p buffer=%p\n", This, buffer);
     if(!PRESENTWaitPixmapReleased(buffer->present_pixmap_priv))
     {
         ERR("PRESENTWaitPixmapReleased failed\n");
@@ -462,6 +469,8 @@ static HRESULT WINAPI DRI3Present_PresentBuffer( struct DRI3Present *This,
     else
         hwnd = This->focus_wnd;
 
+    TRACE("This=%p hwnd=%p\n", This, hwnd);
+
     d3d = get_d3d_drawable(This->gdi_display, hwnd);
 
     if (!d3d)
@@ -500,6 +509,7 @@ static HRESULT WINAPI DRI3Present_PresentBuffer( struct DRI3Present *This,
             pSourceRect, pDestRect, pDirtyRegion))
     {
         release_d3d_drawable(d3d);
+        TRACE("Present call failed\n");
         return D3DERR_DRIVERINTERNALERROR;
     }
     release_d3d_drawable(d3d);
@@ -692,11 +702,14 @@ static HRESULT WINAPI DRI3Present_GetWindowInfo( struct DRI3Present *This,
     HRESULT hr;
     RECT pRect;
 
+    TRACE("This=%p hwnd=%p\n", This, hWnd);
+
     if (!hWnd)
         hWnd = This->focus_wnd;
     hr = GetClientRect(hWnd, &pRect);
     if (!hr)
         return D3DERR_INVALIDCALL;
+    TRACE("pRect: %d %d %d %d\n", pRect.left, pRect.top, pRect.right, pRect.bottom);
     *width = pRect.right - pRect.left;
     *height = pRect.bottom - pRect.top;
     *depth = 24; //TODO
@@ -749,6 +762,7 @@ static HRESULT WINAPI DRI3Present_SetPresentParameters2( struct DRI3Present *Thi
 
 static BOOL WINAPI DRI3Present_IsBufferReleased( struct DRI3Present *This, struct D3DWindowBuffer *buffer )
 {
+    TRACE("This=%p buffer=%p\n", This, buffer);
     return PRESENTIsPixmapReleased(buffer->present_pixmap_priv);
 }
 

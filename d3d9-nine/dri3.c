@@ -867,6 +867,7 @@ static BOOL PRESENTPrivChangeWindow(PRESENTpriv *present_priv, XID window)
 /* Destroy the content, except the link and the struct mem */
 static void PRESENTDestroyPixmapContent(Display *dpy, PRESENTPixmapPriv *present_pixmap)
 {
+    TRACE("Releasing pixmap priv %p\n", present_pixmap);
     XFreePixmap(dpy, present_pixmap->pixmap);
 #ifdef D3D9NINE_DRI2
     if (present_pixmap->dri2_info.is_dri2)
@@ -1104,6 +1105,7 @@ BOOL PRESENTTryFreePixmap(Display *dpy, PRESENTPixmapPriv *present_pixmap_priv)
     if (!present_pixmap_priv->released || present_pixmap_priv->present_complete_pending)
     {
         LeaveCriticalSection(&present_priv->mutex_present);
+        TRACE("Releasing pixmap priv %p later\n", present_pixmap_priv);
         return FALSE;
     }
 
