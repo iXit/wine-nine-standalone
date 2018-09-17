@@ -96,6 +96,8 @@ struct d3d_drawable
     Drawable drawable; /* X11 drawable */
     HDC hdc;
     HWND wnd; /* HWND (for convenience) */
+    RECT windowRect;
+    POINT offset; /* offset of the client area compared to the X11 drawable */
 };
 
 struct DRI3Present
@@ -162,31 +164,97 @@ static void destroy_d3dadapter_drawable(Display *gdi_display, HWND hwnd)
     LeaveCriticalSection(&context_section);
 }
 
-static RECT DRI3Present_GetClientRecWindowRelative(HWND hwnd)
+static void DRI3Present_FillOffset(Display *gdi_display, struct d3d_drawable *d3d)
 {
-    RECT rect;
-    RECT wnd;
+    struct x11drv_escape_get_drawable extesc = { X11DRV_GET_DRAWABLE };
+    HWND desktop;
+    Drawable wineRoot;
+    POINT relWineRootPos;
+    POINT relXRootPos;
+    Drawable drawable;
+    HDC hdc;
 
-    /* Get client space dimensions */
-    GetClientRect(hwnd, &rect);
+    TRACE("hwnd=%p\n", d3d->wnd);
 
-    /* Get window in screen space */
-    GetWindowRect(hwnd, &wnd);
+    /* Finding the offset is hard because a drawable
+     * doesn't always start a the top left of a hwnd window,
+     * for example if the windows window decoration is replaced
+     * by the window managed.
+     * In the case of non-virtual desktop, wine root is
+     * the X root.
+     * In the case of virtual desktop, We assume the root drawable
+     * begins at pos (0, 0) */
 
-    /* Transform to offset */
-    MapWindowPoints(HWND_DESKTOP, hwnd, (LPPOINT) &wnd, 2);
-    wnd.top *= -1;
-    wnd.left *= -1;
-    wnd.bottom = wnd.top + rect.bottom;
-    wnd.right = wnd.left + rect.right;
+    /* Note: Another method that works for virtual desktop,
+     * but fails else because of the window manager replacing
+     * decoration issue stated above:
+     * RECT wnd;
+     * GetWindowRect(hwnd, &wnd);
+     * MapWindowPoints(HWND_DESKTOP, hwnd, (LPPOINT) &wnd, 2);
+     * relWineRootPos.x = -wnd.left;
+     * relWineRootPos.y = -wnd.top;
+     */
 
-    return wnd;
+    d3d->offset.x = d3d->offset.y = 0;
+    relWineRootPos.x = relWineRootPos.y = 0;
+    relXRootPos.x = relXRootPos.y = 0;
+
+    desktop = GetDesktopWindow();
+    hdc = GetDCEx(desktop, 0, DCX_CACHE | DCX_CLIPSIBLINGS);
+    if (!hdc)
+        return;
+    if (ExtEscape(hdc, X11DRV_ESCAPE, sizeof(extesc), (LPCSTR)&extesc,
+                sizeof(extesc), (LPSTR)&extesc) <= 0)
+    {
+        ERR("Unexpected error in X Drawable lookup (hwnd=%p, hdc=%p)\n", desktop, hdc);
+        ReleaseDC(desktop, hdc);
+        return;
+    }
+    ReleaseDC(desktop, hdc);
+    wineRoot = extesc.drawable;
+
+    /* The position of the top left client area
+     * compared to wine root window */
+    ClientToScreen(d3d->wnd, &relWineRootPos);
+    TRACE("Coord client area: %d %d\n", relWineRootPos.x, relWineRootPos.y);
+
+    /* Now we compute the position of the drawable
+     * compared to wine root window */
+
+    drawable = d3d->drawable;
+
+    while (1) {
+        Window Wroot, Wparent, *Wchildren;
+        int x, y;
+        unsigned int numchildren, width, height, depth, border_width;
+        if (!XGetGeometry(gdi_display, drawable, &Wroot, &x, &y, &width, &height, &border_width, &depth))
+            break;
+        /* Should we really add border_width ? */
+        relXRootPos.x += x + border_width;
+        relXRootPos.y += y + border_width;
+        if (!XQueryTree(gdi_display, drawable, &Wroot, &Wparent, &Wchildren, &numchildren))
+            break;
+        if (Wchildren)
+            free(Wchildren);
+        drawable = Wparent;
+        if (drawable == Wroot || drawable == wineRoot)
+        {
+            TRACE("Successfully determined drawable pos (debug: %ld, %ld, %ld)\n", drawable, Wroot, wineRoot);
+            break;
+        }
+    }
+    TRACE("Coord drawable: %d %d\n", relXRootPos.x, relXRootPos.y);
+    d3d->offset.x = relWineRootPos.x - relXRootPos.x;
+    d3d->offset.y = relWineRootPos.y - relXRootPos.y;
+    TRACE("Offset: %d %d\n", d3d->offset.x, d3d->offset.y);
 }
 
-static struct d3d_drawable *create_d3dadapter_drawable(HWND hwnd)
+static struct d3d_drawable *create_d3dadapter_drawable(Display *gdi_display, HWND hwnd)
 {
     struct x11drv_escape_get_drawable extesc = { X11DRV_GET_DRAWABLE };
     struct d3d_drawable *d3d;
+
+    TRACE("hwnd=%p\n", hwnd);
 
     d3d = HeapAlloc(GetProcessHeap(), 0, sizeof(*d3d));
     if (!d3d)
@@ -205,8 +273,11 @@ static struct d3d_drawable *create_d3dadapter_drawable(HWND hwnd)
         return NULL;
     }
 
+    TRACE("hwnd created drawable: %ld\n", extesc.drawable);
     d3d->drawable = extesc.drawable;
     d3d->wnd = hwnd;
+    GetWindowRect(hwnd, &d3d->windowRect);
+    DRI3Present_FillOffset(gdi_display, d3d);
 
     return d3d;
 }
@@ -226,7 +297,7 @@ static struct d3d_drawable *get_d3d_drawable(Display *gdi_display, HWND hwnd)
 
     TRACE("No d3d_drawable attached to hwnd %p, creating one.\n", hwnd);
 
-    d3d = create_d3dadapter_drawable(hwnd);
+    d3d = create_d3dadapter_drawable(gdi_display, hwnd);
     if (!d3d)
         return NULL;
 
@@ -389,76 +460,13 @@ static HRESULT WINAPI DRI3Present_FrontBufferCopy(struct DRI3Present *This,
         return D3DERR_DRIVERINTERNALERROR;
 }
 
-/* Try to detect client side window decorations by walking the X Drawable up.
- * In case there's an intermediate Drawable, server side window decorations are used.
- * TODO: Find a X11 function to query for window decorations.
- */
-static BOOL DRI3Present_HasClientSideWindowDecorations(struct DRI3Present *This,
-        HWND hwnd)
-{
-    struct x11drv_escape_get_drawable extesc = { X11DRV_GET_DRAWABLE };
-    Window Wroot;
-    Window Wparent;
-    Window *Wchildren;
-    unsigned int numchildren;
-    HWND parent;
-    HDC hdc;
-    BOOL ret = TRUE;
-
-    parent = GetParent(hwnd);
-    if (!parent)
-        parent = GetDesktopWindow();
-    if (!parent)
-    {
-        ERR("Unexpected error getting the parent hwnd (hwnd=%p)\n", hwnd);
-        return FALSE;
-    }
-
-    hdc = GetDCEx(hwnd, 0, DCX_CACHE | DCX_CLIPSIBLINGS);
-    if (!hdc)
-        return FALSE;
-    if (ExtEscape(hdc, X11DRV_ESCAPE, sizeof(extesc), (LPCSTR)&extesc,
-            sizeof(extesc), (LPSTR)&extesc) <= 0)
-    {
-        ERR("Unexpected error in X Drawable lookup (hwnd=%p, hdc=%p)\n", hwnd, hdc);
-        ReleaseDC(hwnd, hdc);
-        return FALSE;
-    }
-    ReleaseDC(hwnd, hdc);
-
-    if (XQueryTree(This->gdi_display, extesc.drawable, &Wroot, &Wparent, &Wchildren, &numchildren))
-    {
-        hdc = GetDCEx(parent, 0, DCX_CACHE | DCX_CLIPSIBLINGS);
-        if (!hdc)
-            return FALSE;
-
-        if (ExtEscape(hdc, X11DRV_ESCAPE, sizeof(extesc), (LPCSTR)&extesc,
-                sizeof(extesc), (LPSTR)&extesc) <= 0)
-        {
-            ERR("Unexpected error in X Drawable lookup (hwnd=%p, hdc=%p)\n", parent, hdc);
-            ReleaseDC(parent, hdc);
-            return FALSE;
-        }
-        ReleaseDC(parent, hdc);
-
-        if (Wparent != extesc.drawable)
-        {
-            /* Found at least one intermediate window */
-            ret = FALSE;
-        }
-        if (Wchildren)
-            free(Wchildren);
-    }
-
-    return ret;
-}
-
 static HRESULT WINAPI DRI3Present_PresentBuffer( struct DRI3Present *This,
         struct D3DWindowBuffer *buffer, HWND hWndOverride, const RECT *pSourceRect,
         const RECT *pDestRect, const RGNDATA *pDirtyRegion, DWORD Flags )
 {
     struct d3d_drawable *d3d;
     RECT dest_translate;
+    RECT windowRect;
     RECT offset;
     HWND hwnd;
 
@@ -482,25 +490,37 @@ static HRESULT WINAPI DRI3Present_PresentBuffer( struct DRI3Present *This,
 
     This->d3d = d3d;
 
-    /* In case of client side window decorations we need to add an offset within
-     * the X drawable.
-     * FIXME: Call once on window style / size change */
-    if (DRI3Present_HasClientSideWindowDecorations(This, hwnd))
+    GetWindowRect(d3d->wnd, &windowRect);
+    /* The "correct" way to detect offset changes
+     * would be to catch any window related change with a
+     * listener. But it is complicated and this heuristic
+     * is fast and should work well. */
+    if (windowRect.top != d3d->windowRect.top ||
+        windowRect.left != d3d->windowRect.left ||
+        windowRect.bottom != d3d->windowRect.bottom ||
+        windowRect.right != d3d->windowRect.right)
     {
-        offset = DRI3Present_GetClientRecWindowRelative(hwnd);
+        d3d->windowRect = windowRect;
+        DRI3Present_FillOffset(This->gdi_display, d3d);
+    }
 
-        if ((offset.top != 0) || (offset.left != 0))
+    GetClientRect(d3d->wnd, &offset);
+    offset.left += d3d->offset.x;
+    offset.top += d3d->offset.y;
+    offset.right += d3d->offset.x;
+    offset.bottom += d3d->offset.y;
+
+    if ((offset.top != 0) || (offset.left != 0))
+    {
+        if (!pDestRect)
+            pDestRect = (const RECT *) &offset;
+        else
         {
-            if (!pDestRect)
-                pDestRect = (const RECT *) &offset;
-            else
-            {
-                dest_translate.top = pDestRect->top + offset.top;
-                dest_translate.left = pDestRect->left + offset.left;
-                dest_translate.bottom = pDestRect->bottom + offset.bottom;
-                dest_translate.right = pDestRect->right + offset.right;
-                pDestRect = (const RECT *) &dest_translate;
-            }
+            dest_translate.top = pDestRect->top + offset.top;
+            dest_translate.left = pDestRect->left + offset.left;
+            dest_translate.bottom = pDestRect->bottom + offset.bottom;
+            dest_translate.right = pDestRect->right + offset.right;
+            pDestRect = (const RECT *) &dest_translate;
         }
     }
 
