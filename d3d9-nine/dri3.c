@@ -80,6 +80,9 @@ WINE_DEFAULT_DEBUG_CHANNEL(d3d9nine);
 static EGLDisplay display = NULL;
 static int display_ref = 0;
 
+/* TODO: use atomics */
+static uint32_t last_serial_given = 0;
+
 struct DRI2priv {
     Display *dpy;
     EGLDisplay display;
@@ -96,7 +99,6 @@ struct PRESENTPriv {
     XID window;
     uint64_t last_msc;
     uint64_t last_target;
-    uint32_t last_serial_given;
     xcb_special_event_t *special_event;
     PRESENTPixmapPriv *first_present_priv;
     int pixmap_present_pending;
@@ -629,7 +631,7 @@ static void PRESENThandle_events(PRESENTpriv *present_priv, xcb_present_generic_
             present_pixmap_priv = PRESENTFindPixmapPriv(present_priv, ce->serial);
             if (!present_pixmap_priv || ce->kind != XCB_PRESENT_COMPLETE_KIND_PIXMAP)
             {
-                ERR("FATAL ERROR: PRESENT handling failed\n");
+                /* We received an event from another instance - ignore */
                 free(ce);
                 return;
             }
@@ -653,7 +655,7 @@ static void PRESENThandle_events(PRESENTpriv *present_priv, xcb_present_generic_
             present_pixmap_priv = PRESENTFindPixmapPriv(present_priv, ie->serial);
             if (!present_pixmap_priv || present_pixmap_priv->pixmap != ie->pixmap)
             {
-                ERR("FATAL ERROR: PRESENT handling failed\n");
+                /* We received an event from another instance - ignore */
                 free(ie);
                 return;
             }
@@ -953,8 +955,8 @@ BOOL PRESENTPixmapInit(PRESENTpriv *present_priv, Pixmap pixmap, PRESENTPixmapPr
 #endif
     free(reply);
 
-    present_priv->last_serial_given++;
-    (*present_pixmap_priv)->serial = present_priv->last_serial_given;
+    last_serial_given++;
+    (*present_pixmap_priv)->serial = last_serial_given;
     present_priv->first_present_priv = *present_pixmap_priv;
 
     LeaveCriticalSection(&present_priv->mutex_present);
@@ -1078,8 +1080,8 @@ BOOL DRI2FallbackPRESENTPixmap(PRESENTpriv *present_priv, struct DRI2priv *dri2_
     (*present_pixmap_priv)->dri2_info.texture_read = texture_read;
     (*present_pixmap_priv)->dri2_info.texture_write = texture_write;
 
-    present_priv->last_serial_given++;
-    (*present_pixmap_priv)->serial = present_priv->last_serial_given;
+    last_serial_given++;
+    (*present_pixmap_priv)->serial = last_serial_given;
     present_priv->first_present_priv = *present_pixmap_priv;
 
     eglBindAPI(current_api);
