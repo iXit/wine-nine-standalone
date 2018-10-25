@@ -98,6 +98,9 @@ struct d3d_drawable
     HWND wnd; /* HWND (for convenience) */
     RECT windowRect;
     POINT offset; /* offset of the client area compared to the X11 drawable */
+    unsigned int width;
+    unsigned int height;
+    unsigned int depth;
 };
 
 struct DRI3Present
@@ -173,6 +176,9 @@ static void DRI3Present_FillOffset(Display *gdi_display, struct d3d_drawable *d3
     POINT relXRootPos;
     Drawable drawable;
     HDC hdc;
+    Window Wroot;
+    int x, y;
+    unsigned int border_width;
 
     TRACE("hwnd=%p\n", d3d->wnd);
 
@@ -213,6 +219,13 @@ static void DRI3Present_FillOffset(Display *gdi_display, struct d3d_drawable *d3
     ReleaseDC(desktop, hdc);
     wineRoot = extesc.drawable;
 
+    if (!XGetGeometry(gdi_display, d3d->drawable, &Wroot, &x, &y, &d3d->width, &d3d->height, &border_width, &d3d->depth))
+    {
+        d3d->width = 0;
+        d3d->height = 0;
+        d3d->depth= 0;
+    }
+
     /* The position of the top left client area
      * compared to wine root window */
     ClientToScreen(d3d->wnd, &relWineRootPos);
@@ -224,9 +237,8 @@ static void DRI3Present_FillOffset(Display *gdi_display, struct d3d_drawable *d3
     drawable = d3d->drawable;
 
     while (1) {
-        Window Wroot, Wparent, *Wchildren;
-        int x, y;
-        unsigned int numchildren, width, height, depth, border_width;
+        Window Wparent, *Wchildren;
+        unsigned int numchildren, width, height, depth;
         if (!XGetGeometry(gdi_display, drawable, &Wroot, &x, &y, &width, &height, &border_width, &depth))
             break;
         /* Should we really add border_width ? */
@@ -723,6 +735,20 @@ static HRESULT WINAPI DRI3Present_GetWindowInfo( struct DRI3Present *This,
     RECT pRect;
 
     TRACE("This=%p hwnd=%p\n", This, hWnd);
+
+    /* For fullscreen modes, use the dimensions of the X11 window instead of
+     * the game window. This is for compability with Valve's "fullscreen hack",
+     * which won't switch to the game's resolution anymore, but instead scales
+     * the game window to the root window. Only then can page flipping be used.
+     */
+    if (!This->params.Windowed && This->d3d)
+        if (This->d3d->width > 0 && This->d3d->height > 0 && This->d3d->depth > 0)
+        {
+            *width = This->d3d->width;
+            *height = This->d3d->height;
+            *depth = This->d3d->depth;
+            return D3D_OK;
+        }
 
     if (!hWnd)
         hWnd = This->focus_wnd;
