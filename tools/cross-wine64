@@ -1,0 +1,17 @@
+[binaries]
+c = 'winegcc'
+ar = 'ar'
+strip = 'strip'
+# works on debian/ubuntu, you might need to tweak this
+pkgconfig = 'x86_64-linux-gnu-pkg-config'
+
+[properties]
+c_args = ['-m64', '--no-gnu-unique']
+c_link_args = ['-m64', '-mwindows']
+needs_exe_wrapper = true
+
+[host_machine]
+system = 'linux'
+cpu_family = 'x86_64'
+cpu = 'x86_64'
+endian = 'little'
