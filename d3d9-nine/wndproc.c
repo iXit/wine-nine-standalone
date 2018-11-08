@@ -66,7 +66,7 @@ static CRITICAL_SECTION_DEBUG nine_wndproc_cs_debug =
     0, 0, &nine_wndproc_cs,
     {&nine_wndproc_cs_debug.ProcessLocksList,
     &nine_wndproc_cs_debug.ProcessLocksList},
-    0, 0, {(DWORD_PTR)(__FILE__ ": nine_wndproc_cs")}
+    0, 0, {/*(DWORD_PTR)(__FILE__ ": nine_wndproc_cs")*/}
 };
 static CRITICAL_SECTION nine_wndproc_cs = {&nine_wndproc_cs_debug, -1, 0, 0, 0, 0};
 
