@@ -22,11 +22,15 @@
  *
  */
 
+#define _GNU_SOURCE
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <dlfcn.h>
+
 #define WIN32_LEAN_AND_MEAN
 #define NONAMELESSUNION
 
-#include "config.h"
-#include <wine/port.h>
 #include <ntstatus.h>
 #define WIN32_NO_STATUS
 #include <windows.h>
@@ -55,10 +59,7 @@ WINE_DEFAULT_DEBUG_CHANNEL(ninecfg);
 
 #if !WINE_STAGING
 
-#if HAVE_DLADDR
-#define _GNU_SOURCE
-#include <dlfcn.h>
-#else
+#if !HAVE_DLADDR
 #error neither HAVE_DLADDR nor WINE_STAGING is set
 #endif
 

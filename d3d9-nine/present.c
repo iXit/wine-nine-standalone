@@ -23,13 +23,12 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
  */
 
-#include "config.h"
-#include "wine/port.h"
 #include "wine/debug.h"
 
 WINE_DEFAULT_DEBUG_CHANNEL(d3d9nine);
 
 #include <d3dadapter/drm.h>
+#include <dlfcn.h>
 #include <X11/Xutil.h>
 
 #include "dri3.h"

@@ -22,7 +22,6 @@
  *
  */
 
-#include "config.h"
 #include "wine/debug.h"
 
 #include <fcntl.h>

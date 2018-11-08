@@ -21,10 +21,6 @@
 #ifndef __WINE_DRI3_H
 #define __WINE_DRI3_H
 
-#ifndef __WINE_CONFIG_H
-# error You must include config.h to use this header
-#endif
-
 #include <X11/Xlib.h>
 #include <wingdi.h>
 

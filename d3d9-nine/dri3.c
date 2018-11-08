@@ -20,13 +20,13 @@
  */
 
 
-#include "config.h"
 #include "wine/debug.h"
 
 WINE_DEFAULT_DEBUG_CHANNEL(d3d9nine);
 
 #include "dri3.h"
 
+#include <stdlib.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <pthread.h>

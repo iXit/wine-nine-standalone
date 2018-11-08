@@ -21,10 +21,6 @@
 #ifndef __WINE_PRESENT_H
 #define __WINE_PRESENT_H
 
-#ifndef __WINE_CONFIG_H
-# error You must include config.h to use this header
-#endif
-
 #include <X11/Xlib.h>
 
 HRESULT present_create_present_group(Display *gdi_display, const WCHAR *device_name, UINT adapter,
