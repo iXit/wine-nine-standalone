@@ -1,3 +1,10 @@
+d3d9_res = custom_target(
+  'version.res',
+  input   : 'version.rc',
+  output  : 'version.res',
+  command : [wrc, '-i', '@INPUT@', '-o', '@OUTPUT@'],
+)
+
 d3d9_dll = shared_library(
   'd3d9-nine.dll',
   [
@@ -8,6 +15,7 @@ d3d9_dll = shared_library(
     'present.c',
     'shader_validator.c',
     'wndproc.c',
+    d3d9_res,
   ],
   name_prefix    : '',
   dependencies   : [
