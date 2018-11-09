@@ -27,6 +27,8 @@
 
 #include "config.h"
 #include <wine/port.h>
+#include <ntstatus.h>
+#define WIN32_NO_STATUS
 #include <windows.h>
 #include <commctrl.h>
 #include <shellapi.h>
@@ -50,10 +52,6 @@ WINE_DEFAULT_DEBUG_CHANNEL(ninecfg);
 #endif
 
 #if !WINE_STAGING
-
-#define STATUS_SUCCESS                   ((NTSTATUS) 0x00000000)
-#define STATUS_NO_SUCH_FILE              ((NTSTATUS) 0xC000000F)
-#define STATUS_OBJECT_NAME_EXISTS        ((NTSTATUS) 0x40000000)
 
 #if HAVE_DLADDR
 #define _GNU_SOURCE
