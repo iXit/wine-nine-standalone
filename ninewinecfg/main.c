@@ -317,15 +317,6 @@ WCHAR* load_string (UINT id)
     return newStr;
 }
 
-static BOOL nine_get_system_path(CHAR *pOut, DWORD SizeOut)
-{
-    if (isWoW64()) {
-        return !!GetSystemWow64DirectoryA((LPSTR)pOut, SizeOut);
-    } else {
-        return !!GetSystemDirectoryA((LPSTR)pOut, SizeOut);
-    }
-}
-
 /*
  * Gallium nine
  */
