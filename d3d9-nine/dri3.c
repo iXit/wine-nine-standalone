@@ -80,9 +80,6 @@ WINE_DEFAULT_DEBUG_CHANNEL(d3d9nine);
 static EGLDisplay display = NULL;
 static int display_ref = 0;
 
-/* TODO: use atomics */
-static uint32_t last_serial_given = 0;
-
 struct DRI2priv {
     Display *dpy;
     EGLDisplay display;
@@ -131,6 +128,9 @@ struct PRESENTPixmapPriv {
     BOOL last_present_was_flip;
     PRESENTPixmapPriv *next;
 };
+
+/* TODO: use atomics */
+static uint32_t last_serial_given = 0;
 
 BOOL DRI3CheckExtension(Display *dpy, int major, int minor)
 {
