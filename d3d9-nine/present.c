@@ -25,6 +25,8 @@
 
 #include <d3dadapter/drm.h>
 #include <wine/debug.h>
+#include <X11/Xatom.h>
+#include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <dlfcn.h>
 
@@ -1293,6 +1295,20 @@ static HRESULT DRI3Present_ChangePresentParameters(struct DRI3Present *This,
     This->params.MultiSampleQuality = params->MultiSampleQuality;
 
     DRI3Present_UpdatePresentationInterval(This);
+
+    if (!params->Windowed) {
+        struct d3d_drawable *d3d = get_d3d_drawable(This->gdi_display, focus_window);
+        Atom _NET_WM_BYPASS_COMPOSITOR = XInternAtom(This->gdi_display,
+                                                     "_NET_WM_BYPASS_COMPOSITOR",
+                                                     False);
+        /* Disable compositing for fullscreen windows */
+        int value = 1;
+        if (!d3d)
+            return D3D_OK;
+        XChangeProperty(This->gdi_display, d3d->drawable,
+                        _NET_WM_BYPASS_COMPOSITOR, XA_CARDINAL, 32,
+                        PropModeReplace, (unsigned char *)&value, 1);
+    }
 
     return D3D_OK;
 }
