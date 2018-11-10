@@ -4,6 +4,8 @@
 BINARIES="x86_64-linux-gnu-pkg-config"
 # arch
 BINARIES="$BINARIES x86_64-pc-linux-gnu-pkg-config"
+# opensuse
+BINARIES="$BINARIES x86_64-suse-linux-gnu-pkg-config"
 
 for bin in $BINARIES; do
 	which $bin >/dev/null 2>&1 || continue
