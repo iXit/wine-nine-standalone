@@ -1,0 +1,13 @@
+#!/bin/sh
+
+# debian
+BINARIES="i686-linux-gnu-pkg-config"
+# arch
+BINARIES="$BINARIES i686-pc-linux-gnu-pkg-config"
+
+for bin in $BINARIES; do
+	which $bin >/dev/null 2>&1 || continue
+	exec $bin "$@"
+done
+
+exec pkg-config "$@"

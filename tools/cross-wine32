@@ -2,8 +2,7 @@
 c = 'winegcc'
 ar = 'ar'
 strip = 'strip'
-# works on debian/ubuntu, you might need to tweak this
-pkgconfig = 'i686-linux-gnu-pkg-config'
+pkgconfig = './tools/pkg-config-nine32'
 
 [properties]
 c_args = ['-m32', '--no-gnu-unique']
