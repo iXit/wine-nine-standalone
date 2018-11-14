@@ -374,7 +374,7 @@ static HRESULT WINAPI DRI3Present_QueryInterface(struct DRI3Present *This,
         return S_OK;
     }
 
-    WINE_WARN("%s not implemented, returning E_NOINTERFACE.\n", debugstr_guid(riid));
+    WINE_WARN("%s not implemented, returning E_NOINTERFACE.\n", wine_dbgstr_guid(riid));
     *ppvObject = NULL;
 
     return E_NOINTERFACE;
@@ -1455,7 +1455,7 @@ static HRESULT WINAPI DRI3PresentGroup_QueryInterface(struct DRI3PresentGroup *T
         return S_OK;
     }
 
-    WINE_WARN("%s not implemented, returning E_NOINTERFACE.\n", debugstr_guid(riid));
+    WINE_WARN("%s not implemented, returning E_NOINTERFACE.\n", wine_dbgstr_guid(riid));
     *ppvObject = NULL;
 
     return E_NOINTERFACE;

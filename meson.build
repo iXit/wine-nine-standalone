@@ -19,8 +19,6 @@ pp_args = [
   '-DDECLSPEC_HOTPATCH=__attribute__((__ms_hook_prologue__))',
   '-DWINE_STAGING=0',
   '-DHAVE_D3D9NINE=1',
-  # TODO
-  '-Ddebugstr_guid=wine_dbgstr_guid',
 ]
 
 code = '''#ifndef __WINE__

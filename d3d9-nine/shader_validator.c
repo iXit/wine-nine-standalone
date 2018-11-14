@@ -30,7 +30,7 @@ static HRESULT WINAPI IDirect3DShaderValidator9Impl_QueryInterface(IDirect3DShad
 {
     /* TODO: AddRef(iface). */
     *ppobj = This;
-    WINE_TRACE("This=%p, riid=%s, object=%p.\n", This, debugstr_guid(riid), ppobj);
+    WINE_TRACE("This=%p, riid=%s, object=%p.\n", This, wine_dbgstr_guid(riid), ppobj);
 
     return S_OK;
 }

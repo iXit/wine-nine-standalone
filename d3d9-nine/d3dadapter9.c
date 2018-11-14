@@ -159,7 +159,7 @@ static HRESULT WINAPI d3dadapter9_QueryInterface(struct d3dadapter9 *This,
         return S_OK;
     }
 
-    WINE_WARN("%s not implemented, returning E_NOINTERFACE.\n", debugstr_guid(riid));
+    WINE_WARN("%s not implemented, returning E_NOINTERFACE.\n", wine_dbgstr_guid(riid));
     *ppvObject = NULL;
 
     return E_NOINTERFACE;
