@@ -154,7 +154,7 @@ static void free_d3dadapter_drawable(struct d3d_drawable *d3d)
 static void destroy_d3dadapter_drawable(Display *gdi_display, HWND hwnd)
 {
     struct d3d_drawable *d3d;
-    TRACE("This=%p hwnd=%p\n", gdi_display, hwnd);
+    WINE_TRACE("This=%p hwnd=%p\n", gdi_display, hwnd);
 
     EnterCriticalSection(&context_section);
     if (!XFindContext(gdi_display, (XID)hwnd,
@@ -179,7 +179,7 @@ static void DRI3Present_FillOffset(Display *gdi_display, struct d3d_drawable *d3
     int x, y;
     unsigned int border_width;
 
-    TRACE("hwnd=%p\n", d3d->wnd);
+    WINE_TRACE("hwnd=%p\n", d3d->wnd);
 
     /* Finding the offset is hard because a drawable
      * doesn't always start a the top left of a hwnd window,
@@ -228,7 +228,7 @@ static void DRI3Present_FillOffset(Display *gdi_display, struct d3d_drawable *d3
     /* The position of the top left client area
      * compared to wine root window */
     ClientToScreen(d3d->wnd, &relWineRootPos);
-    TRACE("Coord client area: %d %d\n", relWineRootPos.x, relWineRootPos.y);
+    WINE_TRACE("Coord client area: %d %d\n", relWineRootPos.x, relWineRootPos.y);
 
     /* Now we compute the position of the drawable
      * compared to wine root window */
@@ -250,14 +250,14 @@ static void DRI3Present_FillOffset(Display *gdi_display, struct d3d_drawable *d3
         drawable = Wparent;
         if (drawable == Wroot || drawable == wineRoot)
         {
-            TRACE("Successfully determined drawable pos (debug: %ld, %ld, %ld)\n", drawable, Wroot, wineRoot);
+            WINE_TRACE("Successfully determined drawable pos (debug: %ld, %ld, %ld)\n", drawable, Wroot, wineRoot);
             break;
         }
     }
-    TRACE("Coord drawable: %d %d\n", relXRootPos.x, relXRootPos.y);
+    WINE_TRACE("Coord drawable: %d %d\n", relXRootPos.x, relXRootPos.y);
     d3d->offset.x = relWineRootPos.x - relXRootPos.x;
     d3d->offset.y = relWineRootPos.y - relXRootPos.y;
-    TRACE("Offset: %d %d\n", d3d->offset.x, d3d->offset.y);
+    WINE_TRACE("Offset: %d %d\n", d3d->offset.x, d3d->offset.y);
 }
 
 static struct d3d_drawable *create_d3dadapter_drawable(Display *gdi_display, HWND hwnd)
@@ -265,7 +265,7 @@ static struct d3d_drawable *create_d3dadapter_drawable(Display *gdi_display, HWN
     struct x11drv_escape_get_drawable extesc = { X11DRV_GET_DRAWABLE };
     struct d3d_drawable *d3d;
 
-    TRACE("hwnd=%p\n", hwnd);
+    WINE_TRACE("hwnd=%p\n", hwnd);
 
     d3d = HeapAlloc(GetProcessHeap(), 0, sizeof(*d3d));
     if (!d3d)
@@ -284,7 +284,7 @@ static struct d3d_drawable *create_d3dadapter_drawable(Display *gdi_display, HWN
         return NULL;
     }
 
-    TRACE("hwnd created drawable: %ld\n", extesc.drawable);
+    WINE_TRACE("hwnd created drawable: %ld\n", extesc.drawable);
     d3d->drawable = extesc.drawable;
     d3d->wnd = hwnd;
     GetWindowRect(hwnd, &d3d->windowRect);
@@ -297,7 +297,7 @@ static struct d3d_drawable *get_d3d_drawable(Display *gdi_display, HWND hwnd)
 {
     struct d3d_drawable *d3d, *race;
 
-    TRACE("hwnd=%p\n", hwnd);
+    WINE_TRACE("hwnd=%p\n", hwnd);
 
     EnterCriticalSection(&context_section);
     if (!XFindContext(gdi_display, (XID)hwnd, d3d_hwnd_context, (char **)&d3d))
@@ -306,7 +306,7 @@ static struct d3d_drawable *get_d3d_drawable(Display *gdi_display, HWND hwnd)
     }
     LeaveCriticalSection(&context_section);
 
-    TRACE("No d3d_drawable attached to hwnd %p, creating one.\n", hwnd);
+    WINE_TRACE("No d3d_drawable attached to hwnd %p, creating one.\n", hwnd);
 
     d3d = create_d3dadapter_drawable(gdi_display, hwnd);
     if (!d3d)
@@ -335,14 +335,14 @@ static void release_d3d_drawable(struct d3d_drawable *d3d)
 static ULONG WINAPI DRI3Present_AddRef(struct DRI3Present *This)
 {
     ULONG refs = InterlockedIncrement(&This->refs);
-    TRACE("%p increasing refcount to %u.\n", This, refs);
+    WINE_TRACE("%p increasing refcount to %u.\n", This, refs);
     return refs;
 }
 
 static ULONG WINAPI DRI3Present_Release(struct DRI3Present *This)
 {
     ULONG refs = InterlockedDecrement(&This->refs);
-    TRACE("%p decreasing refcount to %u.\n", This, refs);
+    WINE_TRACE("%p decreasing refcount to %u.\n", This, refs);
     if (refs == 0)
     {
         /* dtor */
@@ -430,7 +430,7 @@ static HRESULT WINAPI DRI3Present_D3DWindowBufferFromDmaBuf(struct DRI3Present *
         return D3DERR_DRIVERINTERNALERROR;
     }
 
-    TRACE("This=%p buffer=%p\n", This, *out);
+    WINE_TRACE("This=%p buffer=%p\n", This, *out);
     return D3D_OK;
 }
 
@@ -440,7 +440,7 @@ static HRESULT WINAPI DRI3Present_DestroyD3DWindowBuffer(struct DRI3Present *Thi
     /* the pixmap is managed by the PRESENT backend.
      * But if it can delete it right away, we may have
      * better performance */
-    TRACE("This=%p buffer=%p of priv %p\n", This, buffer, buffer->present_pixmap_priv);
+    WINE_TRACE("This=%p buffer=%p of priv %p\n", This, buffer, buffer->present_pixmap_priv);
     PRESENTTryFreePixmap(This->gdi_display, buffer->present_pixmap_priv);
     HeapFree(GetProcessHeap(), 0, buffer);
     return D3D_OK;
@@ -449,7 +449,7 @@ static HRESULT WINAPI DRI3Present_DestroyD3DWindowBuffer(struct DRI3Present *Thi
 static HRESULT WINAPI DRI3Present_WaitBufferReleased(struct DRI3Present *This,
         struct D3DWindowBuffer *buffer)
 {
-    TRACE("This=%p buffer=%p\n", This, buffer);
+    WINE_TRACE("This=%p buffer=%p\n", This, buffer);
     if(!PRESENTWaitPixmapReleased(buffer->present_pixmap_priv))
     {
         ERR("PRESENTWaitPixmapReleased failed\n");
@@ -488,7 +488,7 @@ static HRESULT WINAPI DRI3Present_PresentBuffer( struct DRI3Present *This,
     else
         hwnd = This->focus_wnd;
 
-    TRACE("This=%p hwnd=%p\n", This, hwnd);
+    WINE_TRACE("This=%p hwnd=%p\n", This, hwnd);
 
     d3d = get_d3d_drawable(This->gdi_display, hwnd);
 
@@ -540,7 +540,7 @@ static HRESULT WINAPI DRI3Present_PresentBuffer( struct DRI3Present *This,
             pSourceRect, pDestRect, pDirtyRegion))
     {
         release_d3d_drawable(d3d);
-        TRACE("Present call failed\n");
+        WINE_TRACE("Present call failed\n");
         return D3DERR_DRIVERINTERNALERROR;
     }
     release_d3d_drawable(d3d);
@@ -556,7 +556,7 @@ static HRESULT WINAPI DRI3Present_GetRasterStatus( struct DRI3Present *This,
     LARGE_INTEGER counter, freq_per_sec;
     unsigned refresh_rate, height;
 
-    TRACE("This=%p, pRasterStatus=%p\n", This, pRasterStatus);
+    WINE_TRACE("This=%p, pRasterStatus=%p\n", This, pRasterStatus);
 
     if (!QueryPerformanceCounter(&counter) || !QueryPerformanceFrequency(&freq_per_sec))
         return D3DERR_INVALIDCALL;
@@ -575,7 +575,7 @@ static HRESULT WINAPI DRI3Present_GetRasterStatus( struct DRI3Present *This,
     if (refresh_rate == 0)
         refresh_rate = 60;
 
-    TRACE("refresh_rate=%u, height=%u\n", refresh_rate, height);
+    WINE_TRACE("refresh_rate=%u, height=%u\n", refresh_rate, height);
 
     freq_per_frame = freq_per_sec.QuadPart / refresh_rate;
     /* Assume 20 scan lines in the vertical blank. */
@@ -589,7 +589,7 @@ static HRESULT WINAPI DRI3Present_GetRasterStatus( struct DRI3Present *This,
         pRasterStatus->InVBlank = TRUE;
     }
 
-    TRACE("Returning fake value, InVBlank %u, ScanLine %u.\n",
+    WINE_TRACE("Returning fake value, InVBlank %u, ScanLine %u.\n",
             pRasterStatus->InVBlank, pRasterStatus->ScanLine);
 
     return D3D_OK;
@@ -733,7 +733,7 @@ static HRESULT WINAPI DRI3Present_GetWindowInfo( struct DRI3Present *This,
     HRESULT hr;
     RECT pRect;
 
-    TRACE("This=%p hwnd=%p\n", This, hWnd);
+    WINE_TRACE("This=%p hwnd=%p\n", This, hWnd);
 
     /* For fullscreen modes, use the dimensions of the X11 window instead of
      * the game window. This is for compability with Valve's "fullscreen hack",
@@ -754,7 +754,7 @@ static HRESULT WINAPI DRI3Present_GetWindowInfo( struct DRI3Present *This,
     hr = GetClientRect(hWnd, &pRect);
     if (!hr)
         return D3DERR_INVALIDCALL;
-    TRACE("pRect: %d %d %d %d\n", pRect.left, pRect.top, pRect.right, pRect.bottom);
+    WINE_TRACE("pRect: %d %d %d %d\n", pRect.left, pRect.top, pRect.right, pRect.bottom);
     *width = pRect.right - pRect.left;
     *height = pRect.bottom - pRect.top;
     *depth = 24; //TODO
@@ -807,7 +807,7 @@ static HRESULT WINAPI DRI3Present_SetPresentParameters2( struct DRI3Present *Thi
 
 static BOOL WINAPI DRI3Present_IsBufferReleased( struct DRI3Present *This, struct D3DWindowBuffer *buffer )
 {
-    TRACE("This=%p buffer=%p\n", This, buffer);
+    WINE_TRACE("This=%p buffer=%p\n", This, buffer);
     return PRESENTIsPixmapReleased(buffer->present_pixmap_priv);
 }
 
@@ -928,12 +928,12 @@ LRESULT device_process_message(struct DRI3Present *present, HWND window, BOOL un
     DEVMODEW current_mode;
     DEVMODEW new_mode;
 
-    TRACE("Got message: window %p, message %#x, wparam %#lx, lparam %#lx.\n",
+    WINE_TRACE("Got message: window %p, message %#x, wparam %#lx, lparam %#lx.\n",
                     window, message, wparam, lparam);
 
     if (present->drop_wnd_messages && message != WM_DISPLAYCHANGE)
     {
-        TRACE("Filtering message: window %p, message %#x, wparam %#lx, lparam %#lx.\n",
+        WINE_TRACE("Filtering message: window %p, message %#x, wparam %#lx, lparam %#lx.\n",
                 window, message, wparam, lparam);
         if (unicode)
             return DefWindowProcW(window, message, wparam, lparam);
@@ -943,7 +943,7 @@ LRESULT device_process_message(struct DRI3Present *present, HWND window, BOOL un
 
     if (message == WM_DESTROY)
     {
-        TRACE("unregister window %p.\n", window);
+        WINE_TRACE("unregister window %p.\n", window);
         (void) nine_unregister_window(window);
     }
     else if (message == WM_DISPLAYCHANGE)
@@ -1168,7 +1168,7 @@ static HRESULT DRI3Present_ChangePresentParameters(struct DRI3Present *This,
     HRESULT hr;
     boolean drop_wnd_messages;
 
-    TRACE("This=%p, params=%p, focus_window=%p, params->hDeviceWindow=%p\n",
+    WINE_TRACE("This=%p, params=%p, focus_window=%p, params->hDeviceWindow=%p\n",
             This, params, focus_window, params->hDeviceWindow);
 
     This->params.SwapEffect = params->SwapEffect;
@@ -1191,7 +1191,7 @@ static HRESULT DRI3Present_ChangePresentParameters(struct DRI3Present *This,
 
         if (!params->Windowed)
         {
-            TRACE("Setting fullscreen mode: %dx%d@%d\n", params->BackBufferWidth,
+            WINE_TRACE("Setting fullscreen mode: %dx%d@%d\n", params->BackBufferWidth,
                      params->BackBufferHeight, params->FullScreen_RefreshRateInHz);
 
             /* switch display mode */
@@ -1214,7 +1214,7 @@ static HRESULT DRI3Present_ChangePresentParameters(struct DRI3Present *This,
         }
         else if(!This->params.Windowed && params->Windowed)
         {
-            TRACE("Setting fullscreen mode: %dx%d@%d\n", This->initial_mode.dmPelsWidth,
+            WINE_TRACE("Setting fullscreen mode: %dx%d@%d\n", This->initial_mode.dmPelsWidth,
                     This->initial_mode.dmPelsHeight, This->initial_mode.dmDisplayFrequency);
 
             hr = DRI3Present_ChangeDisplaySettingsIfNeccessary(This, &This->initial_mode);
@@ -1268,7 +1268,7 @@ static HRESULT DRI3Present_ChangePresentParameters(struct DRI3Present *This,
     }
     else
     {
-        TRACE("Nothing changed.\n");
+        WINE_TRACE("Nothing changed.\n");
     }
     if (!params->BackBufferWidth || !params->BackBufferHeight) {
         if (!params->Windowed)
@@ -1417,14 +1417,14 @@ struct DRI3PresentGroup
 static ULONG WINAPI DRI3PresentGroup_AddRef(struct DRI3PresentGroup *This)
 {
     ULONG refs = InterlockedIncrement(&This->refs);
-    TRACE("%p increasing refcount to %u.\n", This, refs);
+    WINE_TRACE("%p increasing refcount to %u.\n", This, refs);
     return refs;
 }
 
 static ULONG WINAPI DRI3PresentGroup_Release(struct DRI3PresentGroup *This)
 {
     ULONG refs = InterlockedDecrement(&This->refs);
-    TRACE("%p decreasing refcount to %u.\n", This, refs);
+    WINE_TRACE("%p decreasing refcount to %u.\n", This, refs);
     if (refs == 0)
     {
         unsigned i;
@@ -1566,7 +1566,7 @@ HRESULT present_create_present_group(Display *gdi_display, const WCHAR *device_n
     }
 
     *group = (ID3DPresentGroup *)This;
-    TRACE("Returning %p\n", *group);
+    WINE_TRACE("Returning %p\n", *group);
 
     return D3D_OK;
 }
@@ -1610,7 +1610,7 @@ HRESULT present_create_adapter9(Display *gdi_display, HDC hdc, ID3DAdapter9 **ou
         return hr;
     }
 
-    TRACE("Created ID3DAdapter9 with fd %d\n", fd);
+    WINE_TRACE("Created ID3DAdapter9 with fd %d\n", fd);
 
     return D3D_OK;
 }
@@ -1644,7 +1644,7 @@ BOOL present_has_d3dadapter(Display *gdi_display)
             goto use_default_path;
         }
 
-        TRACE("Reading registry key for module path\n");
+        WINE_TRACE("Reading registry key for module path\n");
         if (rc != ERROR_SUCCESS  || type != REG_SZ)
         {
             ERR("Failed to read Direct3DNine ModulePath registry key: Invalid content\n");
@@ -1678,13 +1678,13 @@ BOOL present_has_d3dadapter(Display *gdi_display)
                     RTLD_GLOBAL | RTLD_NOW, errbuf, sizeof(errbuf));
             if (!handle)
             {
-                TRACE("Failed to load '%s': %s\n", path, errbuf);
+                WINE_TRACE("Failed to load '%s': %s\n", path, errbuf);
 
                 handle = wine_dlopen(tmp_path,
                         RTLD_GLOBAL | RTLD_NOW, errbuf, sizeof(errbuf));
                 if (!handle)
                 {
-                    TRACE("Failed to load '%s': %s\n", tmp_path, errbuf);
+                    WINE_TRACE("Failed to load '%s': %s\n", tmp_path, errbuf);
                     ERR("Failed to load '%s' and '%s' set by ModulePath.\n",
                             path, tmp_path);
                     RegCloseKey(regkey);
@@ -1698,7 +1698,7 @@ BOOL present_has_d3dadapter(Display *gdi_display)
                     RTLD_GLOBAL | RTLD_NOW, errbuf, sizeof(errbuf));
             if (!handle)
             {
-                TRACE("Failed to load %s: %s\n", path, errbuf);
+                WINE_TRACE("Failed to load %s: %s\n", path, errbuf);
                 ERR("Failed to load '%s' set by ModulePath.\n", path);
                 RegCloseKey(regkey);
                 goto cleanup;

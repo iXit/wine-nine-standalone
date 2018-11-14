@@ -164,7 +164,7 @@ static BOOL WINAPI DeleteSymLinkW(LPCWSTR lpFileName)
     ANSI_STRING unixDest;
     BOOL ret = FALSE;
 
-    TRACE("(%s)\n", debugstr_w(lpFileName));
+    WINE_TRACE("(%s)\n", debugstr_w(lpFileName));
 
     ntDest.Buffer = NULL;
     if (!RtlDosPathNameToNtPathName_U( lpFileName, &ntDest, NULL, NULL ))
@@ -179,7 +179,7 @@ static BOOL WINAPI DeleteSymLinkW(LPCWSTR lpFileName)
     {
         if (!unlink(unixDest.Buffer))
         {
-            TRACE("Removed symlink '%s'\n", debugstr_a( unixDest.Buffer ));
+            WINE_TRACE("Removed symlink '%s'\n", debugstr_a( unixDest.Buffer ));
             ret = TRUE;
             status = STATUS_SUCCESS;
         }
@@ -224,7 +224,7 @@ static BOOL WINAPI CreateSymLinkW(LPCWSTR lpFileName, LPCSTR existingUnixFileNam
     ANSI_STRING unixDest;
     BOOL ret = FALSE;
 
-    TRACE("(%s, %s, %p)\n", debugstr_w(lpFileName),
+    WINE_TRACE("(%s, %s, %p)\n", debugstr_w(lpFileName),
          existingUnixFileName, lpSecurityAttributes);
 
     ntDest.Buffer = NULL;
@@ -248,7 +248,7 @@ static BOOL WINAPI CreateSymLinkW(LPCWSTR lpFileName, LPCSTR existingUnixFileNam
          SetLastError( RtlNtStatusToDosError(status) );
     else if (!symlink( existingUnixFileName, unixDest.Buffer ))
     {
-        TRACE("Symlinked '%s' to '%s'\n", debugstr_a( unixDest.Buffer ),
+        WINE_TRACE("Symlinked '%s' to '%s'\n", debugstr_a( unixDest.Buffer ),
             existingUnixFileName);
         ret = TRUE;
     }
@@ -286,7 +286,7 @@ static BOOL WINAPI IsFileSymLinkW(LPCWSTR lpExistingFileName)
     BOOL ret = FALSE;
     struct stat sb;
 
-    TRACE("(%s)\n", debugstr_w(lpExistingFileName));
+    WINE_TRACE("(%s)\n", debugstr_w(lpExistingFileName));
 
     ntSource.Buffer = NULL;
     if (!RtlDosPathNameToNtPathName_U( lpExistingFileName, &ntSource, NULL, NULL ))

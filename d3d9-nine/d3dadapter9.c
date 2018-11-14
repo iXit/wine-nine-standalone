@@ -99,14 +99,14 @@ static HRESULT WINAPI d3dadapter9_CheckDeviceFormat(struct d3dadapter9 *This,
 static ULONG WINAPI d3dadapter9_AddRef(struct d3dadapter9 *This)
 {
     ULONG refs = InterlockedIncrement(&This->refs);
-    TRACE("%p increasing refcount to %u.\n", This, refs);
+    WINE_TRACE("%p increasing refcount to %u.\n", This, refs);
     return refs;
 }
 
 static ULONG WINAPI d3dadapter9_Release(struct d3dadapter9 *This)
 {
     ULONG refs = InterlockedDecrement(&This->refs);
-    TRACE("%p decreasing refcount to %u.\n", This, refs);
+    WINE_TRACE("%p decreasing refcount to %u.\n", This, refs);
     if (refs == 0)
     {
         /* dtor */
@@ -195,7 +195,7 @@ static HRESULT WINAPI d3dadapter9_GetAdapterIdentifier(struct d3dadapter9 *This,
                 pIdentifier->DeviceName, sizeof(pIdentifier->DeviceName), NULL, NULL))
             return D3DERR_INVALIDCALL;
 
-        TRACE("DeviceName overriden: %s\n", pIdentifier->DeviceName);
+        WINE_TRACE("DeviceName overriden: %s\n", pIdentifier->DeviceName);
 
         /* Override PCI IDs when wined3d registry keys are set */
         if (!RegOpenKeyA(HKEY_CURRENT_USER, "Software\\Wine\\Direct3DNine", &regkey))
@@ -218,7 +218,7 @@ static HRESULT WINAPI d3dadapter9_GetAdapterIdentifier(struct d3dadapter9 *This,
                 ERR("VideoPciVendorID is not a DWORD\n");
             RegCloseKey(regkey);
 
-            TRACE("DeviceId:VendorId overridden: %04X:%04X\n", pIdentifier->DeviceId, pIdentifier->VendorId);
+            WINE_TRACE("DeviceId:VendorId overridden: %04X:%04X\n", pIdentifier->DeviceId, pIdentifier->VendorId);
         }
     }
     return hr;
@@ -237,7 +237,7 @@ static UINT WINAPI d3dadapter9_GetAdapterModeCount(struct d3dadapter9 *This,
         return 0;
     }
 
-    TRACE("%u modes.\n", ADAPTER_OUTPUT.nmodes);
+    WINE_TRACE("%u modes.\n", ADAPTER_OUTPUT.nmodes);
     return ADAPTER_OUTPUT.nmodes;
 }
 
@@ -254,7 +254,7 @@ static HRESULT WINAPI d3dadapter9_EnumAdapterModes(struct d3dadapter9 *This,
 
     if (FAILED(hr))
     {
-        TRACE("DeviceFormat not available.\n");
+        WINE_TRACE("DeviceFormat not available.\n");
         return hr;
     }
 
@@ -415,7 +415,7 @@ static HRESULT WINAPI d3dadapter9_EnumAdapterModesEx(struct d3dadapter9 *This,
 
     if (FAILED(hr))
     {
-        TRACE("DeviceFormat not available.\n");
+        WINE_TRACE("DeviceFormat not available.\n");
         return hr;
     }
 

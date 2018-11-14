@@ -166,7 +166,7 @@ BOOL DRI3CheckExtension(Display *dpy, int major, int minor)
     }
     close(fd);
 
-    TRACE("DRI3 version %d,%d found. %d %d requested\n", major, minor,
+    WINE_TRACE("DRI3 version %d,%d found. %d %d requested\n", major, minor,
             (int)dri3_reply->major_version, (int)dri3_reply->minor_version);
     free(dri3_reply);
 
@@ -339,7 +339,7 @@ BOOL PRESENTCheckExtension(Display *dpy, int major, int minor)
         return FALSE;
     }
 
-    TRACE("PRESENT version %d,%d found. %u %u requested\n", major, minor,
+    WINE_TRACE("PRESENT version %d,%d found. %u %u requested\n", major, minor,
             present_reply->major_version, present_reply->minor_version);
 
     free(present_reply);
@@ -410,7 +410,7 @@ static Bool wire_to_event(Display *dpy, XEvent *re, xEvent *event)
 {
     XExtDisplayInfo *info = find_display(dpy);
     DRI2CheckExtension(dpy, info, False);
-    TRACE("dri2 wire_to_event\n");
+    WINE_TRACE("dri2 wire_to_event\n");
     return False;
 }
 
@@ -418,13 +418,13 @@ static Status event_to_wire(Display *dpy, XEvent *re, xEvent *event)
 {
     XExtDisplayInfo *info = find_display(dpy);
     DRI2CheckExtension(dpy, info, False);
-    TRACE("dri2 event_to_wire\n");
+    WINE_TRACE("dri2 event_to_wire\n");
     return False;
 }
 
 static int error(Display *dpy, xError *err, XExtCodes *codes, int *ret_code)
 {
-    TRACE("dri2 error\n");
+    WINE_TRACE("dri2 error\n");
     return False;
 }
 
@@ -868,7 +868,7 @@ static BOOL PRESENTPrivChangeWindow(PRESENTpriv *present_priv, XID window)
 /* Destroy the content, except the link and the struct mem */
 static void PRESENTDestroyPixmapContent(Display *dpy, PRESENTPixmapPriv *present_pixmap)
 {
-    TRACE("Releasing pixmap priv %p\n", present_pixmap);
+    WINE_TRACE("Releasing pixmap priv %p\n", present_pixmap);
     XFreePixmap(dpy, present_pixmap->pixmap);
 #ifdef D3D9NINE_DRI2
     if (present_pixmap->dri2_info.is_dri2)
@@ -1106,7 +1106,7 @@ BOOL PRESENTTryFreePixmap(Display *dpy, PRESENTPixmapPriv *present_pixmap_priv)
     if (!present_pixmap_priv->released || present_pixmap_priv->present_complete_pending)
     {
         LeaveCriticalSection(&present_priv->mutex_present);
-        TRACE("Releasing pixmap priv %p later\n", present_pixmap_priv);
+        WINE_TRACE("Releasing pixmap priv %p later\n", present_pixmap_priv);
         return FALSE;
     }
 

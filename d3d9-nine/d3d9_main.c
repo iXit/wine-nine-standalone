@@ -44,7 +44,7 @@ void WINAPI DebugSetMute(void)
 IDirect3D9 * WINAPI DECLSPEC_HOTPATCH Direct3DCreate9(UINT sdk_version)
 {
     IDirect3D9 *native;
-    TRACE("sdk_version %#x.\n", sdk_version);
+    WINE_TRACE("sdk_version %#x.\n", sdk_version);
 
     if (SUCCEEDED(d3dadapter9_new(gdi_display, FALSE, (IDirect3D9Ex **)&native)))
         return native;
@@ -54,7 +54,7 @@ IDirect3D9 * WINAPI DECLSPEC_HOTPATCH Direct3DCreate9(UINT sdk_version)
 
 HRESULT WINAPI DECLSPEC_HOTPATCH Direct3DCreate9Ex(UINT sdk_version, IDirect3D9Ex **d3d9ex)
 {
-    TRACE("sdk_version %#x, d3d9ex %p.\n", sdk_version, d3d9ex);
+    WINE_TRACE("sdk_version %#x, d3d9ex %p.\n", sdk_version, d3d9ex);
 
     return d3dadapter9_new(gdi_display, TRUE, d3d9ex);
 }
@@ -111,7 +111,7 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, void *reserved)
  */
 int WINAPI D3DPERF_BeginEvent(D3DCOLOR color, const WCHAR *name)
 {
-    TRACE("color 0x%08x, name %s.\n", color, debugstr_w(name));
+    WINE_TRACE("color 0x%08x, name %s.\n", color, debugstr_w(name));
 
     return D3DPERF_event_level++;
 }
@@ -121,7 +121,7 @@ int WINAPI D3DPERF_BeginEvent(D3DCOLOR color, const WCHAR *name)
  */
 int WINAPI D3DPERF_EndEvent(void)
 {
-    TRACE("(void) : stub\n");
+    WINE_TRACE("(void) : stub\n");
 
     return --D3DPERF_event_level;
 }
