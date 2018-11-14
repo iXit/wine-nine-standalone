@@ -19,8 +19,6 @@ pp_args = [
   '-DDECLSPEC_HOTPATCH=__attribute__((__ms_hook_prologue__))',
   '-DWINE_STAGING=0',
   '-DHAVE_D3D9NINE=1',
-  # TODO make this an option?
-  '-DD3D9NINE_DRI2=1',
   # TODO
   '-DTRACE=WINE_TRACE',
   '-DWARN=WINE_WARN',
@@ -71,8 +69,15 @@ dep_xcb = dependency('xcb')
 dep_xcb_dri3 = dependency('xcb-dri3')
 dep_xcb_present = dependency('xcb-present')
 dep_xcb_xfixes = dependency('xcb-xfixes')
-dep_gl = dependency('gl')
-dep_egl = dependency('egl')
+
+dep_gl = null_dep
+dep_egl = null_dep
+_dri2 = get_option('dri2')
+if _dri2 != 'false'
+  dep_gl = dependency('gl', required : _dri2 == 'true')
+  dep_egl = dependency('egl', required : _dri2 == 'true')
+  pp_args += '-DD3D9NINE_DRI2=1'
+endif
 
 dep_dxguid = cc.find_library('dxguid')
 dep_uuid = cc.find_library('uuid')

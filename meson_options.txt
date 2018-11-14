@@ -1,0 +1,7 @@
+option(
+  'dri2',
+  type : 'combo',
+  value : 'auto',
+  choices : ['auto', 'true', 'false'],
+  description : 'enable dri2 support',
+)
