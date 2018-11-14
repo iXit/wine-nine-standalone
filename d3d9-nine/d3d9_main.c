@@ -22,7 +22,7 @@
  *
  */
 
-#include "wine/debug.h"
+#include <wine/debug.h>
 
 #include <fcntl.h>
 #include <d3d9.h>

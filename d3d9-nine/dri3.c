@@ -20,7 +20,7 @@
  */
 
 
-#include "wine/debug.h"
+#include <wine/debug.h>
 
 WINE_DEFAULT_DEBUG_CHANNEL(d3d9nine);
 
@@ -34,7 +34,7 @@ WINE_DEFAULT_DEBUG_CHANNEL(d3d9nine);
 #include <xcb/dri3.h>
 #include <xcb/present.h>
 
-#include "winbase.h"
+#include <winbase.h>
 
 #ifdef D3D9NINE_DRI2
 #include <sys/ioctl.h>

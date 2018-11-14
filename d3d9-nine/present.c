@@ -23,7 +23,7 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
  */
 
-#include "wine/debug.h"
+#include <wine/debug.h>
 
 WINE_DEFAULT_DEBUG_CHANNEL(d3d9nine);
 
@@ -34,8 +34,8 @@ WINE_DEFAULT_DEBUG_CHANNEL(d3d9nine);
 #include "dri3.h"
 #include "wndproc.h"
 
-#include "wine/library.h" // for wine_dl*
-#include "wine/unicode.h" // for strcpyW
+#include <wine/library.h> // for wine_dl*
+#include <wine/unicode.h> // for strcpyW
 
 #ifndef D3DPRESENT_DONOTWAIT
 #define D3DPRESENT_DONOTWAIT      0x00000001
