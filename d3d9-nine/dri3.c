@@ -29,7 +29,6 @@ WINE_DEFAULT_DEBUG_CHANNEL(d3d9nine);
 #include <stdlib.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include <pthread.h>
 
 #include <X11/Xlib-xcb.h>
 #include <xcb/dri3.h>
