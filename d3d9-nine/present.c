@@ -374,7 +374,7 @@ static HRESULT WINAPI DRI3Present_QueryInterface(struct DRI3Present *This,
         return S_OK;
     }
 
-    WARN("%s not implemented, returning E_NOINTERFACE.\n", debugstr_guid(riid));
+    WINE_WARN("%s not implemented, returning E_NOINTERFACE.\n", debugstr_guid(riid));
     *ppvObject = NULL;
 
     return E_NOINTERFACE;
@@ -617,7 +617,7 @@ static HRESULT WINAPI DRI3Present_GetDisplayMode( struct DRI3Present *This,
         case 24: pMode->Format = D3DFMT_R8G8B8; break;
         case 16: pMode->Format = D3DFMT_R5G6B5; break;
         default:
-            WARN("Unknown display format with %u bpp.\n", dm.dmBitsPerPel);
+            WINE_WARN("Unknown display format with %u bpp.\n", dm.dmBitsPerPel);
             pMode->Format = D3DFMT_UNKNOWN;
     }
 
@@ -628,7 +628,7 @@ static HRESULT WINAPI DRI3Present_GetDisplayMode( struct DRI3Present *This,
         case DMDO_180:     *pRotation = D3DDISPLAYROTATION_180; break;
         case DMDO_270:     *pRotation = D3DDISPLAYROTATION_270; break;
         default:
-            WARN("Unknown display rotation %u.\n", dm.dmDisplayOrientation);
+            WINE_WARN("Unknown display rotation %u.\n", dm.dmDisplayOrientation);
             *pRotation = D3DDISPLAYROTATION_IDENTITY;
     }
 
@@ -1455,7 +1455,7 @@ static HRESULT WINAPI DRI3PresentGroup_QueryInterface(struct DRI3PresentGroup *T
         return S_OK;
     }
 
-    WARN("%s not implemented, returning E_NOINTERFACE.\n", debugstr_guid(riid));
+    WINE_WARN("%s not implemented, returning E_NOINTERFACE.\n", debugstr_guid(riid));
     *ppvObject = NULL;
 
     return E_NOINTERFACE;
@@ -1551,7 +1551,7 @@ HRESULT present_create_present_group(Display *gdi_display, const WCHAR *device_n
         /* find final device name */
         if (!EnumDisplayDevicesW(device_name, adapter + i, &dd, 0))
         {
-            WARN("Couldn't find subdevice %d from `%s'\n",
+            WINE_WARN("Couldn't find subdevice %d from `%s'\n",
                     i, debugstr_w(device_name));
         }
 

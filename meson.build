@@ -20,7 +20,6 @@ pp_args = [
   '-DWINE_STAGING=0',
   '-DHAVE_D3D9NINE=1',
   # TODO
-  '-DWARN=WINE_WARN',
   '-DFIXME=WINE_FIXME',
   '-DERR=WINE_ERR',
   '-Ddebugstr_a=wine_dbgstr_a',

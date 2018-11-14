@@ -111,7 +111,7 @@ BOOL nine_dll_destroy(HINSTANCE hInstDLL)
          * registered, or if the application still has an active nine
          * device. In the latter case the application has bigger problems than
          * these entries. */
-        WARN("Leftover wndproc table entry %p.\n", &wndproc_table.entries[i]);
+        WINE_WARN("Leftover wndproc table entry %p.\n", &wndproc_table.entries[i]);
     }
     HeapFree(GetProcessHeap(), 0, wndproc_table.entries);
 
@@ -184,7 +184,7 @@ BOOL nine_register_window(HWND window, struct DRI3Present *present)
     if (nine_find_wndproc(window))
     {
         nine_wndproc_mutex_unlock();
-        WARN("Window %p is already registered with nine.\n", window);
+        WINE_WARN("Window %p is already registered with nine.\n", window);
         return TRUE;
     }
 
@@ -244,7 +244,7 @@ BOOL nine_unregister_window(HWND window)
         {
             entry->present = NULL;
             nine_wndproc_mutex_unlock();
-            WARN("Not unregistering window %p, window proc %#lx doesn't match nine window proc %p.\n",
+            WINE_WARN("Not unregistering window %p, window proc %#lx doesn't match nine window proc %p.\n",
                     window, proc, nine_wndproc);
             return FALSE;
         }
@@ -258,7 +258,7 @@ BOOL nine_unregister_window(HWND window)
         {
             entry->present = NULL;
             nine_wndproc_mutex_unlock();
-            WARN("Not unregistering window %p, window proc %#lx doesn't match nine window proc %p.\n",
+            WINE_WARN("Not unregistering window %p, window proc %#lx doesn't match nine window proc %p.\n",
                     window, proc, nine_wndproc);
             return FALSE;
         }

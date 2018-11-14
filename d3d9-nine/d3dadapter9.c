@@ -159,7 +159,7 @@ static HRESULT WINAPI d3dadapter9_QueryInterface(struct d3dadapter9 *This,
         return S_OK;
     }
 
-    WARN("%s not implemented, returning E_NOINTERFACE.\n", debugstr_guid(riid));
+    WINE_WARN("%s not implemented, returning E_NOINTERFACE.\n", debugstr_guid(riid));
     *ppvObject = NULL;
 
     return E_NOINTERFACE;
@@ -233,7 +233,7 @@ static UINT WINAPI d3dadapter9_GetAdapterModeCount(struct d3dadapter9 *This,
     if (FAILED(d3dadapter9_CheckDeviceFormat(This, Adapter, D3DDEVTYPE_HAL,
             Format, D3DUSAGE_RENDERTARGET, D3DRTYPE_SURFACE, Format)))
     {
-        WARN("DeviceFormat not available.\n");
+        WINE_WARN("DeviceFormat not available.\n");
         return 0;
     }
 
@@ -260,7 +260,7 @@ static HRESULT WINAPI d3dadapter9_EnumAdapterModes(struct d3dadapter9 *This,
 
     if (Mode >= ADAPTER_OUTPUT.nmodes)
     {
-        WARN("Mode %u does not exist.\n", Mode);
+        WINE_WARN("Mode %u does not exist.\n", Mode);
         return D3DERR_INVALIDCALL;
     }
 
@@ -421,7 +421,7 @@ static HRESULT WINAPI d3dadapter9_EnumAdapterModesEx(struct d3dadapter9 *This,
 
     if (Mode >= ADAPTER_OUTPUT.nmodes)
     {
-        WARN("Mode %u does not exist.\n", Mode);
+        WINE_WARN("Mode %u does not exist.\n", Mode);
         return D3DERR_INVALIDCALL;
     }
 
@@ -492,7 +492,7 @@ static HRESULT WINAPI DECLSPEC_HOTPATCH d3dadapter9_CreateDeviceEx(struct d3dada
 
     if (FAILED(hr))
     {
-        WARN("Failed to create PresentGroup.\n");
+        WINE_WARN("Failed to create PresentGroup.\n");
         return hr;
     }
 
@@ -511,7 +511,7 @@ static HRESULT WINAPI DECLSPEC_HOTPATCH d3dadapter9_CreateDeviceEx(struct d3dada
     }
     if (FAILED(hr))
     {
-        WARN("ADAPTER_PROC failed.\n");
+        WINE_WARN("ADAPTER_PROC failed.\n");
         ID3DPresentGroup_Release(present);
         return hr;
     }
@@ -682,7 +682,7 @@ static HRESULT fill_groups(struct d3dadapter9 *This)
         if (!hdc)
         {
             remove_group(This);
-            WARN("Unable to create DC for display %d.\n", i);
+            WINE_WARN("Unable to create DC for display %d.\n", i);
             goto end_group;
         }
 
@@ -734,7 +734,7 @@ static HRESULT fill_groups(struct d3dadapter9 *This)
 
                     default:
                         remove_mode(This);
-                        WARN("Unknown format (%u bpp) in display %d, monitor "
+                        WINE_WARN("Unknown format (%u bpp) in display %d, monitor "
                                 "%d, mode %d.\n", dm.dmBitsPerPel, i, j, k);
                         goto end_mode;
                 }
@@ -761,7 +761,7 @@ static HRESULT fill_groups(struct d3dadapter9 *This)
 
                         default:
                             remove_output(This);
-                            WARN("Unknown display rotation in display %d, "
+                            WINE_WARN("Unknown display rotation in display %d, "
                                     "monitor %d\n", i, j);
                             goto end_output;
                     }
@@ -776,7 +776,7 @@ static HRESULT fill_groups(struct d3dadapter9 *This)
                     if (!out->monitor)
                     {
                         remove_output(This);
-                        WARN("Unable to get monitor handle for display %d, "
+                        WINE_WARN("Unable to get monitor handle for display %d, "
                                 "monitor %d.\n", i, j);
                         goto end_output;
                     }
