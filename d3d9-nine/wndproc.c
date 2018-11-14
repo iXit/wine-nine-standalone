@@ -90,7 +90,7 @@ BOOL nine_dll_init(HINSTANCE hInstDLL)
 
     if (!RegisterClassA(&wc))
     {
-        ERR("Failed to register window class '%s'!\n", NINE_WINDOW_CLASS_NAME);
+        WINE_ERR("Failed to register window class '%s'!\n", NINE_WINDOW_CLASS_NAME);
         return FALSE;
     }
 
@@ -159,7 +159,7 @@ static LRESULT CALLBACK nine_wndproc(HWND window, UINT message, WPARAM wparam, L
     if (!entry)
     {
         nine_wndproc_mutex_unlock();
-        ERR("Window %p is not registered with nine.\n", window);
+        WINE_ERR("Window %p is not registered with nine.\n", window);
         return DefWindowProcW(window, message, wparam, lparam);
     }
 
@@ -199,7 +199,7 @@ BOOL nine_register_window(HWND window, struct DRI3Present *present)
         if (!new_entries)
         {
             nine_wndproc_mutex_unlock();
-            ERR("Failed to grow table.\n");
+            WINE_ERR("Failed to grow table.\n");
             return FALSE;
         }
 

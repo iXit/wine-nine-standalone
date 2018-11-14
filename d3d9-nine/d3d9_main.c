@@ -89,7 +89,7 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, void *reserved)
         case DLL_PROCESS_ATTACH:
             if (!(gdi_display = XOpenDisplay( NULL )))
             {
-                ERR("Failed to open display\n");
+                WINE_ERR("Failed to open display\n");
                 return FALSE;
             }
 

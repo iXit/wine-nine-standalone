@@ -208,14 +208,14 @@ static HRESULT WINAPI d3dadapter9_GetAdapterIdentifier(struct d3dadapter9 *This,
                 pIdentifier->DeviceId = data;
             if (size != sizeof(DWORD))
             {
-                ERR("VideoPciDeviceID is not a DWORD\n");
+                WINE_ERR("VideoPciDeviceID is not a DWORD\n");
                 size = sizeof(DWORD);
             }
             if (!RegQueryValueExA(regkey, "VideoPciVendorID", 0, &type, (BYTE *)&data, &size) &&
                     (type == REG_DWORD) && (size == sizeof(DWORD)))
                 pIdentifier->VendorId = data;
             if (size != sizeof(DWORD))
-                ERR("VideoPciVendorID is not a DWORD\n");
+                WINE_ERR("VideoPciVendorID is not a DWORD\n");
             RegCloseKey(regkey);
 
             WINE_TRACE("DeviceId:VendorId overridden: %04X:%04X\n", pIdentifier->DeviceId, pIdentifier->VendorId);
@@ -674,7 +674,7 @@ static HRESULT fill_groups(struct d3dadapter9 *This)
         struct adapter_group *group = add_group(This);
         if (!group)
         {
-            ERR("Out of memory.\n");
+            WINE_ERR("Out of memory.\n");
             return E_OUTOFMEMORY;
         }
 
@@ -701,7 +701,7 @@ static HRESULT fill_groups(struct d3dadapter9 *This)
             boolean orient = FALSE, monit = FALSE;
             if (!out)
             {
-                ERR("Out of memory.\n");
+                WINE_ERR("Out of memory.\n");
                 return E_OUTOFMEMORY;
             }
 
@@ -710,7 +710,7 @@ static HRESULT fill_groups(struct d3dadapter9 *This)
                 D3DDISPLAYMODEEX *mode = add_mode(This);
                 if (!out)
                 {
-                    ERR("Out of memory.\n");
+                    WINE_ERR("Out of memory.\n");
                     return E_OUTOFMEMORY;
                 }
 
@@ -835,7 +835,7 @@ HRESULT d3dadapter9_new(Display *gdi_display, boolean ex, IDirect3D9Ex **ppOut)
     This = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(struct d3dadapter9));
     if (!This)
     {
-        ERR("Out of memory.\n");
+        WINE_ERR("Out of memory.\n");
         return E_OUTOFMEMORY;
     }
 
@@ -846,7 +846,7 @@ HRESULT d3dadapter9_new(Display *gdi_display, boolean ex, IDirect3D9Ex **ppOut)
 
     if (!present_has_d3dadapter(gdi_display))
     {
-        ERR("Your display driver doesn't support native D3D9 adapters.\n");
+        WINE_ERR("Your display driver doesn't support native D3D9 adapters.\n");
         d3dadapter9_Release(This);
         return D3DERR_NOTAVAILABLE;
     }
@@ -867,7 +867,7 @@ HRESULT d3dadapter9_new(Display *gdi_display, boolean ex, IDirect3D9Ex **ppOut)
     }
     if (This->nadapters == 0)
     {
-        ERR("No available native adapters in system.\n");
+        WINE_ERR("No available native adapters in system.\n");
         d3dadapter9_Release(This);
         return D3DERR_NOTAVAILABLE;
     }
@@ -878,7 +878,7 @@ HRESULT d3dadapter9_new(Display *gdi_display, boolean ex, IDirect3D9Ex **ppOut)
     if (!This->map)
     {
         d3dadapter9_Release(This);
-        ERR("Out of memory.\n");
+        WINE_ERR("Out of memory.\n");
         return E_OUTOFMEMORY;
     }
     for (i = k = 0; i < This->ngroups; ++i)

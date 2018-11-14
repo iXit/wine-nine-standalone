@@ -185,7 +185,7 @@ static BOOL WINAPI DeleteSymLinkW(LPCWSTR lpFileName)
         }
         else
         {
-            ERR("Failed to remove symlink\n");
+            WINE_ERR("Failed to remove symlink\n");
         }
     }
 
@@ -465,7 +465,7 @@ static BOOL nine_get(void)
         if (nine_get_system_path(buf, sizeof(buf)))
         {
             strcat(buf, "\\d3d9.dll");
-            ERR("removing obsolete symlink");
+            WINE_ERR("removing obsolete symlink");
             DeleteSymLinkA(buf);
         }
         return FALSE;
@@ -483,7 +483,7 @@ static BOOL nine_get(void)
     {
         /* broken symlink */
         DeleteSymLinkA(buf);
-        ERR("removing dead symlink\n");
+        WINE_ERR("removing dead symlink\n");
         return FALSE;
     }
 #endif

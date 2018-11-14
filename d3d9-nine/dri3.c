@@ -145,7 +145,7 @@ BOOL DRI3CheckExtension(Display *dpy, int major, int minor)
     extension = xcb_get_extension_data(xcb_connection, &xcb_dri3_id);
     if (!(extension && extension->present))
     {
-        ERR("DRI3 extension is not present\n");
+        WINE_ERR("DRI3 extension is not present\n");
         return FALSE;
     }
 
@@ -155,13 +155,13 @@ BOOL DRI3CheckExtension(Display *dpy, int major, int minor)
     if (!dri3_reply)
     {
         free(error);
-        ERR("Issue getting requested version of DRI3: %d,%d\n", major, minor);
+        WINE_ERR("Issue getting requested version of DRI3: %d,%d\n", major, minor);
         return FALSE;
     }
 
     if (!DRI3Open(dpy, DefaultScreen(dpy), &fd))
     {
-        ERR("DRI3 advertised, but not working\n");
+        WINE_ERR("DRI3 advertised, but not working\n");
         return FALSE;
     }
     close(fd);
@@ -247,7 +247,7 @@ BOOL DRI2FallbackInit(Display *dpy, struct DRI2priv **priv)
             !glEGLImageTargetTexture2DOES_func ||
             !eglDestroyImageKHR_func)
     {
-        ERR("eglGetProcAddress failed !");
+        WINE_ERR("eglGetProcAddress failed !");
         goto clean_egl;
     }
 
@@ -325,7 +325,7 @@ BOOL PRESENTCheckExtension(Display *dpy, int major, int minor)
     extension = xcb_get_extension_data(xcb_connection, &xcb_present_id);
     if (!(extension && extension->present))
     {
-        ERR("PRESENT extension is not present\n");
+        WINE_ERR("PRESENT extension is not present\n");
         return FALSE;
     }
 
@@ -335,7 +335,7 @@ BOOL PRESENTCheckExtension(Display *dpy, int major, int minor)
     if (!present_reply)
     {
         free(error);
-        ERR("Issue getting requested version of PRESENT: %d,%d\n", major, minor);
+        WINE_ERR("Issue getting requested version of PRESENT: %d,%d\n", major, minor);
         return FALSE;
     }
 
@@ -572,7 +572,7 @@ BOOL DRI3PixmapFromDmaBuf(Display *dpy, int screen, int fd, int width, int heigh
     error = xcb_request_check(xcb_connection, cookie); /* performs a flush */
     if (error)
     {
-        ERR("Error using DRI3 to convert a DmaBufFd to pixmap\n");
+        WINE_ERR("Error using DRI3 to convert a DmaBufFd to pixmap\n");
         return FALSE;
     }
     return TRUE;
@@ -700,7 +700,7 @@ static BOOL PRESENTwait_events(PRESENTpriv *present_priv, BOOL allow_other_threa
     }
     if (!ev)
     {
-        ERR("FATAL error: xcb had an error\n");
+        WINE_ERR("FATAL error: xcb had an error\n");
         return FALSE;
     }
 
@@ -791,7 +791,7 @@ static void PRESENTForceReleases(PRESENTpriv *present_priv)
         {
             if (!current->last_present_was_flip && !present_priv->xcb_wait)
             {
-                ERR("ERROR: a pixmap seems not released by PRESENT for no reason. Code bug.\n");
+                WINE_ERR("ERROR: a pixmap seems not released by PRESENT for no reason. Code bug.\n");
             }
             else
             {
@@ -855,7 +855,7 @@ static BOOL PRESENTPrivChangeWindow(PRESENTpriv *present_priv, XID window)
         error = xcb_request_check(present_priv->xcb_connection, cookie); /* performs a flush */
         if (error || !present_priv->special_event)
         {
-            ERR("FAILED to use the X PRESENT extension. Was the destination a window ?\n");
+            WINE_ERR("FAILED to use the X PRESENT extension. Was the destination a window ?\n");
             if (present_priv->special_event)
                 xcb_unregister_for_special_event(present_priv->xcb_connection, present_priv->special_event);
             present_priv->special_event = NULL;
@@ -885,7 +885,7 @@ static void PRESENTDestroyPixmapContent(Display *dpy, PRESENTPixmapPriv *present
             glDeleteTextures(1, &present_pixmap->dri2_info.texture_write);
         }
         else
-            ERR("eglMakeCurrent failed with 0x%0X\n", eglGetError());
+            WINE_ERR("eglMakeCurrent failed with 0x%0X\n", eglGetError());
 
         eglMakeCurrent(dri2_priv->display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
         eglBindAPI(current_api);
@@ -1055,7 +1055,7 @@ BOOL DRI2FallbackPRESENTPixmap(PRESENTpriv *present_priv, struct DRI2priv *dri2_
         dri2_priv->eglDestroyImageKHR_func(dri2_priv->display, image);
     }
     else
-        ERR("eglMakeCurrent failed with 0x%0X\n", eglGetError());
+        WINE_ERR("eglMakeCurrent failed with 0x%0X\n", eglGetError());
 
     eglMakeCurrent(dri2_priv->display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
 
@@ -1180,7 +1180,7 @@ BOOL PRESENTPixmap(Display *dpy, XID window, PRESENTPixmapPriv *present_pixmap_p
 
     if (!window)
     {
-        ERR("ERROR: Try to Present a pixmap on a NULL window\n");
+        WINE_ERR("ERROR: Try to Present a pixmap on a NULL window\n");
         LeaveCriticalSection(&present_priv->mutex_present);
         return FALSE;
     }
@@ -1191,7 +1191,7 @@ BOOL PRESENTPixmap(Display *dpy, XID window, PRESENTPixmapPriv *present_pixmap_p
      * event. */
     if (!present_pixmap_priv->released)
     {
-        ERR("FATAL ERROR: Trying to Present a pixmap not released\n");
+        WINE_ERR("FATAL ERROR: Trying to Present a pixmap not released\n");
         LeaveCriticalSection(&present_priv->mutex_present);
         return FALSE;
     }
@@ -1211,7 +1211,7 @@ BOOL PRESENTPixmap(Display *dpy, XID window, PRESENTPixmapPriv *present_pixmap_p
             glFlush(); /* Perhaps useless */
         }
         else
-            ERR("eglMakeCurrent failed with 0x%0X\n", eglGetError());
+            WINE_ERR("eglMakeCurrent failed with 0x%0X\n", eglGetError());
 
         eglMakeCurrent(dri2_priv->display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
         eglBindAPI(current_api);
@@ -1313,26 +1313,26 @@ BOOL PRESENTPixmap(Display *dpy, XID window, PRESENTPixmapPriv *present_pixmap_p
         cookie_geom = xcb_get_geometry(present_priv->xcb_connection_bis, window);
         reply = xcb_get_geometry_reply(present_priv->xcb_connection_bis, cookie_geom, NULL);
 
-        ERR("Error using PRESENT. Here some debug info\n");
+        WINE_ERR("Error using PRESENT. Here some debug info\n");
         if (!reply)
         {
-            ERR("Error querying window info. Perhaps it doesn't exist anymore\n");
+            WINE_ERR("Error querying window info. Perhaps it doesn't exist anymore\n");
             LeaveCriticalSection(&present_priv->mutex_present);
             return FALSE;
         }
-        ERR("Pixmap: width=%d, height=%d, depth=%d\n",
+        WINE_ERR("Pixmap: width=%d, height=%d, depth=%d\n",
                 present_pixmap_priv->width, present_pixmap_priv->height,
                 present_pixmap_priv->depth);
 
-        ERR("Window: width=%d, height=%d, depth=%d, x=%d, y=%d\n",
+        WINE_ERR("Window: width=%d, height=%d, depth=%d, x=%d, y=%d\n",
                 (int) reply->width, (int) reply->height,
                 (int) reply->depth, (int) reply->x, (int) reply->y);
 
-        ERR("Present parameter: PresentationInterval=%d, Pending presentations=%d\n",
+        WINE_ERR("Present parameter: PresentationInterval=%d, Pending presentations=%d\n",
                 PresentationInterval, present_priv->pixmap_present_pending);
 
         if (present_pixmap_priv->depth != reply->depth)
-            ERR("Depths are different. PRESENT needs the pixmap and the window have same depth\n");
+            WINE_ERR("Depths are different. PRESENT needs the pixmap and the window have same depth\n");
         free(reply);
         LeaveCriticalSection(&present_priv->mutex_present);
         return FALSE;
@@ -1417,7 +1417,7 @@ BOOL PRESENTWaitReleaseEvent(PRESENTpriv *present_priv)
         }
         else if (!PRESENTwait_events(present_priv, TRUE))
         {
-            ERR("Issue in PRESENTWaitReleaseEvent\n");
+            WINE_ERR("Issue in PRESENTWaitReleaseEvent\n");
             LeaveCriticalSection(&present_priv->mutex_present);
             return FALSE;
         }

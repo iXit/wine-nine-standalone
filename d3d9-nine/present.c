@@ -211,7 +211,7 @@ static void DRI3Present_FillOffset(Display *gdi_display, struct d3d_drawable *d3
     if (ExtEscape(hdc, X11DRV_ESCAPE, sizeof(extesc), (LPCSTR)&extesc,
                 sizeof(extesc), (LPSTR)&extesc) <= 0)
     {
-        ERR("Unexpected error in X Drawable lookup (hwnd=%p, hdc=%p)\n", desktop, hdc);
+        WINE_ERR("Unexpected error in X Drawable lookup (hwnd=%p, hdc=%p)\n", desktop, hdc);
         ReleaseDC(desktop, hdc);
         return;
     }
@@ -270,7 +270,7 @@ static struct d3d_drawable *create_d3dadapter_drawable(Display *gdi_display, HWN
     d3d = HeapAlloc(GetProcessHeap(), 0, sizeof(*d3d));
     if (!d3d)
     {
-        ERR("Couldn't allocate d3d_drawable.\n");
+        WINE_ERR("Couldn't allocate d3d_drawable.\n");
         return NULL;
     }
 
@@ -278,7 +278,7 @@ static struct d3d_drawable *create_d3dadapter_drawable(Display *gdi_display, HWN
     if (ExtEscape(d3d->hdc, X11DRV_ESCAPE, sizeof(extesc), (LPCSTR)&extesc,
             sizeof(extesc), (LPSTR)&extesc) <= 0)
     {
-        ERR("Unexpected error in X Drawable lookup (hwnd=%p, hdc=%p)\n", hwnd, d3d->hdc);
+        WINE_ERR("Unexpected error in X Drawable lookup (hwnd=%p, hdc=%p)\n", hwnd, d3d->hdc);
         ReleaseDC(hwnd, d3d->hdc);
         HeapFree(GetProcessHeap(), 0, d3d);
         return NULL;
@@ -328,7 +328,7 @@ static struct d3d_drawable *get_d3d_drawable(Display *gdi_display, HWND hwnd)
 static void release_d3d_drawable(struct d3d_drawable *d3d)
 {
     if (!d3d)
-        ERR("Driver internal error: d3d_drawable is NULL\n");
+        WINE_ERR("Driver internal error: d3d_drawable is NULL\n");
     LeaveCriticalSection(&context_section);
 }
 
@@ -407,7 +407,7 @@ static HRESULT WINAPI DRI3Present_D3DWindowBufferFromDmaBuf(struct DRI3Present *
                 dmaBufFd, width, height, stride, depth,
                 bpp, &((*out)->present_pixmap_priv)))
         {
-            ERR("DRI2FallbackPRESENTPixmap failed\n");
+            WINE_ERR("DRI2FallbackPRESENTPixmap failed\n");
             HeapFree(GetProcessHeap(), 0, *out);
             return D3DERR_DRIVERINTERNALERROR;
         }
@@ -417,7 +417,7 @@ static HRESULT WINAPI DRI3Present_D3DWindowBufferFromDmaBuf(struct DRI3Present *
     if (!DRI3PixmapFromDmaBuf(This->gdi_display, DefaultScreen(This->gdi_display),
             dmaBufFd, width, height, stride, depth, bpp, &pixmap))
     {
-        ERR("DRI3PixmapFromDmaBuf failed\n");
+        WINE_ERR("DRI3PixmapFromDmaBuf failed\n");
         return D3DERR_DRIVERINTERNALERROR;
     }
 
@@ -425,7 +425,7 @@ static HRESULT WINAPI DRI3Present_D3DWindowBufferFromDmaBuf(struct DRI3Present *
             sizeof(struct D3DWindowBuffer));
     if (!PRESENTPixmapInit(This->present_priv, pixmap, &((*out)->present_pixmap_priv)))
     {
-        ERR("PRESENTPixmapInit failed\n");
+        WINE_ERR("PRESENTPixmapInit failed\n");
         HeapFree(GetProcessHeap(), 0, *out);
         return D3DERR_DRIVERINTERNALERROR;
     }
@@ -452,7 +452,7 @@ static HRESULT WINAPI DRI3Present_WaitBufferReleased(struct DRI3Present *This,
     WINE_TRACE("This=%p buffer=%p\n", This, buffer);
     if(!PRESENTWaitPixmapReleased(buffer->present_pixmap_priv))
     {
-        ERR("PRESENTWaitPixmapReleased failed\n");
+        WINE_ERR("PRESENTWaitPixmapReleased failed\n");
         return D3DERR_DRIVERINTERNALERROR;
     }
     return D3D_OK;
@@ -890,7 +890,7 @@ static HRESULT DRI3Present_ChangeDisplaySettingsIfNeccessary(struct DRI3Present 
     current_mode.dmSize = sizeof(DEVMODEW);
     /* Only change the mode if necessary. */
     if (!EnumDisplaySettingsW(This->devname, ENUM_CURRENT_SETTINGS, &current_mode))
-       ERR("Failed to get current display mode.\n");
+       WINE_ERR("Failed to get current display mode.\n");
     else if (current_mode.dmPelsWidth != new_mode->dmPelsWidth
            || current_mode.dmPelsHeight != new_mode->dmPelsHeight
            || (current_mode.dmDisplayFrequency != new_mode->dmDisplayFrequency
@@ -907,13 +907,13 @@ static HRESULT DRI3Present_ChangeDisplaySettingsIfNeccessary(struct DRI3Present 
                 hr = ChangeDisplaySettingsExW(This->devname, new_mode, 0, CDS_FULLSCREEN, NULL);
                 if (hr != DISP_CHANGE_SUCCESSFUL)
                 {
-                    ERR("ChangeDisplaySettingsExW failed with 0x%08X\n", hr);
+                    WINE_ERR("ChangeDisplaySettingsExW failed with 0x%08X\n", hr);
                     return D3DERR_INVALIDCALL;
                 }
             }
             else
             {
-                ERR("ChangeDisplaySettingsExW failed with 0x%08X\n", hr);
+                WINE_ERR("ChangeDisplaySettingsExW failed with 0x%08X\n", hr);
                 return D3DERR_INVALIDCALL;
             }
         }
@@ -1258,7 +1258,7 @@ static HRESULT DRI3Present_ChangePresentParameters(struct DRI3Present *This,
             }
 
             if (params->Windowed && !nine_unregister_window(focus_window))
-                ERR("Window %p is not registered with nine.\n", focus_window);
+                WINE_ERR("Window %p is not registered with nine.\n", focus_window);
         }
         This->params.Windowed = params->Windowed;
     }
@@ -1311,7 +1311,7 @@ static HRESULT DRI3Present_new(Display *gdi_display, const WCHAR *devname,
 
     if (!focus_wnd && !params->hDeviceWindow)
     {
-        ERR("No focus HWND specified for presentation backend.\n");
+        WINE_ERR("No focus HWND specified for presentation backend.\n");
         return D3DERR_INVALIDCALL;
     }
 
@@ -1319,7 +1319,7 @@ static HRESULT DRI3Present_new(Display *gdi_display, const WCHAR *devname,
                      sizeof(struct DRI3Present));
     if (!This)
     {
-        ERR("Out of memory.\n");
+        WINE_ERR("Out of memory.\n");
         return E_OUTOFMEMORY;
     }
 
@@ -1472,7 +1472,7 @@ static HRESULT WINAPI DRI3PresentGroup_GetPresent(struct DRI3PresentGroup *This,
 {
     if (Index >= DRI3PresentGroup_GetMultiheadCount(This))
     {
-        ERR("Index >= MultiHeadCount\n");
+        WINE_ERR("Index >= MultiHeadCount\n");
         return D3DERR_INVALIDCALL;
     }
     DRI3Present_AddRef(This->present_backends[Index]);
@@ -1522,7 +1522,7 @@ HRESULT present_create_present_group(Display *gdi_display, const WCHAR *device_n
             sizeof(struct DRI3PresentGroup));
     if (!This)
     {
-        ERR("Out of memory.\n");
+        WINE_ERR("Out of memory.\n");
         return E_OUTOFMEMORY;
     }
 
@@ -1537,7 +1537,7 @@ HRESULT present_create_present_group(Display *gdi_display, const WCHAR *device_n
     if (!This->present_backends)
     {
         DRI3PresentGroup_Release(This);
-        ERR("Out of memory.\n");
+        WINE_ERR("Out of memory.\n");
         return E_OUTOFMEMORY;
     }
 
@@ -1579,13 +1579,13 @@ HRESULT present_create_adapter9(Display *gdi_display, HDC hdc, ID3DAdapter9 **ou
 
     if (!d3d9_drm)
     {
-        ERR("DRM drivers are not supported on your system.\n");
+        WINE_ERR("DRM drivers are not supported on your system.\n");
         return D3DERR_DRIVERINTERNALERROR;
     }
 
     if (ExtEscape(hdc, X11DRV_ESCAPE, sizeof(extesc), (LPCSTR)&extesc,
             sizeof(extesc), (LPSTR)&extesc) <= 0)
-        ERR("X11 drawable lookup failed (hdc=%p)\n", hdc);
+        WINE_ERR("X11 drawable lookup failed (hdc=%p)\n", hdc);
 
 #ifdef D3D9NINE_DRI2
     if (!is_dri2_fallback && !DRI3Open(gdi_display, DefaultScreen(gdi_display), &fd))
@@ -1593,20 +1593,20 @@ HRESULT present_create_adapter9(Display *gdi_display, HDC hdc, ID3DAdapter9 **ou
     if (!DRI3Open(gdi_display, DefaultScreen(gdi_display), &fd))
 #endif
     {
-        ERR("DRI3Open failed (fd=%d)\n", fd);
+        WINE_ERR("DRI3Open failed (fd=%d)\n", fd);
         return D3DERR_DRIVERINTERNALERROR;
     }
 #ifdef D3D9NINE_DRI2
     if (is_dri2_fallback && !DRI2FallbackOpen(gdi_display, DefaultScreen(gdi_display), &fd))
     {
-        ERR("DRI2Open failed (fd=%d)\n", fd);
+        WINE_ERR("DRI2Open failed (fd=%d)\n", fd);
         return D3DERR_DRIVERINTERNALERROR;
     }
 #endif
     hr = d3d9_drm->create_adapter(fd, out);
     if (FAILED(hr))
     {
-        ERR("Unable to create ID3DAdapter9 (fd=%d)\n", fd);
+        WINE_ERR("Unable to create ID3DAdapter9 (fd=%d)\n", fd);
         return hr;
     }
 
@@ -1647,7 +1647,7 @@ BOOL present_has_d3dadapter(Display *gdi_display)
         WINE_TRACE("Reading registry key for module path\n");
         if (rc != ERROR_SUCCESS  || type != REG_SZ)
         {
-            ERR("Failed to read Direct3DNine ModulePath registry key: Invalid content\n");
+            WINE_ERR("Failed to read Direct3DNine ModulePath registry key: Invalid content\n");
             RegCloseKey(regkey);
             goto cleanup;
         }
@@ -1655,14 +1655,14 @@ BOOL present_has_d3dadapter(Display *gdi_display)
         path = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, size + 1);
         if (!path)
         {
-            ERR("Out of memory\n");
+            WINE_ERR("Out of memory\n");
             RegCloseKey(regkey);
             return FALSE;
         }
         rc = RegQueryValueExA(regkey, "ModulePath", 0, &type, (LPBYTE)path, &size);
         if (rc != ERROR_SUCCESS)
         {
-            ERR("Failed to read Direct3DNine registry\n");
+            WINE_ERR("Failed to read Direct3DNine registry\n");
             RegCloseKey(regkey);
             goto cleanup;
         }
@@ -1685,7 +1685,7 @@ BOOL present_has_d3dadapter(Display *gdi_display)
                 if (!handle)
                 {
                     WINE_TRACE("Failed to load '%s': %s\n", tmp_path, errbuf);
-                    ERR("Failed to load '%s' and '%s' set by ModulePath.\n",
+                    WINE_ERR("Failed to load '%s' and '%s' set by ModulePath.\n",
                             path, tmp_path);
                     RegCloseKey(regkey);
                     goto cleanup;
@@ -1699,7 +1699,7 @@ BOOL present_has_d3dadapter(Display *gdi_display)
             if (!handle)
             {
                 WINE_TRACE("Failed to load %s: %s\n", path, errbuf);
-                ERR("Failed to load '%s' set by ModulePath.\n", path);
+                WINE_ERR("Failed to load '%s' set by ModulePath.\n", path);
                 RegCloseKey(regkey);
                 goto cleanup;
             }
@@ -1715,7 +1715,7 @@ use_default_path:
 #if !defined(D3D9NINE_MODULEPATH)
     if (!handle)
     {
-        ERR("d3d9-nine.dll was built without default module path.\n"
+        WINE_ERR("d3d9-nine.dll was built without default module path.\n"
                 "Setting Software\\Wine\\Direct3DNine ModulePath is required\n");
         goto cleanup;
     }
@@ -1726,7 +1726,7 @@ use_default_path:
                 RTLD_GLOBAL | RTLD_NOW, errbuf, sizeof(errbuf));
         if (!handle)
         {
-            ERR("Failed to load '%s': %s\n", D3D9NINE_MODULEPATH, errbuf);
+            WINE_ERR("Failed to load '%s': %s\n", D3D9NINE_MODULEPATH, errbuf);
             goto cleanup;
         }
         memcpy(pathbuf, D3D9NINE_MODULEPATH,
@@ -1740,7 +1740,7 @@ use_default_path:
             errbuf, sizeof(errbuf));
     if (!pD3DAdapter9GetProc)
     {
-        ERR("Failed to get the entry point from %s: %s", pathbuf, errbuf);
+        WINE_ERR("Failed to get the entry point from %s: %s", pathbuf, errbuf);
         goto cleanup;
     }
 
@@ -1748,14 +1748,14 @@ use_default_path:
     d3d9_drm = pD3DAdapter9GetProc("drm");
     if (!d3d9_drm)
     {
-        ERR("%s doesn't support the drm backend.\n", pathbuf);
+        WINE_ERR("%s doesn't support the drm backend.\n", pathbuf);
         goto cleanup;
     }
 
     /* verify that we're binary compatible */
     if (d3d9_drm->major_version != 0)
     {
-        ERR("Version mismatch. %s has %d.%d, was expecting 0.x\n",
+        WINE_ERR("Version mismatch. %s has %d.%d, was expecting 0.x\n",
                 pathbuf, d3d9_drm->major_version, d3d9_drm->minor_version);
         goto cleanup;
     }
@@ -1765,21 +1765,21 @@ use_default_path:
 
     if (!PRESENTCheckExtension(gdi_display, 1, 0))
     {
-        ERR("Unable to query PRESENT.\n");
+        WINE_ERR("Unable to query PRESENT.\n");
         goto cleanup;
     }
 
     if (!DRI3CheckExtension(gdi_display, 1, 0))
     {
 #ifndef D3D9NINE_DRI2
-        ERR("Unable to query DRI3.\n");
+        WINE_ERR("Unable to query DRI3.\n");
         goto cleanup;
 #else
-        ERR("Unable to query DRI3. Trying DRI2 fallback (slower performance).\n");
+        WINE_ERR("Unable to query DRI3. Trying DRI2 fallback (slower performance).\n");
         is_dri2_fallback = 1;
         if (!DRI2FallbackCheckSupport(gdi_display))
         {
-            ERR("DRI2 fallback unsupported\n");
+            WINE_ERR("DRI2 fallback unsupported\n");
             goto cleanup;
         }
 #endif
@@ -1788,7 +1788,7 @@ use_default_path:
     return TRUE;
 
 cleanup:
-    ERR("\033[1;31m\nNative Direct3D 9 will be unavailable."
+    WINE_ERR("\033[1;31m\nNative Direct3D 9 will be unavailable."
             "\nFor more information visit https://wiki.ixit.cz/d3d9\033[0m\n");
     if (handle)
     {
@@ -1806,7 +1806,7 @@ BOOL enable_device_vtable_wrapper(void)
 {
     if (!d3d9_drm)
     {
-        ERR("enable_device_vtable_wrapper call before init.\n");
+        WINE_ERR("enable_device_vtable_wrapper call before init.\n");
         return FALSE;
     }
     /* Since minor version 1, we can assume a copy of the internal vtable is stored in second pos.
