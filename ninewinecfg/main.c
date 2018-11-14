@@ -179,7 +179,7 @@ static BOOL WINAPI DeleteSymLinkW(LPCWSTR lpFileName)
     {
         if (!unlink(unixDest.Buffer))
         {
-            WINE_TRACE("Removed symlink '%s'\n", debugstr_a( unixDest.Buffer ));
+            WINE_TRACE("Removed symlink '%s'\n", wine_dbgstr_a( unixDest.Buffer ));
             ret = TRUE;
             status = STATUS_SUCCESS;
         }
@@ -248,7 +248,7 @@ static BOOL WINAPI CreateSymLinkW(LPCWSTR lpFileName, LPCSTR existingUnixFileNam
          SetLastError( RtlNtStatusToDosError(status) );
     else if (!symlink( existingUnixFileName, unixDest.Buffer ))
     {
-        WINE_TRACE("Symlinked '%s' to '%s'\n", debugstr_a( unixDest.Buffer ),
+        WINE_TRACE("Symlinked '%s' to '%s'\n", wine_dbgstr_a( unixDest.Buffer ),
             existingUnixFileName);
         ret = TRUE;
     }
