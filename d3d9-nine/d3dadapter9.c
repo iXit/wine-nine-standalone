@@ -168,7 +168,7 @@ static HRESULT WINAPI d3dadapter9_QueryInterface(struct d3dadapter9 *This,
 static HRESULT WINAPI d3dadapter9_RegisterSoftwareDevice(struct d3dadapter9 *This,
         void *pInitializeFunction)
 {
-    FIXME("(%p, %p), stub!\n", This, pInitializeFunction);
+    WINE_FIXME("(%p, %p), stub!\n", This, pInitializeFunction);
     return D3DERR_INVALIDCALL;
 }
 
@@ -395,7 +395,7 @@ static HRESULT WINAPI DECLSPEC_HOTPATCH d3dadapter9_CreateDevice(struct d3dadapt
 static UINT WINAPI d3dadapter9_GetAdapterModeCountEx(struct d3dadapter9 *This,
         UINT Adapter, const D3DDISPLAYMODEFILTER *pFilter)
 {
-    FIXME("(%p, %u, %p), half stub!\n", This, Adapter, pFilter);
+    WINE_FIXME("(%p, %u, %p), half stub!\n", This, Adapter, pFilter);
     return d3dadapter9_GetAdapterModeCount(This, Adapter, pFilter->Format);
 }
 
@@ -405,7 +405,7 @@ static HRESULT WINAPI d3dadapter9_EnumAdapterModesEx(struct d3dadapter9 *This,
 {
     HRESULT hr;
 
-    FIXME("(%p, %u, %p, %u, %p), half stub!\n", This, Adapter, pFilter, Mode, pMode);
+    WINE_FIXME("(%p, %u, %p, %u, %p), half stub!\n", This, Adapter, pFilter, Mode, pMode);
 
     if (Adapter >= d3dadapter9_GetAdapterCount(This))
         return D3DERR_INVALIDCALL;
@@ -530,7 +530,7 @@ static HRESULT WINAPI DECLSPEC_HOTPATCH d3dadapter9_CreateDeviceEx(struct d3dada
 static HRESULT WINAPI d3dadapter9_GetAdapterLUID(struct d3dadapter9 *This,
         UINT Adapter, LUID *pLUID)
 {
-    FIXME("(%p, %u, %p), stub!\n", This, Adapter, pLUID);
+    WINE_FIXME("(%p, %u, %p), stub!\n", This, Adapter, pLUID);
     return D3DERR_INVALIDCALL;
 }
 
@@ -891,7 +891,7 @@ HRESULT d3dadapter9_new(Display *gdi_display, boolean ex, IDirect3D9Ex **ppOut)
     }
 
     *ppOut = (IDirect3D9Ex *)This;
-    FIXME("\033[1;32m\nNative Direct3D 9 is active."
+    WINE_FIXME("\033[1;32m\nNative Direct3D 9 is active."
             "\nFor more information visit https://wiki.ixit.cz/d3d9\033[0m\n");
     return D3D_OK;
 }

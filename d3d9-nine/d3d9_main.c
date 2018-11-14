@@ -75,7 +75,7 @@ void* WINAPI Direct3DShaderValidatorCreate9(void)
     object->lpVtbl = &IDirect3DShaderValidator9Vtbl;
     object->ref = 1;
 
-    FIXME("Returning interface %p\n", object);
+    WINE_FIXME("Returning interface %p\n", object);
     return (void*) object;
 }
 
@@ -131,7 +131,7 @@ int WINAPI D3DPERF_EndEvent(void)
  */
 DWORD WINAPI D3DPERF_GetStatus(void)
 {
-    FIXME("(void) : stub\n");
+    WINE_FIXME("(void) : stub\n");
 
     return 0;
 }
@@ -142,7 +142,7 @@ DWORD WINAPI D3DPERF_GetStatus(void)
  */
 void WINAPI D3DPERF_SetOptions(DWORD options)
 {
-  FIXME("(%#x) : stub\n", options);
+  WINE_FIXME("(%#x) : stub\n", options);
 }
 
 /***********************************************************************
@@ -150,7 +150,7 @@ void WINAPI D3DPERF_SetOptions(DWORD options)
  */
 BOOL WINAPI D3DPERF_QueryRepeatFrame(void)
 {
-    FIXME("(void) : stub\n");
+    WINE_FIXME("(void) : stub\n");
 
     return FALSE;
 }
@@ -160,7 +160,7 @@ BOOL WINAPI D3DPERF_QueryRepeatFrame(void)
  */
 void WINAPI D3DPERF_SetMarker(D3DCOLOR color, const WCHAR *name)
 {
-    FIXME("color 0x%08x, name %s stub!\n", color, debugstr_w(name));
+    WINE_FIXME("color 0x%08x, name %s stub!\n", color, debugstr_w(name));
 }
 
 /***********************************************************************
@@ -168,5 +168,5 @@ void WINAPI D3DPERF_SetMarker(D3DCOLOR color, const WCHAR *name)
  */
 void WINAPI D3DPERF_SetRegion(D3DCOLOR color, const WCHAR *name)
 {
-    FIXME("color 0x%08x, name %s stub!\n", color, debugstr_w(name));
+    WINE_FIXME("color 0x%08x, name %s stub!\n", color, debugstr_w(name));
 }

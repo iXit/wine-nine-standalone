@@ -388,7 +388,7 @@ static HRESULT WINAPI DRI3Present_SetPresentParameters(struct DRI3Present *This,
         D3DDISPLAYMODEEX *pFullscreenDisplayMode)
 {
     if (pFullscreenDisplayMode)
-        FIXME("Ignoring pFullscreenDisplayMode\n");
+        WINE_FIXME("Ignoring pFullscreenDisplayMode\n");
     return DRI3Present_ChangePresentParameters(This, pPresentationParameters);
 }
 
@@ -637,7 +637,7 @@ static HRESULT WINAPI DRI3Present_GetDisplayMode( struct DRI3Present *This,
 
 static HRESULT WINAPI DRI3Present_GetPresentStats( struct DRI3Present *This, D3DPRESENTSTATS *pStats )
 {
-    FIXME("(%p, %p), stub!\n", This, pStats);
+    WINE_FIXME("(%p, %p), stub!\n", This, pStats);
     return D3DERR_INVALIDCALL;
 }
 
@@ -1463,7 +1463,7 @@ static HRESULT WINAPI DRI3PresentGroup_QueryInterface(struct DRI3PresentGroup *T
 
 static UINT WINAPI DRI3PresentGroup_GetMultiheadCount(struct DRI3PresentGroup *This)
 {
-    FIXME("(%p), stub!\n", This);
+    WINE_FIXME("(%p), stub!\n", This);
     return 1;
 }
 
