@@ -164,7 +164,7 @@ static BOOL WINAPI DeleteSymLinkW(LPCWSTR lpFileName)
     ANSI_STRING unixDest;
     BOOL ret = FALSE;
 
-    WINE_TRACE("(%s)\n", debugstr_w(lpFileName));
+    WINE_TRACE("(%s)\n", wine_dbgstr_w(lpFileName));
 
     ntDest.Buffer = NULL;
     if (!RtlDosPathNameToNtPathName_U( lpFileName, &ntDest, NULL, NULL ))
@@ -224,7 +224,7 @@ static BOOL WINAPI CreateSymLinkW(LPCWSTR lpFileName, LPCSTR existingUnixFileNam
     ANSI_STRING unixDest;
     BOOL ret = FALSE;
 
-    WINE_TRACE("(%s, %s, %p)\n", debugstr_w(lpFileName),
+    WINE_TRACE("(%s, %s, %p)\n", wine_dbgstr_w(lpFileName),
          existingUnixFileName, lpSecurityAttributes);
 
     ntDest.Buffer = NULL;
@@ -286,7 +286,7 @@ static BOOL WINAPI IsFileSymLinkW(LPCWSTR lpExistingFileName)
     BOOL ret = FALSE;
     struct stat sb;
 
-    WINE_TRACE("(%s)\n", debugstr_w(lpExistingFileName));
+    WINE_TRACE("(%s)\n", wine_dbgstr_w(lpExistingFileName));
 
     ntSource.Buffer = NULL;
     if (!RtlDosPathNameToNtPathName_U( lpExistingFileName, &ntSource, NULL, NULL ))

@@ -111,7 +111,7 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, void *reserved)
  */
 int WINAPI D3DPERF_BeginEvent(D3DCOLOR color, const WCHAR *name)
 {
-    WINE_TRACE("color 0x%08x, name %s.\n", color, debugstr_w(name));
+    WINE_TRACE("color 0x%08x, name %s.\n", color, wine_dbgstr_w(name));
 
     return D3DPERF_event_level++;
 }
@@ -160,7 +160,7 @@ BOOL WINAPI D3DPERF_QueryRepeatFrame(void)
  */
 void WINAPI D3DPERF_SetMarker(D3DCOLOR color, const WCHAR *name)
 {
-    WINE_FIXME("color 0x%08x, name %s stub!\n", color, debugstr_w(name));
+    WINE_FIXME("color 0x%08x, name %s stub!\n", color, wine_dbgstr_w(name));
 }
 
 /***********************************************************************
@@ -168,5 +168,5 @@ void WINAPI D3DPERF_SetMarker(D3DCOLOR color, const WCHAR *name)
  */
 void WINAPI D3DPERF_SetRegion(D3DCOLOR color, const WCHAR *name)
 {
-    WINE_FIXME("color 0x%08x, name %s stub!\n", color, debugstr_w(name));
+    WINE_FIXME("color 0x%08x, name %s stub!\n", color, wine_dbgstr_w(name));
 }

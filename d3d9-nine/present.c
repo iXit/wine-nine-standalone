@@ -1552,7 +1552,7 @@ HRESULT present_create_present_group(Display *gdi_display, const WCHAR *device_n
         if (!EnumDisplayDevicesW(device_name, adapter + i, &dd, 0))
         {
             WINE_WARN("Couldn't find subdevice %d from `%s'\n",
-                    i, debugstr_w(device_name));
+                    i, wine_dbgstr_w(device_name));
         }
 
         /* create an ID3DPresent for it */
