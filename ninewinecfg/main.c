@@ -445,6 +445,60 @@ static BOOL getRegistryString(LPCSTR path, LPCSTR name, LPSTR *value)
     return TRUE;
 }
 
+static BOOL setRegistryString(LPCSTR path, LPCSTR name, LPCSTR value)
+{
+    HKEY regkey;
+
+    WINE_TRACE("Setting key '%s' at 'HKCU\\%s' to '%s'\n", name, path, value);
+
+    if (RegOpenKeyA(HKEY_CURRENT_USER, path, &regkey) != ERROR_SUCCESS)
+    {
+        WINE_TRACE("Failed to open path 'HKCU\\%s'\n", path);
+        return FALSE;
+    }
+
+    if (RegSetValueExA(regkey, name, 0, REG_SZ, (LPBYTE)value, strlen(value)) != ERROR_SUCCESS)
+    {
+        WINE_TRACE("Failed to write key '%s' at 'HKCU\\%s'\n", name, path);
+        RegCloseKey(regkey);
+        return FALSE;
+    }
+
+    RegCloseKey(regkey);
+
+    return TRUE;
+}
+
+static BOOL delRegistryKey(LPCSTR path, LPCSTR name)
+{
+    HKEY regkey;
+    LSTATUS rc;
+
+    WINE_TRACE("Deleting key '%s' at 'HKCU\\%s'\n", name, path);
+
+    rc = RegOpenKeyA(HKEY_CURRENT_USER, path, &regkey);
+    if (rc == ERROR_FILE_NOT_FOUND)
+        return TRUE;
+
+    if (rc != ERROR_SUCCESS)
+    {
+        WINE_TRACE("Failed to open path 'HKCU\\%s'\n", path);
+        return FALSE;
+    }
+
+    rc = RegDeleteValueA(regkey, name);
+    if (rc != ERROR_FILE_NOT_FOUND && rc != ERROR_SUCCESS)
+    {
+        WINE_TRACE("Failed to delete key '%s' at 'HKCU\\%s'\n", name, path);
+        RegCloseKey(regkey);
+        return FALSE;
+    }
+
+    RegCloseKey(regkey);
+
+    return TRUE;
+}
+
 static BOOL nine_get(void)
 {
     BOOL ret = FALSE;
@@ -495,30 +549,18 @@ static BOOL nine_get(void)
 
 static void nine_set(BOOL status, BOOL NoOtherArch)
 {
-    HKEY regkey;
-
 #if WINE_STAGING
     /* Active dll redirect */
-    if (!RegOpenKeyA(HKEY_CURRENT_USER, "Software\\Wine\\DllRedirects", &regkey))
+    if (!status)
     {
-        LSTATUS rc;
-
-        if (!status)
-        {
-            rc = RegDeleteValueA(regkey, "d3d9");
-        }
-        else
-        {
-            rc = RegSetValueExA(regkey, "d3d9", 0, REG_SZ, (LPBYTE)"d3d9-nine.dll", strlen("d3d9-nine.dll"));
-        }
-        if (rc != NO_ERROR)
-        {
-            WINE_ERR("Failed to write 'HKCU\\Software\\Wine\\DllRedirects\\d3d9'. rc = %d\n", rc);
-        }
-        RegCloseKey(regkey);
+        if (!delRegistryKey("Software\\Wine\\DllRedirects", "d3d9"))
+            WINE_ERR("Failed to delete 'HKCU\\Software\\Wine\\DllRedirects\\d3d9'\n'");
     }
     else
-        WINE_ERR("Failed to open path 'HKCU\\Software\\Wine\\DllRedirects'\n");
+    {
+        if (!setRegistryString("Software\\Wine\\DllRedirects", "d3d9", "native"))
+            WINE_ERR("Failed to write 'HKCU\\Software\\Wine\\DllRedirects\\d3d9'\n");
+    }
 #else
     CHAR dst[MAX_PATH];
 
@@ -534,25 +576,16 @@ static void nine_set(BOOL status, BOOL NoOtherArch)
     }
 
     /* enable native dll */
-    if (!RegOpenKeyA(HKEY_CURRENT_USER, "Software\\Wine\\DllOverrides", &regkey))
+    if (!status)
     {
-        LSTATUS rc;
-
-        if (!status)
-        {
-            rc = RegDeleteValueA(regkey, "d3d9");
-        }
-        else
-        {
-            rc = RegSetValueExA(regkey, "d3d9", 0, REG_SZ, (LPBYTE)"native", strlen("native"));
-        }
-        if (rc != NO_ERROR)
-            WINE_WARN("Failed to write 'HKCU\\Software\\Wine\\DllOverrides\\d3d9'. rc = %d\n", rc);
-
-        RegCloseKey(regkey);
+        if (!delRegistryKey("Software\\Wine\\DllOverrides", "d3d9"))
+            WINE_ERR("Failed to delete 'HKCU\\Software\\Wine\\DllOverrides\\d3d9'\n'");
     }
     else
-        WINE_WARN("Failed to open path 'HKCU\\Software\\Wine\\DllRedirects'\n");
+    {
+        if (!setRegistryString("Software\\Wine\\DllOverrides", "d3d9", "native"))
+            WINE_ERR("Failed to write 'HKCU\\Software\\Wine\\DllOverrides\\d3d9'\n");
+    }
 
     if (!nine_get_system_path(dst, sizeof(dst))) {
         WINE_ERR("Failed to get system path\n");
