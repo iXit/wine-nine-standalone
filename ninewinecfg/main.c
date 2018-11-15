@@ -447,7 +447,7 @@ static BOOL getRegistryString(LPCSTR path, LPCSTR name, LPSTR *value)
 
 static BOOL nine_get(void)
 {
-    BOOL ret = 0;
+    BOOL ret = FALSE;
     LPSTR value;
 
 #if WINE_STAGING
@@ -465,24 +465,20 @@ static BOOL nine_get(void)
         HeapFree(GetProcessHeap(), 0, value);
     }
 
-    if (!ret)
-    {
-        /* Sanity: Remove symlink if any */
-        if (nine_get_system_path(buf, sizeof(buf)))
-        {
-            strcat(buf, "\\d3d9.dll");
-            WINE_ERR("removing obsolete symlink");
-            DeleteSymLinkA(buf);
-        }
-        return FALSE;
-    }
-
     if (!nine_get_system_path(buf, sizeof(buf)))
     {
         WINE_ERR("Failed to get system path\n");
         return FALSE;
     }
     strcat(buf, "\\d3d9.dll");
+
+    if (!ret)
+    {
+        /* Sanity: Remove symlink if any */
+        WINE_ERR("removing obsolete symlink\n");
+        DeleteSymLinkA(buf);
+        return FALSE;
+    }
 
     ret = IsFileSymLinkA(buf);
     if (ret && !PathFileExistsA(buf))
