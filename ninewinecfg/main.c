@@ -579,7 +579,6 @@ static void nine_set(BOOL status, BOOL NoOtherArch)
         hmod = LoadLibraryExA("d3d9-nine.dll", NULL, DONT_RESOLVE_DLL_REFERENCES);
         if (hmod)
         {
-#if HAVE_DLADDR
             Dl_info info;
 
             if (dladdr(hmod, &info) && info.dli_fname)
@@ -590,7 +589,6 @@ static void nine_set(BOOL status, BOOL NoOtherArch)
             }
             else
                 WINE_ERR("dladdr failed to get file path\n");
-#endif
 
             FreeLibrary(hmod);
         }
@@ -905,11 +903,6 @@ doPropertySheet (HINSTANCE hInstance, HWND hOwner)
 int WINAPI
 WinMain (HINSTANCE hInstance, HINSTANCE hPrev, LPSTR szCmdLine, int nShow)
 {
-#if !HAVE_DLADDR && !WINE_STAGING
-    WINE_ERR("Compiled without dladdr support.\n");
-    return 1;
-#endif
-
     if (ProcessCmdLine(GetCommandLineW()))
     {
         return 0;
