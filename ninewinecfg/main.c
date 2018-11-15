@@ -736,7 +736,7 @@ out:
         FreeLibrary(hmod);
 }
 
-BOOL ProcessCmdLine(WCHAR *cmdline)
+static BOOL ProcessCmdLine(WCHAR *cmdline)
 {
     WCHAR **argv;
     int argc, i;
