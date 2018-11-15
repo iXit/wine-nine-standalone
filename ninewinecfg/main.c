@@ -129,7 +129,7 @@ static BOOL Call64bitNineWineCfg(BOOL state)
         strcat(buf, " -e -n");
     else
         strcat(buf, " -d -n");
- 
+
     if (!CreateProcessA(NULL, buf, NULL, NULL,
         FALSE, 0, NULL, NULL, &si, &pi )) {
         WINE_ERR("Failed to call CreateProcess, error=%d", GetLastError());
@@ -140,6 +140,7 @@ static BOOL Call64bitNineWineCfg(BOOL state)
     GetExitCodeProcess( pi.hProcess, &exit_code );
 
     Wow64RevertWow64FsRedirection( redir );
+
     return TRUE;
 }
 
@@ -153,7 +154,9 @@ static LPWSTR FILE_name_AtoW(LPCSTR name, int optarg)
     RtlInitAnsiString( &str, name );
     pstrW = &strW ;
     status = RtlAnsiStringToUnicodeString( pstrW, &str, TRUE );
-    if (status == STATUS_SUCCESS) return pstrW->Buffer;
+    if (status == STATUS_SUCCESS)
+        return pstrW->Buffer;
+
     return NULL;
 }
 
@@ -245,7 +248,7 @@ static BOOL WINAPI CreateSymLinkW(LPCWSTR lpFileName, LPCSTR existingUnixFileNam
     }
 
     if (status)
-         SetLastError( RtlNtStatusToDosError(status) );
+        SetLastError( RtlNtStatusToDosError(status) );
     else if (!symlink( existingUnixFileName, unixDest.Buffer ))
     {
         WINE_TRACE("Symlinked '%s' to '%s'\n", wine_dbgstr_a( unixDest.Buffer ),
@@ -343,7 +346,6 @@ static BOOL nine_get_system_path(CHAR *pOut, DWORD SizeOut)
         return !!GetSystemDirectoryA((LPSTR)pOut, SizeOut);
     }
 }
-
 #endif
 
 /*
@@ -377,6 +379,7 @@ WCHAR* load_string (UINT id)
     newStr = HeapAlloc (GetProcessHeap(), 0, (len + 1) * sizeof (WCHAR));
     memcpy (newStr, buf, len * sizeof (WCHAR));
     newStr[len] = 0;
+
     return newStr;
 }
 
@@ -424,7 +427,6 @@ static BOOL nine_get(void)
         WINE_ERR("Failed to open path 'HKCU\\Software\\Wine\\DllRedirects'\n");
     }
 #else
-
     CHAR buf[MAX_PATH];
 
     if (!RegOpenKeyA(HKEY_CURRENT_USER, "Software\\Wine\\DllOverrides", &regkey))
@@ -470,12 +472,12 @@ static BOOL nine_get(void)
         }
         return FALSE;
     }
+
     if (!nine_get_system_path(buf, sizeof(buf)))
     {
         WINE_ERR("Failed to get system path\n");
         return FALSE;
     }
-
     strcat(buf, "\\d3d9.dll");
 
     ret = IsFileSymLinkA(buf);
@@ -487,6 +489,7 @@ static BOOL nine_get(void)
         return FALSE;
     }
 #endif
+
     return ret;
 }
 
@@ -587,10 +590,8 @@ static void nine_set(BOOL status, BOOL NoOtherArch)
     }
     else
         DeleteSymLinkA(dst);
-
 #endif
 }
-
 
 typedef IDirect3D9* (WINAPI *LPDIRECT3DCREATE9)( UINT );
 
@@ -729,6 +730,7 @@ static void load_staging_settings(HWND dialog)
         FreeLibrary(hmod);
 
     return;
+
 out:
     EnableWindow(GetDlgItem(dialog, IDC_ENABLE_NATIVE_D3D9), 0);
 
@@ -843,7 +845,6 @@ doPropertySheet (HINSTANCE hInstance, HWND hOwner)
 {
     PROPSHEETPAGEW psp[2];
     PROPSHEETHEADERW psh;
-
 
     psp[0].dwSize = sizeof (PROPSHEETPAGEW);
     psp[0].dwFlags = PSP_USETITLE;
