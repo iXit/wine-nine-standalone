@@ -395,80 +395,75 @@ WCHAR* load_string (UINT id)
 /*
  * Gallium nine
  */
+static BOOL getRegistryString(LPCSTR path, LPCSTR name, LPSTR *value)
+{
+    HKEY regkey;
+    DWORD type;
+    DWORD size = 0;
+
+    WINE_TRACE("Getting string key '%s' at 'HKCU\\%s'\n", name, path);
+
+    if (RegOpenKeyA(HKEY_CURRENT_USER, path, &regkey) != ERROR_SUCCESS)
+    {
+        WINE_TRACE("Failed to open path 'HKCU\\%s'\n", path);
+        return FALSE;
+    }
+
+    if (RegQueryValueExA(regkey, name, 0, &type, NULL, &size) != ERROR_SUCCESS)
+    {
+        WINE_TRACE("Failed to query key '%s' at 'HKCU\\%s'\n", name, path);
+        RegCloseKey(regkey);
+        return FALSE;
+    }
+
+    if (type != REG_SZ)
+    {
+        WINE_TRACE("Key '%s' at 'HKCU\\%s' is not a string\n", name, path);
+        RegCloseKey(regkey);
+        return FALSE;
+    }
+
+    *value = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, size + 1);
+    if (!(*value))
+    {
+        RegCloseKey(regkey);
+        return FALSE;
+    }
+
+    if (RegQueryValueExA(regkey, name, 0, &type, (LPBYTE)*value, &size) != ERROR_SUCCESS)
+    {
+        WINE_TRACE("Failed to read value of key '%s' at 'HKCU\\%s'\n", name, path);
+        HeapFree(GetProcessHeap(), 0, *value);
+        RegCloseKey(regkey);
+        return FALSE;
+    }
+
+    RegCloseKey(regkey);
+
+    WINE_TRACE("Value is '%s'\n", *value);
+
+    return TRUE;
+}
+
 static BOOL nine_get(void)
 {
     BOOL ret = 0;
-    HKEY regkey;
+    LPSTR value;
 
 #if WINE_STAGING
-    if (!RegOpenKeyA(HKEY_CURRENT_USER, "Software\\Wine\\DllRedirects", &regkey))
+    if (getRegistryString("Software\\Wine\\DllRedirects", "d3d9", &value))
     {
-        DWORD type;
-        DWORD size = 0;
-        LSTATUS rc;
-        rc = RegQueryValueExA(regkey, "d3d9", 0, &type, NULL, &size);
-        if (rc != ERROR_FILE_NOT_FOUND && type == REG_SZ)
-        {
-            char *val = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, size + 1);
-            if (!val)
-            {
-                RegCloseKey(regkey);
-                return 0;
-            }
-            rc = RegQueryValueExA(regkey, "d3d9", 0, &type, (LPBYTE)val, &size);
-            if (rc == ERROR_SUCCESS)
-            {
-                ret = !!val && !strcmp(val, "d3d9-nine.dll");
-            }
-            else
-            {
-                WINE_ERR("Failed to read value 'd3d9'. rc = %d\n", rc);
-            }
-            HeapFree(GetProcessHeap(), 0, val);
-        }
-        else
-            WINE_WARN("Failed to read value 'd3d9'. rc = %d\n", rc);
-
-        RegCloseKey(regkey);
-    }
-    else
-    {
-        WINE_ERR("Failed to open path 'HKCU\\Software\\Wine\\DllRedirects'\n");
+        ret = !strcmp(value, "d3d9-nine.dll");
+        HeapFree(GetProcessHeap(), 0, value);
     }
 #else
     CHAR buf[MAX_PATH];
 
-    if (!RegOpenKeyA(HKEY_CURRENT_USER, "Software\\Wine\\DllOverrides", &regkey))
+    if (getRegistryString("Software\\Wine\\DllOverrides", "d3d9", &value))
     {
-        DWORD type;
-        DWORD size = 0;
-        LSTATUS rc;
-        rc = RegQueryValueExA(regkey, "d3d9", 0, &type, NULL, &size);
-        if (rc != ERROR_FILE_NOT_FOUND && type == REG_SZ)
-        {
-            char *val = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, size + 1);
-            if (!val)
-            {
-                RegCloseKey(regkey);
-                return 0;
-            }
-            rc = RegQueryValueExA(regkey, "d3d9", 0, &type, (LPBYTE)val, &size);
-            if (rc == ERROR_SUCCESS)
-            {
-                ret = !!val && !strcmp(val, "native");
-            }
-            else
-                ret = FALSE;
-
-            HeapFree(GetProcessHeap(), 0, val);
-        }
-        else
-            ret = FALSE;
-
-        RegCloseKey(regkey);
+        ret = !strcmp(value, "native");
+        HeapFree(GetProcessHeap(), 0, value);
     }
-    else
-        WINE_WARN("Failed to open path 'HKCU\\Software\\Wine\\DllOverrides'\n");
 
     if (!ret)
     {
@@ -612,7 +607,6 @@ static void load_staging_settings(HWND dialog)
     char *mod_path = NULL;
     LPDIRECT3DCREATE9 Direct3DCreate9Ptr = NULL;
     IDirect3D9 *iface = NULL;
-    HKEY regkey;
     void *handle;
     char errbuf[1024];
 
@@ -649,24 +643,8 @@ static void load_staging_settings(HWND dialog)
         goto out;
     }
 
-    if (!have_modpath && !RegOpenKeyA(HKEY_CURRENT_USER, "Software\\Wine\\Direct3DNine", &regkey))
-    {
-        DWORD type;
-        DWORD size = 0;
-        LSTATUS rc;
-
-        rc = RegQueryValueExA(regkey, "ModulePath", 0, &type, NULL, &size);
-        if (rc != ERROR_FILE_NOT_FOUND && type == REG_SZ)
-        {
-            mod_path = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, size + 1);
-            rc = RegQueryValueExA(regkey, "ModulePath", 0, &type, (LPBYTE)mod_path, &size);
-            if (rc == ERROR_SUCCESS)
-            {
-                have_modpath = 1;
-            }
-        }
-        RegCloseKey(regkey);
-    }
+    if (!have_modpath && getRegistryString("Software\\Wine\\Direct3DNine", "ModulePath", &mod_path))
+        have_modpath = 1;
 
     if (have_modpath)
     {
