@@ -68,6 +68,13 @@ static BOOL isWin64(void)
     return sizeof(void*) == 8;
 }
 
+static BOOL isWoW64(void)
+{
+    BOOL is_wow64;
+
+    return IsWow64Process( GetCurrentProcess(), &is_wow64 ) && is_wow64;
+}
+
 static BOOL Call32bitNineWineCfg(BOOL state)
 {
     STARTUPINFOA si;
@@ -97,13 +104,6 @@ static BOOL Call32bitNineWineCfg(BOOL state)
         WaitForSingleObject( pi.hProcess, INFINITE );
 
     return TRUE;
-}
-
-static BOOL isWoW64(void)
-{
-    BOOL is_wow64;
-
-    return IsWow64Process( GetCurrentProcess(), &is_wow64 ) && is_wow64;
 }
 
 static BOOL Call64bitNineWineCfg(BOOL state)
