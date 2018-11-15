@@ -75,7 +75,7 @@ void* WINAPI Direct3DShaderValidatorCreate9(void)
     object->lpVtbl = &IDirect3DShaderValidator9Vtbl;
     object->ref = 1;
 
-    WINE_FIXME("Returning interface %p\n", object);
+    WINE_TRACE("Returning interface %p\n", object);
     return (void*) object;
 }
 
