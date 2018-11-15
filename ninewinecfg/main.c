@@ -75,17 +75,47 @@ static BOOL isWoW64(void)
     return IsWow64Process( GetCurrentProcess(), &is_wow64 ) && is_wow64;
 }
 
-static BOOL Call32bitNineWineCfg(BOOL state)
+static DWORD executeCmdline(LPSTR cmdline)
 {
     STARTUPINFOA si;
     PROCESS_INFORMATION pi;
-    CHAR buf[MAX_PATH];
+    DWORD exit_code;
 
     ZeroMemory( &si, sizeof(si) );
     si.cb = sizeof(si);
     ZeroMemory( &pi, sizeof(pi) );
 
-    if (!GetSystemWow64DirectoryA((LPSTR)buf, sizeof(buf)))
+    WINE_TRACE("Executing cmdline '%s'\n", cmdline);
+
+    if (!CreateProcessA(NULL, cmdline, NULL, NULL,
+        FALSE, 0, NULL, NULL, &si, &pi ))
+    {
+        WINE_ERR("CreateProcessA failed, error=%d", GetLastError());
+        return ~0u;
+    }
+
+    if (WaitForSingleObject( pi.hProcess, INFINITE ) != WAIT_OBJECT_0)
+    {
+        WINE_ERR("WaitForSingleObject failed, error=%d", GetLastError());
+        return ~0u;
+    }
+
+    if (!GetExitCodeProcess( pi.hProcess, &exit_code ))
+    {
+        WINE_ERR("GetExitCodeProcess failed, error=%d", GetLastError());
+        return ~0u;
+    }
+
+    WINE_TRACE("Exit code: %u\n", exit_code);
+
+    return exit_code;
+}
+
+static BOOL Call32bitNineWineCfg(BOOL state)
+{
+    CHAR buf[MAX_PATH + 6];
+
+    if (!GetSystemWow64DirectoryA(buf, sizeof(buf)))
         return FALSE;
 
     strcat(buf, "\\ninewinecfg.exe");
@@ -95,30 +125,16 @@ static BOOL Call32bitNineWineCfg(BOOL state)
     else
         strcat(buf, " -d -n");
 
-    if (!CreateProcessA(NULL, buf, NULL, NULL,
-        FALSE, 0, NULL, NULL, &si, &pi )) {
-        WINE_ERR("Failed to call CreateProcess, error=%d", GetLastError());
-        return FALSE;
-    }
-    else
-        WaitForSingleObject( pi.hProcess, INFINITE );
-
-    return TRUE;
+    return executeCmdline(buf) == 0;
 }
 
 static BOOL Call64bitNineWineCfg(BOOL state)
 {
-    STARTUPINFOA si;
-    PROCESS_INFORMATION pi;
     void *redir;
-    DWORD exit_code;
-    CHAR buf[MAX_PATH];
+    CHAR buf[MAX_PATH + 6];
+    BOOL res;
 
     Wow64DisableWow64FsRedirection( &redir );
-
-    ZeroMemory( &si, sizeof(si) );
-    si.cb = sizeof(si);
-    ZeroMemory( &pi, sizeof(pi) );
 
     if (!GetSystemDirectoryA((LPSTR)buf, sizeof(buf)))
         return FALSE;
@@ -130,18 +146,11 @@ static BOOL Call64bitNineWineCfg(BOOL state)
     else
         strcat(buf, " -d -n");
 
-    if (!CreateProcessA(NULL, buf, NULL, NULL,
-        FALSE, 0, NULL, NULL, &si, &pi )) {
-        WINE_ERR("Failed to call CreateProcess, error=%d", GetLastError());
-        return FALSE;
-    }
-    else
-        WaitForSingleObject( pi.hProcess, INFINITE );
-    GetExitCodeProcess( pi.hProcess, &exit_code );
+    res = executeCmdline(buf) == 0;
 
     Wow64RevertWow64FsRedirection( redir );
 
-    return TRUE;
+    return res;
 }
 
 /* helper functions taken from NTDLL and KERNEL32 */
