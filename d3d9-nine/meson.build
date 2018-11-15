@@ -35,6 +35,6 @@ d3d9_dll = shared_library(
                      dep_user32,
                    ],
   install        : true,
-  vs_module_defs : 'd3d9-nine.spec',
-  objects        : 'd3d9-nine.spec',
+  vs_module_defs : 'd3d9.spec',
+  objects        : 'd3d9.spec',
 )
