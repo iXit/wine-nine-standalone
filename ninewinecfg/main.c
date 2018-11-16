@@ -910,7 +910,7 @@ doPropertySheet (HINSTANCE hInstance, HWND hOwner)
      * Fill out the PROPSHEETHEADER
      */
     psh.dwSize = sizeof (PROPSHEETHEADERW);
-    psh.dwFlags = PSH_PROPSHEETPAGE | PSH_USEICONID | PSH_USECALLBACK;
+    psh.dwFlags = PSH_PROPSHEETPAGE | PSH_USEICONID | PSH_USECALLBACK | PSH_NOAPPLYNOW;
     psh.hwndParent = hOwner;
     psh.hInstance = hInstance;
     psh.u.pszIcon = NULL;
