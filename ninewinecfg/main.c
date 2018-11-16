@@ -58,6 +58,8 @@ WINE_DEFAULT_DEBUG_CHANNEL(ninecfg);
 #endif
 
 static const char * const fn_nine_dll = "d3d9-nine.dll";
+static const char * const reg_path_dll_overrides = "Software\\Wine\\DllOverrides";
+static const char * const reg_path_dll_redirects = "Software\\Wine\\DllRedirects";
 static const char * const reg_key_d3d9 = "d3d9";
 static const char * const reg_path_nine = "Software\\Wine\\Direct3DNine";
 static const char * const reg_key_module_path = "ModulePath";
@@ -65,10 +67,8 @@ static const char * const reg_key_module_path = "ModulePath";
 #if !WINE_STAGING
 static const char * const fn_d3d9_dll = "d3d9.dll";
 static const char * const fn_nine_exe = "ninewinecfg.exe";
-static const char * const reg_path_dll_overrides = "Software\\Wine\\DllOverrides";
 static const char * const reg_value_override = "native";
 #else
-static const char * const reg_path_dll_redirects = "Software\\Wine\\DllRedirects";
 static const char * const reg_value_redirect = fn_nine_dll;
 #endif
 
@@ -568,6 +568,9 @@ static BOOL nine_get(void)
 static void nine_set(BOOL status, BOOL NoOtherArch)
 {
 #if WINE_STAGING
+    /* Delete unused DllOverrides key */
+    delRegistryKey(reg_path_dll_overrides, reg_key_d3d9);
+
     /* Active dll redirect */
     if (!status)
     {
@@ -592,6 +595,9 @@ static void nine_set(BOOL status, BOOL NoOtherArch)
         else if (isWoW64())
             Call64bitNineWineCfg(status);
     }
+
+    /* Delete unused DllRedirects key */
+    delRegistryKey(reg_path_dll_redirects, reg_key_d3d9);
 
     /* enable native dll */
     if (!status)
