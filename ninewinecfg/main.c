@@ -544,7 +544,7 @@ static BOOL nine_get(void)
     strcat(buf, "\\");
     strcat(buf, fn_d3d9_dll);
 
-    if (!ret)
+    if (!ret && IsFileSymLinkA(buf))
     {
         /* Sanity: Remove symlink if any */
         WINE_ERR("removing obsolete symlink\n");
