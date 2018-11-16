@@ -11,8 +11,8 @@ wine --version >/dev/null 2>&1 || die "wine not found"
 DST=`wine winepath -u 'c:\windows\system32'`
 
 echo "installing 32bit binaries to $DST"
-install -m 644 "$BASE/lib32/d3d9-nine.dll.so" "$DST/d3d9-nine.dll"
-install -m 755 "$BASE/bin32/ninewinecfg.exe.so" "$DST/ninewinecfg.exe"
+ln -sf "$BASE/lib32/d3d9-nine.dll.so" "$DST/d3d9-nine.dll"
+ln -sf "$BASE/bin32/ninewinecfg.exe.so" "$DST/ninewinecfg.exe"
 
 unset HAVE_WINE64
 wine64 --version >/dev/null 2>&1 && HAVE_WINE64=1
@@ -27,8 +27,8 @@ fi
 DST=`wine64 winepath -u 'c:\windows\system32'`
 
 echo "installing 64bit binaries to $DST"
-install -m 644 "$BASE/lib64/d3d9-nine.dll.so" "$DST/d3d9-nine.dll"
-install -m 755 "$BASE/bin64/ninewinecfg.exe.so" "$DST/ninewinecfg.exe"
+ln -sf "$BASE/lib64/d3d9-nine.dll.so" "$DST/d3d9-nine.dll"
+ln -sf "$BASE/bin64/ninewinecfg.exe.so" "$DST/ninewinecfg.exe"
 
 echo "enabling gallium nine"
 wine64 ninewinecfg.exe -e
