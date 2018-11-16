@@ -777,7 +777,7 @@ out:
         FreeLibrary(hmod);
 }
 
-static BOOL ProcessCmdLine(WCHAR *cmdline)
+static BOOL ProcessCmdLine(WCHAR *cmdline, BOOL *result)
 {
     WCHAR **argv;
     int argc, i;
@@ -829,11 +829,13 @@ static BOOL ProcessCmdLine(WCHAR *cmdline)
     if (NineSet && !NineClear)
     {
         nine_set(TRUE, NoOtherArch);
+        *result = nine_get();
         return TRUE;
     }
     else if (NineClear && !NineSet)
     {
         nine_set(FALSE, NoOtherArch);
+        *result = !nine_get();
         return TRUE;
     }
 
@@ -936,8 +938,13 @@ doPropertySheet (HINSTANCE hInstance, HWND hOwner)
 int WINAPI
 WinMain (HINSTANCE hInstance, HINSTANCE hPrev, LPSTR szCmdLine, int nShow)
 {
-    if (ProcessCmdLine(GetCommandLineW()))
+    BOOL res = FALSE;
+
+    if (ProcessCmdLine(GetCommandLineW(), &res))
     {
+        if (!res)
+            return 1;
+
         return 0;
     }
 
