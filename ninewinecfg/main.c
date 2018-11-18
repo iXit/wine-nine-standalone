@@ -41,7 +41,6 @@
 #include <objbase.h>
 #include <winternl.h>
 #include <wine/debug.h>
-#include <wine/library.h>
 
 #include <d3d9.h>
 
@@ -654,7 +653,6 @@ static void load_staging_settings(HWND dialog)
     LPDIRECT3DCREATE9 Direct3DCreate9Ptr = NULL;
     IDirect3D9 *iface = NULL;
     void *handle;
-    char errbuf[1024];
 
 #if defined(HAVE_D3D9NINE)
     have_d3d9nine = 1;
@@ -702,14 +700,14 @@ static void load_staging_settings(HWND dialog)
         goto out;
     }
 
-    handle = wine_dlopen(mod_path, RTLD_GLOBAL | RTLD_NOW, errbuf, sizeof(errbuf));
+    handle = dlopen(mod_path, RTLD_GLOBAL | RTLD_NOW);
     if (handle)
     {
         CheckDlgButton(dialog, IDC_NINE_STATE3, BST_CHECKED);
     }
     else
     {
-        SendDlgItemMessageA(dialog, IDC_NINE_STATE_TIP3, WM_SETTEXT, 1, (LPARAM)errbuf);
+        SendDlgItemMessageA(dialog, IDC_NINE_STATE_TIP3, WM_SETTEXT, 1, (LPARAM)dlerror());
         goto out;
     }
 
