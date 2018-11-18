@@ -29,7 +29,7 @@ if not cc.compiles(code, name: 'winelib check')
   error('A WINE cross compiler is required')
 endif
 
-foreach h : ['wine/debug.h', 'wine/unicode.h', 'wine/library.h']
+foreach h : ['wine/debug.h', 'wine/library.h']
   if not cc.has_header(h)
     error('WINE headers not found')
   endif

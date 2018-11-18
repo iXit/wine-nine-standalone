@@ -27,6 +27,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <dlfcn.h>
+#include <wctype.h>
 
 #define WIN32_LEAN_AND_MEAN
 #define NONAMELESSUNION
@@ -41,7 +42,6 @@
 #include <winternl.h>
 #include <wine/debug.h>
 #include <wine/library.h>
-#include <wine/unicode.h>
 
 #include <d3d9.h>
 
@@ -804,7 +804,7 @@ static BOOL ProcessCmdLine(WCHAR *cmdline, BOOL *result)
         if (argv[i][1] && argv[i][2] && argv[i][2] != ':')
             break; /* This is a file path beginning with '/'. */
 
-        switch (toupperW(argv[i][1]))
+        switch (towupper(argv[i][1]))
         {
         case '?':
             WINE_ERR("\nSupported arguments: [ -e | -d ][ -n ]\n-e Enable nine\n-d Disable nine\n-n Do not call other arch exe\n");
