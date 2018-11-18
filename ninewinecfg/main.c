@@ -41,11 +41,8 @@
 #include <winternl.h>
 #include <wine/debug.h>
 #include <wine/library.h>
-
-#include <wine/svcctl.h>
 #include <wine/unicode.h>
-#include <wine/library.h>
-#include <wine/debug.h>
+
 #include <d3d9.h>
 
 #include "resource.h"
