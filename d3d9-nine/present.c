@@ -34,8 +34,6 @@ WINE_DEFAULT_DEBUG_CHANNEL(d3d9nine);
 #include "dri3.h"
 #include "wndproc.h"
 
-#include <wine/library.h> // for wine_dl*
-
 #ifndef D3DPRESENT_DONOTWAIT
 #define D3DPRESENT_DONOTWAIT      0x00000001
 #endif
@@ -1623,7 +1621,6 @@ BOOL present_has_d3dadapter(Display *gdi_display)
     LSTATUS rc;
     char *path = NULL;
 
-    char errbuf[256];
     char pathbuf[MAX_PATH];
 
     /* like in opengl.c (single threaded assumption OK?) */
@@ -1673,17 +1670,15 @@ BOOL present_has_d3dadapter(Display *gdi_display)
             /* Replace colon by string terminate */
             *tmp_path = 0;
             tmp_path ++;
-            handle = wine_dlopen(path,
-                    RTLD_GLOBAL | RTLD_NOW, errbuf, sizeof(errbuf));
+            handle = dlopen(path, RTLD_GLOBAL | RTLD_NOW);
             if (!handle)
             {
-                WINE_TRACE("Failed to load '%s': %s\n", path, errbuf);
+                WINE_TRACE("Failed to load '%s': %s\n", path, dlerror());
 
-                handle = wine_dlopen(tmp_path,
-                        RTLD_GLOBAL | RTLD_NOW, errbuf, sizeof(errbuf));
+                handle = dlopen(tmp_path, RTLD_GLOBAL | RTLD_NOW);
                 if (!handle)
                 {
-                    WINE_TRACE("Failed to load '%s': %s\n", tmp_path, errbuf);
+                    WINE_TRACE("Failed to load '%s': %s\n", tmp_path, dlerror());
                     WINE_ERR("Failed to load '%s' and '%s' set by ModulePath.\n",
                             path, tmp_path);
                     RegCloseKey(regkey);
@@ -1693,11 +1688,10 @@ BOOL present_has_d3dadapter(Display *gdi_display)
         }
         else
         {
-            handle = wine_dlopen(path,
-                    RTLD_GLOBAL | RTLD_NOW, errbuf, sizeof(errbuf));
+            handle = dlopen(path, RTLD_GLOBAL | RTLD_NOW);
             if (!handle)
             {
-                WINE_TRACE("Failed to load %s: %s\n", path, errbuf);
+                WINE_TRACE("Failed to load %s: %s\n", path, dlerror());
                 WINE_ERR("Failed to load '%s' set by ModulePath.\n", path);
                 RegCloseKey(regkey);
                 goto cleanup;
@@ -1721,11 +1715,10 @@ use_default_path:
 #else
     if (!handle)
     {
-        handle = wine_dlopen(D3D9NINE_MODULEPATH,
-                RTLD_GLOBAL | RTLD_NOW, errbuf, sizeof(errbuf));
+        handle = dlopen(D3D9NINE_MODULEPATH, RTLD_GLOBAL | RTLD_NOW);
         if (!handle)
         {
-            WINE_ERR("Failed to load '%s': %s\n", D3D9NINE_MODULEPATH, errbuf);
+            WINE_ERR("Failed to load '%s': %s\n", D3D9NINE_MODULEPATH, dlerror());
             goto cleanup;
         }
         memcpy(pathbuf, D3D9NINE_MODULEPATH,
@@ -1735,11 +1728,10 @@ use_default_path:
     }
 #endif
     /* find our entry point in d3dadapter9 */
-    pD3DAdapter9GetProc = wine_dlsym(handle, "D3DAdapter9GetProc",
-            errbuf, sizeof(errbuf));
+    pD3DAdapter9GetProc = dlsym(handle, "D3DAdapter9GetProc");
     if (!pD3DAdapter9GetProc)
     {
-        WINE_ERR("Failed to get the entry point from %s: %s", pathbuf, errbuf);
+        WINE_ERR("Failed to get the entry point from %s: %s", pathbuf, dlerror());
         goto cleanup;
     }
 
@@ -1791,7 +1783,7 @@ cleanup:
             "\nFor more information visit https://wiki.ixit.cz/d3d9\033[0m\n");
     if (handle)
     {
-        wine_dlclose(handle, NULL, 0);
+        dlclose(handle);
         handle = NULL;
     }
 

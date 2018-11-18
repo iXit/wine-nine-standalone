@@ -43,9 +43,11 @@ else
   dep_dl = cc.find_library('dl')
 endif
 
-if not cc.has_function('dladdr', dependencies : dep_dl)
-  error('dladdr is required')
-endif
+foreach fn : ['dlopen', 'dlclose', 'dlsym', 'dladdr']
+  if not cc.has_function(fn, dependencies : dep_dl)
+    error(fn + ' is required')
+  endif
+endforeach
 
 dep_d3dadapter9 = dependency('d3dadapter9', required : false)
 if not dep_d3dadapter9.found()
