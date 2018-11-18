@@ -70,11 +70,6 @@ static const char * const reg_value_redirect = fn_nine_dll;
 #endif
 
 #if !WINE_STAGING
-
-#if !HAVE_DLADDR
-#error neither HAVE_DLADDR nor WINE_STAGING is set
-#endif
-
 static BOOL isWin64(void)
 {
     return sizeof(void*) == 8;
@@ -726,7 +721,6 @@ static void load_staging_settings(HWND dialog)
     if (hmod && Direct3DCreate9Ptr)
     {
         CheckDlgButton(dialog, IDC_NINE_STATE4, BST_CHECKED);
-#if HAVE_DLADDR
         {
             Dl_info info;
 
@@ -737,7 +731,6 @@ static void load_staging_settings(HWND dialog)
             else
                 WINE_ERR("dladdr failed to get file path\n");
         }
-#endif
     }
     else
     {

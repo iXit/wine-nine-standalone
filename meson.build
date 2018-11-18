@@ -43,9 +43,7 @@ else
   dep_dl = cc.find_library('dl')
 endif
 
-if cc.has_function('dladdr', dependencies : dep_dl)
-  pp_args += '-DHAVE_DLADDR=1'
-else
+if not cc.has_function('dladdr', dependencies : dep_dl)
   error('dladdr is required')
 endif
 
