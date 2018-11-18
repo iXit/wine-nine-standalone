@@ -35,7 +35,6 @@ WINE_DEFAULT_DEBUG_CHANNEL(d3d9nine);
 #include "wndproc.h"
 
 #include <wine/library.h> // for wine_dl*
-#include <wine/unicode.h> // for strcpyW
 
 #ifndef D3DPRESENT_DONOTWAIT
 #define D3DPRESENT_DONOTWAIT      0x00000001
@@ -1388,7 +1387,7 @@ static HRESULT DRI3Present_new(Display *gdi_display, const WCHAR *devname,
 
     DRI3Present_UpdatePresentationInterval(This);
 
-    strcpyW(This->devname, devname);
+    lstrcpyW(This->devname, devname);
 
     PRESENTInit(gdi_display, &(This->present_priv));
 #ifdef D3D9NINE_DRI2
