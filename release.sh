@@ -1,6 +1,9 @@
 #!/bin/sh -e
 
 SRC=`dirname $(readlink -f $0)`
+
+$SRC/bootstrap.sh
+
 TMP=`mktemp -d`
 
 meson \

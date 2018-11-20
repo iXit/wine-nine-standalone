@@ -2,7 +2,7 @@
 c = 'winegcc'
 ar = 'ar'
 strip = 'strip'
-pkgconfig = './tools/pkg-config-nine32'
+pkgconfig = '@PKG_CONFIG@'
 
 [properties]
 c_args = ['-m32', '--no-gnu-unique']
