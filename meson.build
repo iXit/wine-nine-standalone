@@ -18,7 +18,6 @@ pp_args = [
   '-U_WIN32', '-U__WIN32', '-U__WIN32__', '-U__WINNT', '-U__WINNT__',
   '-DDECLSPEC_HOTPATCH=__attribute__((__ms_hook_prologue__))',
   '-DWINE_STAGING=0',
-  '-DHAVE_D3D9NINE=1',
 ]
 
 code = '''#ifndef __WINE__

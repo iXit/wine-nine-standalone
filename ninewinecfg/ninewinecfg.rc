@@ -31,7 +31,6 @@ BEGIN
     
     IDS_NINECFG_TITLE                        "Nine configuration"
     IDS_NINECFG_TITLE_APP                    "ninecfg"
-    IDS_NINECFG_NINE_SUPPORT_NOT_COMPILED    "Tip: Run ./configure and enable nine. Make sure to set PKG_CONFIG_PATH."
     IDS_NINECFG_NINE_LOADABLE                "Tip: Make sure d3d9-nine.dll has the correct ARCH."
     IDS_NINECFG_D3D_ERROR                    "Tip: Make sure that d3dadapter9.so is installed."
     
@@ -59,8 +58,6 @@ BEGIN
     CONTROL     "Enable &Gallium Nine for better D3D9 graphic performance.",IDC_ENABLE_NATIVE_D3D9,"Button",BS_CHECKBOX | WS_TABSTOP,16,44,230,8
 
     GROUPBOX    "Install state",IDC_STATIC,8,74,244,134
-    CONTROL     "Support for Gallium Nine compiled in",IDC_NINE_STATE1,"Button",BS_AUTOCHECKBOX | WS_DISABLED,16,90,230,8
-    LTEXT       "Tip",IDC_NINE_STATE_TIP1,32,98,210,8
     CONTROL     "d3dadapter module path is set",IDC_NINE_STATE2,"Button",BS_AUTOCHECKBOX | WS_DISABLED,16,106,230,8
     LTEXT       "Tip",IDC_NINE_STATE_TIP2,32,114,210,8
     CONTROL     "Loading of d3d9adapter succeeded",IDC_NINE_STATE3,"Button",BS_AUTOCHECKBOX | WS_DISABLED,16,122,230,8

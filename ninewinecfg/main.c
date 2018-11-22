@@ -647,16 +647,12 @@ static const WCHAR emptyW[1];
 static void load_staging_settings(HWND dialog)
 {
     HMODULE hmod = NULL;
-    char have_d3d9nine = 0;
     char have_modpath = 0;
     char *mod_path = NULL;
     LPDIRECT3DCREATE9 Direct3DCreate9Ptr = NULL;
     IDirect3D9 *iface = NULL;
     void *handle;
 
-#if defined(HAVE_D3D9NINE)
-    have_d3d9nine = 1;
-#endif
 #if defined(D3D9NINE_MODULEPATH)
     have_modpath = 1;
     mod_path = (char*)D3D9NINE_MODULEPATH;
@@ -664,28 +660,15 @@ static void load_staging_settings(HWND dialog)
 
     CheckDlgButton(dialog, IDC_ENABLE_NATIVE_D3D9, nine_get() ? BST_CHECKED : BST_UNCHECKED);
 
-    SendDlgItemMessageW(dialog, IDC_NINE_STATE_TIP1, WM_SETTEXT, 1, (LPARAM)emptyW);
     SendDlgItemMessageW(dialog, IDC_NINE_STATE_TIP2, WM_SETTEXT, 1, (LPARAM)emptyW);
     SendDlgItemMessageW(dialog, IDC_NINE_STATE_TIP3, WM_SETTEXT, 1, (LPARAM)emptyW);
     SendDlgItemMessageW(dialog, IDC_NINE_STATE_TIP4, WM_SETTEXT, 1, (LPARAM)emptyW);
     SendDlgItemMessageW(dialog, IDC_NINE_STATE_TIP5, WM_SETTEXT, 1, (LPARAM)emptyW);
 
-    CheckDlgButton(dialog, IDC_NINE_STATE1, BST_UNCHECKED);
     CheckDlgButton(dialog, IDC_NINE_STATE2, BST_UNCHECKED);
     CheckDlgButton(dialog, IDC_NINE_STATE3, BST_UNCHECKED);
     CheckDlgButton(dialog, IDC_NINE_STATE4, BST_UNCHECKED);
     CheckDlgButton(dialog, IDC_NINE_STATE5, BST_UNCHECKED);
-
-    if (have_d3d9nine)
-    {
-        CheckDlgButton(dialog, IDC_NINE_STATE1, BST_CHECKED);
-    }
-    else
-    {
-        SendDlgItemMessageW(dialog, IDC_NINE_STATE_TIP1, WM_SETTEXT, 1,
-                (LPARAM)load_string (IDS_NINECFG_NINE_SUPPORT_NOT_COMPILED));
-        goto out;
-    }
 
     if (!have_modpath && getRegistryString(reg_path_nine, reg_key_module_path, &mod_path))
         have_modpath = 1;

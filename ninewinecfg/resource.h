@@ -36,13 +36,11 @@
 #define IDD_NINE                        10
 #define IDD_WINECFG                     11
 #define IDC_ENABLE_NATIVE_D3D9          12
-#define IDC_NINE_STATE1                 13
 #define IDC_NINE_STATE2                 14
 #define IDC_NINE_STATE3                 15
 #define IDC_NINE_STATE4                 16
 #define IDC_NINE_STATE5                 17
 
-#define IDC_NINE_STATE_TIP1             18
 #define IDC_NINE_STATE_TIP2             19
 #define IDC_NINE_STATE_TIP3             20
 #define IDC_NINE_STATE_TIP4             21
