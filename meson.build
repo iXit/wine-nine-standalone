@@ -1,7 +1,9 @@
 project(
   'nine',
   ['c'],
-  version : 'v0.1',
+  version : run_command(
+              find_program('tools/get_version.sh', native : true)
+            ).stdout(),
   license : 'LGPL2.1+',
   meson_version : '>= 0.45',
   default_options : [
