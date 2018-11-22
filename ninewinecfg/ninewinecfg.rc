@@ -36,7 +36,7 @@ BEGIN
     
 END
 
-IDD_ABOUT DIALOG  0, 0, 260, 220
+IDD_ABOUT DIALOG  0, 0, 260, 230
 STYLE WS_CHILD | WS_DISABLED
 FONT 8, "MS Shell Dlg"
 BEGIN
@@ -55,17 +55,17 @@ FONT 8, "MS Shell Dlg"
 BEGIN
     GROUPBOX    "Gallium Nine settings",IDC_STATIC,8,4,244,60
     LTEXT       "The following settings are experimental and may break stuff!\nMake sure to reset them again in case of a problem.\nGallium Nine requires MESA graphic drivers and AMD/Nvidia GPU.\n",IDC_STATIC,16,16,230,24
-    CONTROL     "Enable &Gallium Nine for better D3D9 graphic performance.",IDC_ENABLE_NATIVE_D3D9,"Button",BS_CHECKBOX | WS_TABSTOP,16,44,230,8
+    CONTROL     "Enable &Gallium Nine for better D3D9 graphic performance.",IDC_ENABLE_NATIVE_D3D9,"Button",BS_CHECKBOX | WS_TABSTOP,16,48,230,8
 
-    GROUPBOX    "Install state",IDC_STATIC,8,74,244,134
-    CONTROL     "d3dadapter module path is set",IDC_NINE_STATE2,"Button",BS_AUTOCHECKBOX | WS_DISABLED,16,106,230,8
-    LTEXT       "Tip",IDC_NINE_STATE_TIP2,32,114,210,8
+    GROUPBOX    "Install state",IDC_STATIC,8,74,244,144
+    CONTROL     "d3dadapter module path is set",IDC_NINE_STATE2,"Button",BS_AUTOCHECKBOX | WS_DISABLED,16,90,230,8
+    LTEXT       "Tip",IDC_NINE_STATE_TIP2,32,102,210,16
     CONTROL     "Loading of d3d9adapter succeeded",IDC_NINE_STATE3,"Button",BS_AUTOCHECKBOX | WS_DISABLED,16,122,230,8
-    LTEXT       "Tip",IDC_NINE_STATE_TIP3,32,130,210,16
-    CONTROL     "d3d9-nine.dll is loadable",IDC_NINE_STATE4,"Button",BS_AUTOCHECKBOX | WS_DISABLED,16,146,230,8
-    LTEXT       "Tip",IDC_NINE_STATE_TIP4,32,154,210,16
-    CONTROL     "Creating a D3D9 device succeeded",IDC_NINE_STATE5,"Button",BS_AUTOCHECKBOX | WS_DISABLED,16,170,230,8
-    LTEXT       "Tip",IDC_NINE_STATE_TIP5,32,178,210,16
+    LTEXT       "Tip",IDC_NINE_STATE_TIP3,32,134,210,16
+    CONTROL     "d3d9-nine.dll is loadable",IDC_NINE_STATE4,"Button",BS_AUTOCHECKBOX | WS_DISABLED,16,154,230,8
+    LTEXT       "Tip",IDC_NINE_STATE_TIP4,32,166,210,16
+    CONTROL     "Creating a D3D9 device succeeded",IDC_NINE_STATE5,"Button",BS_AUTOCHECKBOX | WS_DISABLED,16,186,230,8
+    LTEXT       "Tip",IDC_NINE_STATE_TIP5,32,198,210,16
 END
 
 LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
