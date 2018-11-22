@@ -36,7 +36,17 @@ foreach h : ['wine/debug.h']
   endif
 endforeach
 
-wrc = find_program('wrc')
+version = meson.project_version().split('.')
+wrc = [
+        find_program('wrc'),
+        '-DNINE_MAJOR=' + version[0],
+        '-DNINE_MINOR=' + version[1],
+        '-DNINE_BUILD=' + version[2],
+        '-DNINE_REVISION=' + version[3],
+        '-DNINE_VERSION="v' + meson.project_version() + '"',
+        '-i', '@INPUT@',
+        '-o', '@OUTPUT@',
+      ]
 
 if cc.has_function('dlopen')
   dep_dl = null_dep

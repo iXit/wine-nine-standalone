@@ -3,7 +3,7 @@ ninewinecfg_res = custom_target(
   input        : 'ninewinecfg.rc',
   output       : 'ninewinecfg.res',
   depend_files : ['ninewinecfg.manifest'],
-  command      : [wrc, '-i', '@INPUT@', '-o', '@OUTPUT@'],
+  command      : wrc,
 )
 
 ninewinecfg_exe = executable(
