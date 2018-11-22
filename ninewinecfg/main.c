@@ -706,11 +706,9 @@ static void load_staging_settings(HWND dialog)
             Dl_info info;
 
             if (dladdr(hmod, &info) && info.dli_fname)
-            {
-                 SendDlgItemMessageA(dialog, IDC_NINE_STATE_TIP4, WM_SETTEXT, 1, (LPARAM)info.dli_fname);
-            }
+                SendDlgItemMessageA(dialog, IDC_NINE_STATE_TIP4, WM_SETTEXT, 1, (LPARAM)info.dli_fname);
             else
-                WINE_ERR("dladdr failed to get file path\n");
+                SendDlgItemMessageA(dialog, IDC_NINE_STATE_TIP4, WM_SETTEXT, 1, (LPARAM)dlerror());
         }
     }
     else
