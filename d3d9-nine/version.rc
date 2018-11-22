@@ -19,8 +19,8 @@
 #include <verrsrc.h>
 
 VS_VERSION_INFO VERSIONINFO
-FILEVERSION    5,3,1,904
-PRODUCTVERSION 5,3,1,904
+FILEVERSION    NINE_MAJOR,NINE_MINOR,NINE_BUILD,NINE_REVISION
+PRODUCTVERSION NINE_MAJOR,NINE_MINOR,NINE_BUILD,NINE_REVISION
 FILEFLAGSMASK  63
 FILEFLAGS      0
 FILEOS         VOS_UNKNOWN
@@ -34,12 +34,12 @@ FILESUBTYPE    VFT2_UNKNOWN
         {
             VALUE "CompanyName", ""
             VALUE "FileDescription", "Wine Gallium Nine Direct3D"
-            VALUE "FileVersion", "5.3.1.904"
+            VALUE "FileVersion", NINE_VERSION
             VALUE "InternalName", ""
             VALUE "LegalCopyright", ""
             VALUE "OriginalFilename", "d3d9-nine.dll"
             VALUE "ProductName", "Wine"
-            VALUE "ProductVersion", "5.3.1.904"
+            VALUE "ProductVersion", NINE_VERSION
         }
     }
     BLOCK "VarFileInfo"
