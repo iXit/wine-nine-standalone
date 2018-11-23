@@ -42,13 +42,14 @@ IDD_ABOUT DIALOG  0, 0, 260, 230
 STYLE WS_CHILD | WS_DISABLED
 FONT 8, "MS Shell Dlg"
 BEGIN
-    GROUPBOX    "License Wine (d3d9-nine.dll)",IDC_STATIC,8,4,244,36
-    LTEXT       "GNU Lesser General Public License, version 2.1\n",IDC_STATIC,16,16,230,8
-    GROUPBOX    "License MESA",IDC_STATIC,8,44,244,36
-    LTEXT       "MIT License\n",IDC_STATIC,16,60,230,8
+    CTEXT       NINE_PROJECT,IDC_STATIC,16,8,228,8
+    CTEXT       NINE_VERSION,IDC_STATIC,16,20,228,8
+    GROUPBOX    "License",IDC_STATIC,8,52,244,40
+    CTEXT       "GNU Lesser General Public License, version 2.1",IDC_STATIC,16,64,228,8
+    CTEXT       "MESA: MIT License",IDC_STATIC,16,76,228,8
 
-    GROUPBOX    "Authors",IDC_STATIC,8,88,244,120
-    LTEXT       "Joakim Sindholt\nChristoph Bumiller\nTiziano Bacocco\nDavid Heidelberger\nAxel Davy\nNick Sarnie\nPatrick Rudolph\n\n\n\n",IDC_STATIC,16,100,230,92
+    GROUPBOX    "Authors",IDC_STATIC,8,100,244,120
+    CTEXT       "Joakim Sindholt\nChristoph Bumiller\nTiziano Bacocco\nDavid Heidelberger\nAxel Davy\nNick Sarnie\nPatrick Rudolph",IDC_STATIC,16,112,228,96
 END
 
 IDD_NINE DIALOG  0, 0, 260, 220
