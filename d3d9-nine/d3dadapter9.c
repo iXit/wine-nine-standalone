@@ -892,7 +892,7 @@ HRESULT d3dadapter9_new(Display *gdi_display, boolean ex, IDirect3D9Ex **ppOut)
 
     *ppOut = (IDirect3D9Ex *)This;
 
-    wine_dbg_printf("\033[1;32mNative Direct3D 9 is active.\n"
+    wine_dbg_printf("\033[1;32mNative Direct3D 9 " NINE_VERSION " is active.\n"
                     "For more information visit "
                     "https://wiki.ixit.cz/d3d9\033[0m\n");
 
