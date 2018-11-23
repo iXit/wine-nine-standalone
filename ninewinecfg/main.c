@@ -819,6 +819,31 @@ static INT_PTR CALLBACK AppDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM l
     return FALSE;
 }
 
+static INT_PTR CALLBACK AboutDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+    switch (uMsg)
+    {
+    case WM_INITDIALOG:
+        SetDlgItemTextA(hDlg, IDC_NINE_URL, "<a href=\"" NINE_URL "\">" NINE_URL "</a>");
+        break;
+
+    case WM_NOTIFY:
+        switch (((LPNMHDR)lParam)->code)
+        {
+        case NM_CLICK:
+        case NM_RETURN:
+            if (wParam == IDC_NINE_URL)
+              ShellExecuteA(NULL, "open", NINE_URL, NULL, NULL, SW_SHOW);
+
+            break;
+        }
+
+        break;
+    }
+
+    return FALSE;
+}
+
 static INT_PTR
 doPropertySheet (HINSTANCE hInstance, HWND hOwner)
 {
@@ -839,7 +864,7 @@ doPropertySheet (HINSTANCE hInstance, HWND hOwner)
     psp[1].hInstance = hInstance;
     psp[1].u.pszTemplate = MAKEINTRESOURCEW (IDD_ABOUT);
     psp[1].u2.pszIcon = NULL;
-    psp[1].pfnDlgProc = NULL;
+    psp[1].pfnDlgProc = AboutDlgProc;
     psp[1].pszTitle = load_string (IDS_TAB_ABOUT);
     psp[1].lParam = 0;
 

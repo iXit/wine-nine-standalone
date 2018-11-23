@@ -47,3 +47,4 @@
 #define IDC_NINE_STATE_TIP5             22
 
 #define IDD_ABOUT                       24
+#define IDC_NINE_URL                    25
