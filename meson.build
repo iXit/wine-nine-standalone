@@ -1,5 +1,5 @@
 project(
-  'nine',
+  'Gallium Nine Standalone',
   ['c'],
   version : run_command(
               find_program('tools/get_version.sh', native : true)
@@ -44,6 +44,7 @@ wrc = [
         '-DNINE_BUILD=' + version[2],
         '-DNINE_REVISION=' + version[3],
         '-DNINE_VERSION="v' + meson.project_version() + '"',
+        '-DNINE_PROJECT="' + meson.project_name() + '"',
         '-i', '@INPUT@',
         '-o', '@OUTPUT@',
       ]
