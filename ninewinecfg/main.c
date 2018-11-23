@@ -626,8 +626,6 @@ static void nine_set(BOOL status, BOOL NoOtherArch)
 
 typedef IDirect3D9* (WINAPI *LPDIRECT3DCREATE9)( UINT );
 
-static const WCHAR emptyW[1];
-
 static void load_staging_settings(HWND dialog)
 {
     HMODULE hmod = NULL;
@@ -644,10 +642,10 @@ static void load_staging_settings(HWND dialog)
 
     CheckDlgButton(dialog, IDC_ENABLE_NATIVE_D3D9, nine_get() ? BST_CHECKED : BST_UNCHECKED);
 
-    SendDlgItemMessageW(dialog, IDC_NINE_STATE_TIP2, WM_SETTEXT, 1, (LPARAM)emptyW);
-    SendDlgItemMessageW(dialog, IDC_NINE_STATE_TIP3, WM_SETTEXT, 1, (LPARAM)emptyW);
-    SendDlgItemMessageW(dialog, IDC_NINE_STATE_TIP4, WM_SETTEXT, 1, (LPARAM)emptyW);
-    SendDlgItemMessageW(dialog, IDC_NINE_STATE_TIP5, WM_SETTEXT, 1, (LPARAM)emptyW);
+    SetDlgItemTextA(dialog, IDC_NINE_STATE_TIP2, NULL);
+    SetDlgItemTextA(dialog, IDC_NINE_STATE_TIP3, NULL);
+    SetDlgItemTextA(dialog, IDC_NINE_STATE_TIP4, NULL);
+    SetDlgItemTextA(dialog, IDC_NINE_STATE_TIP5, NULL);
 
     CheckDlgButton(dialog, IDC_NINE_STATE2, BST_UNCHECKED);
     CheckDlgButton(dialog, IDC_NINE_STATE3, BST_UNCHECKED);
@@ -659,7 +657,7 @@ static void load_staging_settings(HWND dialog)
 
     if (have_modpath)
     {
-        SendDlgItemMessageA(dialog, IDC_NINE_STATE_TIP2, WM_SETTEXT, 1, (LPARAM)mod_path);
+        SetDlgItemTextA(dialog, IDC_NINE_STATE_TIP2, mod_path);
         CheckDlgButton(dialog, IDC_NINE_STATE2, BST_CHECKED);
     }
     else
@@ -674,7 +672,7 @@ static void load_staging_settings(HWND dialog)
     }
     else
     {
-        SendDlgItemMessageA(dialog, IDC_NINE_STATE_TIP3, WM_SETTEXT, 1, (LPARAM)dlerror());
+        SetDlgItemTextA(dialog, IDC_NINE_STATE_TIP3, dlerror());
         goto out;
     }
 
@@ -690,9 +688,9 @@ static void load_staging_settings(HWND dialog)
             Dl_info info;
 
             if (dladdr(hmod, &info) && info.dli_fname)
-                SendDlgItemMessageA(dialog, IDC_NINE_STATE_TIP4, WM_SETTEXT, 1, (LPARAM)info.dli_fname);
+                SetDlgItemTextA(dialog, IDC_NINE_STATE_TIP4, info.dli_fname);
             else
-                SendDlgItemMessageA(dialog, IDC_NINE_STATE_TIP4, WM_SETTEXT, 1, (LPARAM)dlerror());
+                SetDlgItemTextA(dialog, IDC_NINE_STATE_TIP4, dlerror());
         }
     }
     else
@@ -701,7 +699,7 @@ static void load_staging_settings(HWND dialog)
         FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM, NULL, GetLastError(),
                       MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPWSTR)buf, 256, NULL);
 
-        SendDlgItemMessageW(dialog, IDC_NINE_STATE_TIP4, WM_SETTEXT, 1, (LPARAM)buf);
+        SetDlgItemTextW(dialog, IDC_NINE_STATE_TIP4, buf);
         goto out;
     }
 
@@ -713,8 +711,7 @@ static void load_staging_settings(HWND dialog)
     }
     else
     {
-        SendDlgItemMessageW(dialog, IDC_NINE_STATE_TIP5, WM_SETTEXT, 1,
-                (LPARAM)load_string (IDS_NINECFG_D3D_ERROR));
+        SetDlgItemTextW(dialog, IDC_NINE_STATE_TIP5, load_string(IDS_NINECFG_D3D_ERROR));
         goto out;
     }
 
