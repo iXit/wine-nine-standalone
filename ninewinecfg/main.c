@@ -368,22 +368,6 @@ static BOOL nine_get_system_path(CHAR *pOut, DWORD SizeOut)
 /*
  * Winecfg
  */
-/* this is called from the WM_SHOWWINDOW handlers of each tab page.
- *
- * it's a nasty hack, necessary because the property sheet insists on resetting the window title
- * to the title of the tab, which is utterly useless. dropping the property sheet is on the todo list.
- */
-void set_window_title(HWND dialog)
-{
-    WCHAR newtitle[256];
-
-    LoadStringW (GetModuleHandleW(NULL), IDS_NINECFG_TITLE, newtitle,
-         sizeof(newtitle)/sizeof(newtitle[0]));
-
-    WINE_TRACE("setting title to %s\n", wine_dbgstr_w (newtitle));
-    SendMessageW (GetParent(dialog), PSM_SETTITLEW, 0, (LPARAM) newtitle);
-}
-
 WCHAR* load_string (UINT id)
 {
     WCHAR buf[1024];
@@ -816,18 +800,7 @@ static INT_PTR CALLBACK AppDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM l
     switch (uMsg)
     {
     case WM_INITDIALOG:
-        break;
-
-    case WM_NOTIFY:
-        if (((LPNMHDR)lParam)->code == PSN_SETACTIVE)
-            load_staging_settings(hDlg);
-        break;
-
-    case WM_SHOWWINDOW:
-        set_window_title(hDlg);
-        break;
-
-    case WM_DESTROY:
+        load_staging_settings(hDlg);
         break;
 
     case WM_COMMAND:
@@ -842,13 +815,8 @@ static INT_PTR CALLBACK AppDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM l
         }
         break;
     }
-    return FALSE;
-}
 
-static INT CALLBACK
-PropSheetCallback (HWND hWnd, UINT uMsg, LPARAM lParam)
-{
-    return 0;
+    return FALSE;
 }
 
 static INT_PTR
@@ -885,8 +853,8 @@ doPropertySheet (HINSTANCE hInstance, HWND hOwner)
     psh.u.pszIcon = NULL;
     psh.pszCaption =  load_string (IDS_NINECFG_TITLE);
     psh.nPages = sizeof(psp) / sizeof(psp[0]);
-    psh.u3.ppsp = &psp[0];
-    psh.pfnCallback = PropSheetCallback;
+    psh.u3.ppsp = psp;
+    psh.pfnCallback = NULL;
     psh.u2.nStartPage = 0;
 
     /*
