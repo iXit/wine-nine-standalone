@@ -11,6 +11,8 @@ project(
   ],
 )
 
+project_url = 'https://github.com/dhewg/nine'
+
 cc = meson.get_compiler('c')
 
 null_dep = dependency('', required : false)
@@ -20,6 +22,7 @@ pp_args = [
   '-U_WIN32', '-U__WIN32', '-U__WIN32__', '-U__WINNT', '-U__WINNT__',
   '-DDECLSPEC_HOTPATCH=__attribute__((__ms_hook_prologue__))',
   '-DNINE_VERSION="v' + meson.project_version() + '"',
+  '-DNINE_URL="' + project_url + '"',
   '-DWINE_STAGING=0',
 ]
 
