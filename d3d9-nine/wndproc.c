@@ -28,9 +28,6 @@
 #include <stdarg.h>
 #include <math.h>
 #include <limits.h>
-#define NONAMELESSUNION
-#define NONAMELESSSTRUCT
-#define COBJMACROS
 #include <windef.h>
 #include <winbase.h>
 #include <winreg.h>
