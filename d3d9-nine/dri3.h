@@ -18,8 +18,8 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
  */
 
-#ifndef __WINE_DRI3_H
-#define __WINE_DRI3_H
+#ifndef __NINE_DRI3_H
+#define __NINE_DRI3_H
 
 #include <X11/Xlib.h>
 #include <wingdi.h>
@@ -84,4 +84,4 @@ BOOL PRESENTIsPixmapReleased(PRESENTPixmapPriv *present_pixmap_priv);
 
 BOOL PRESENTWaitReleaseEvent(PRESENTpriv *present_priv);
 
-#endif /* __WINE_DRI3_H */
+#endif /* __NINE_DRI3_H */

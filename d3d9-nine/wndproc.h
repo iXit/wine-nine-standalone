@@ -22,8 +22,8 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
  */
 
-#ifndef __WINE_NINE_WNDPROC_H
-#define __WINE_NINE_WNDPROC_H
+#ifndef __NINE_WNDPROC_H
+#define __NINE_WNDPROC_H
 
 struct DRI3Present;
 
@@ -38,4 +38,4 @@ LRESULT device_process_message(struct DRI3Present *present, HWND window, BOOL un
 
 #define NINE_WINDOW_CLASS_NAME "Gallium_Nine_Window"
 
-#endif
+#endif /* __NINE_WNDPROC_H */

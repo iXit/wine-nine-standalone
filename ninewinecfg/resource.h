@@ -19,6 +19,9 @@
  *
  */
 
+#ifndef __NINECFG_RESOURCE_H
+#define __NINECFG_RESOURCE_H
+
 #include <windef.h>
 #include <winuser.h>
 #include <commctrl.h>
@@ -48,3 +51,5 @@
 
 #define IDD_ABOUT                       24
 #define IDC_NINE_URL                    25
+
+#endif /* __NINECFG_RESOURCE_H */

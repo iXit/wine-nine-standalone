@@ -18,8 +18,8 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
  */
 
-#ifndef __WINE_D3D9ADAPTER_H
-#define __WINE_D3D9ADAPTER_H
+#ifndef __NINE_D3D9ADAPTER_H
+#define __NINE_D3D9ADAPTER_H
 
 #include <X11/Xlib.h>
 
@@ -29,4 +29,4 @@ void d3dadapter9_destroy(HINSTANCE hinst);
 
 HRESULT d3dadapter9_new(Display *gdi_display, boolean ex, IDirect3D9Ex **ppOut);
 
-#endif /* __WINE_D3D9ADAPTER_H */
+#endif /* __NINE_D3D9ADAPTER_H */

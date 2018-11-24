@@ -19,6 +19,9 @@
  *
  */
 
+#ifndef __NINE_SHADER_VALIDATOR_H
+#define __NINE_SHADER_VALIDATOR_H
+
 typedef struct IDirect3DShaderValidator9Impl
 {
     /* IUnknown fields */
@@ -27,3 +30,5 @@ typedef struct IDirect3DShaderValidator9Impl
 } IDirect3DShaderValidator9Impl;
 
 const void *IDirect3DShaderValidator9Vtbl[6];
+
+#endif /* __NINE_SHADER_VALIDATOR_H */

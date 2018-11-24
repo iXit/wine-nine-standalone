@@ -18,8 +18,8 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
  */
 
-#ifndef __WINE_PRESENT_H
-#define __WINE_PRESENT_H
+#ifndef __NINE_PRESENT_H
+#define __NINE_PRESENT_H
 
 #include <X11/Xlib.h>
 
@@ -33,4 +33,4 @@ BOOL present_has_d3dadapter(Display *gdi_display);
 
 BOOL enable_device_vtable_wrapper(void);
 
-#endif /* __WINE_PRESENT_H */
+#endif /* __NINE_PRESENT_H */
