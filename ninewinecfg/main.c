@@ -28,7 +28,6 @@
 #include <dlfcn.h>
 #include <wctype.h>
 
-#define WIN32_LEAN_AND_MEAN
 #define NONAMELESSUNION
 
 #include <ntstatus.h>

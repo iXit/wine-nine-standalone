@@ -21,6 +21,7 @@ pp_args = [
   # undefine winegcc's mingw compatiblity macros, x11-xcb and egl get confused
   '-U_WIN32', '-U__WIN32', '-U__WIN32__', '-U__WINNT', '-U__WINNT__',
   '-D_GNU_SOURCE',
+  '-DWIN32_LEAN_AND_MEAN',
   '-DDECLSPEC_HOTPATCH=__attribute__((__ms_hook_prologue__))',
   '-DNINE_VERSION="v' + meson.project_version() + '"',
   '-DNINE_URL="' + project_url + '"',
