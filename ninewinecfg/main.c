@@ -22,22 +22,21 @@
  *
  */
 
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <dlfcn.h>
-#include <wctype.h>
-#include <ntstatus.h>
-#define WIN32_NO_STATUS
 #include <windows.h>
+#include <ntstatus.h>
 #include <commctrl.h>
 #include <shellapi.h>
 #include <shlwapi.h>
 #include <objbase.h>
 #include <winternl.h>
+#include <d3d9.h>
 #include <wine/debug.h>
 
-#include <d3d9.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <dlfcn.h>
+#include <wctype.h>
 
 #include "resource.h"
 

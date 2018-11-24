@@ -20,7 +20,10 @@
  *
  */
 
+#include <windef.h>
+#include <winuser.h>
 #include <verrsrc.h>
+#include <commctrl.h>
 
 #include "resource.h"
 

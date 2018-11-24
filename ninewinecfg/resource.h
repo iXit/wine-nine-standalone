@@ -22,10 +22,6 @@
 #ifndef __NINECFG_RESOURCE_H
 #define __NINECFG_RESOURCE_H
 
-#include <windef.h>
-#include <winuser.h>
-#include <commctrl.h>
-
 #define IDC_STATIC                              -1
 #define IDS_TAB_MAIN                             1
 #define IDS_TAB_ABOUT                            2
