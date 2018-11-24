@@ -27,9 +27,6 @@
 #include <unistd.h>
 #include <dlfcn.h>
 #include <wctype.h>
-
-#define NONAMELESSUNION
-
 #include <ntstatus.h>
 #define WIN32_NO_STATUS
 #include <windows.h>
@@ -848,8 +845,8 @@ doPropertySheet (HINSTANCE hInstance, HWND hOwner)
     psp[0].dwSize = sizeof (PROPSHEETPAGEW);
     psp[0].dwFlags = PSP_USETITLE;
     psp[0].hInstance = hInstance;
-    psp[0].u.pszTemplate = MAKEINTRESOURCEW (IDD_NINE);
-    psp[0].u2.pszIcon = NULL;
+    psp[0].pszTemplate = MAKEINTRESOURCEW (IDD_NINE);
+    psp[0].pszIcon = NULL;
     psp[0].pfnDlgProc = AppDlgProc;
     psp[0].pszTitle = load_string (IDS_TAB_MAIN);
     psp[0].lParam = 0;
@@ -857,8 +854,8 @@ doPropertySheet (HINSTANCE hInstance, HWND hOwner)
     psp[1].dwSize = sizeof (PROPSHEETPAGEW);
     psp[1].dwFlags = PSP_USETITLE;
     psp[1].hInstance = hInstance;
-    psp[1].u.pszTemplate = MAKEINTRESOURCEW (IDD_ABOUT);
-    psp[1].u2.pszIcon = NULL;
+    psp[1].pszTemplate = MAKEINTRESOURCEW (IDD_ABOUT);
+    psp[1].pszIcon = NULL;
     psp[1].pfnDlgProc = AboutDlgProc;
     psp[1].pszTitle = load_string (IDS_TAB_ABOUT);
     psp[1].lParam = 0;
@@ -870,12 +867,12 @@ doPropertySheet (HINSTANCE hInstance, HWND hOwner)
     psh.dwFlags = PSH_PROPSHEETPAGE | PSH_USEICONID | PSH_USECALLBACK | PSH_NOAPPLYNOW;
     psh.hwndParent = hOwner;
     psh.hInstance = hInstance;
-    psh.u.pszIcon = NULL;
+    psh.pszIcon = NULL;
     psh.pszCaption =  load_string (IDS_NINECFG_TITLE);
     psh.nPages = sizeof(psp) / sizeof(psp[0]);
-    psh.u3.ppsp = psp;
+    psh.ppsp = psp;
     psh.pfnCallback = NULL;
-    psh.u2.nStartPage = 0;
+    psh.nStartPage = 0;
 
     /*
      * Display the modal property sheet
