@@ -23,13 +23,13 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
  */
 
+#include <d3dadapter/d3dadapter9.h>
 #include <wine/debug.h>
 
-WINE_DEFAULT_DEBUG_CHANNEL(d3d9nine);
-
-#include <d3dadapter/d3dadapter9.h>
 #include "present.h"
 #include "device_wrap.h"
+
+WINE_DEFAULT_DEBUG_CHANNEL(d3d9nine);
 
 /* this represents a snapshot taken at the moment of creation */
 struct output

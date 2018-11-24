@@ -21,6 +21,7 @@
 #ifndef __NINE_PRESENT_H
 #define __NINE_PRESENT_H
 
+#include <d3dadapter/present.h>
 #include <X11/Xlib.h>
 
 HRESULT present_create_present_group(Display *gdi_display, const WCHAR *device_name, UINT adapter,

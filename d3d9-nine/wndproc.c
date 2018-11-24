@@ -25,15 +25,11 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
  */
 
+#include <windows.h>
+#include <wine/debug.h>
 #include <stdarg.h>
 #include <math.h>
 #include <limits.h>
-#include <windef.h>
-#include <winbase.h>
-#include <winreg.h>
-#include <wingdi.h>
-#include <winuser.h>
-#include <wine/debug.h>
 
 #include "wndproc.h"
 

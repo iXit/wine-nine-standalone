@@ -18,12 +18,13 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
  *
  */
-#include <wine/debug.h>
-WINE_DEFAULT_DEBUG_CHANNEL(d3d9nine);
 
-#include <winbase.h>
+#include <windows.h>
+#include <wine/debug.h>
 
 #include "shader_validator.h"
+
+WINE_DEFAULT_DEBUG_CHANNEL(d3d9nine);
 
 static HRESULT WINAPI IDirect3DShaderValidator9Impl_QueryInterface(IDirect3DShaderValidator9Impl *This,
         REFIID riid, LPVOID* ppobj)

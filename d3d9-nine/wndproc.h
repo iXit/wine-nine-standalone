@@ -25,6 +25,8 @@
 #ifndef __NINE_WNDPROC_H
 #define __NINE_WNDPROC_H
 
+#include <windef.h>
+
 struct DRI3Present;
 
 BOOL nine_register_window(HWND window, struct DRI3Present *present);

@@ -19,25 +19,17 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
  */
 
-
+#include <windows.h>
 #include <wine/debug.h>
-
-WINE_DEFAULT_DEBUG_CHANNEL(d3d9nine);
-
-#include "dri3.h"
 
 #include <stdlib.h>
 #include <fcntl.h>
 #include <unistd.h>
 
-#include <X11/Xlib-xcb.h>
-#include <xcb/dri3.h>
-#include <xcb/present.h>
-
-#include <winbase.h>
-
 #ifdef D3D9NINE_DRI2
 #include <sys/ioctl.h>
+#include <libdrm/drm_fourcc.h>
+#include <libdrm/drm.h>
 
 #define BOOL X_BOOL
 #define BYTE X_BYTE
@@ -58,10 +50,16 @@ WINE_DEFAULT_DEBUG_CHANNEL(d3d9nine);
 #include <X11/extensions/dri2tokens.h>
 #include <X11/extensions/dri2proto.h>
 #include <X11/extensions/extutil.h>
+#endif
+
+#include <X11/Xlib-xcb.h>
+#include <xcb/dri3.h>
+#include <xcb/present.h>
+
+#ifdef D3D9NINE_DRI2
 #define GL_GLEXT_PROTOTYPES 1
 #define EGL_EGLEXT_PROTOTYPES 1
 #define GL_GLEXT_LEGACY 1
-
 /* workaround for broken ABI on x86_64 due to windef.h */
 #undef APIENTRY
 #undef APIENTRYP
@@ -73,9 +71,13 @@ WINE_DEFAULT_DEBUG_CHANNEL(d3d9nine);
 #include <GL/glext.h>
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
-#include <libdrm/drm_fourcc.h>
-#include <libdrm/drm.h>
+#endif
 
+#include "dri3.h"
+
+WINE_DEFAULT_DEBUG_CHANNEL(d3d9nine);
+
+#ifdef D3D9NINE_DRI2
 static EGLDisplay display = NULL;
 static int display_ref = 0;
 

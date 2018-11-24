@@ -16,8 +16,6 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
  */
 
-#include <wine/debug.h>
-
 #include <d3d9.h>
 
 #include "device_wrap.h"

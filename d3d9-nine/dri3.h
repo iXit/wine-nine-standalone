@@ -21,8 +21,8 @@
 #ifndef __NINE_DRI3_H
 #define __NINE_DRI3_H
 
-#include <X11/Xlib.h>
 #include <wingdi.h>
+#include <X11/Xlib.h>
 
 BOOL DRI3CheckExtension(Display *dpy, int major, int minor);
 
