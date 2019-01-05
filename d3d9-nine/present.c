@@ -711,7 +711,9 @@ static HRESULT WINAPI DRI3Present_SetCursor( struct DRI3Present *This, void *pBi
 static HRESULT WINAPI DRI3Present_SetGammaRamp( struct DRI3Present *This,
         const D3DGAMMARAMP *pRamp, HWND hWndOverride )
 {
-    HWND hWnd = hWndOverride ? hWndOverride : This->focus_wnd;
+    HWND draw_window = This->params.hDeviceWindow ?
+        This->params.hDeviceWindow : This->focus_wnd;
+    HWND hWnd = hWndOverride ? hWndOverride : draw_window;
     HDC hdc;
     BOOL ok;
     if (!pRamp)
@@ -726,6 +728,8 @@ static HRESULT WINAPI DRI3Present_SetGammaRamp( struct DRI3Present *This,
 static HRESULT WINAPI DRI3Present_GetWindowInfo( struct DRI3Present *This,
         HWND hWnd, int *width, int *height, int *depth )
 {
+    HWND draw_window = This->params.hDeviceWindow ?
+        This->params.hDeviceWindow : This->focus_wnd;
     HRESULT hr;
     RECT pRect;
 
@@ -746,7 +750,7 @@ static HRESULT WINAPI DRI3Present_GetWindowInfo( struct DRI3Present *This,
         }
 
     if (!hWnd)
-        hWnd = This->focus_wnd;
+        hWnd = draw_window;
     hr = GetClientRect(hWnd, &pRect);
     if (!hr)
         return D3DERR_INVALIDCALL;
