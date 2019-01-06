@@ -22,6 +22,7 @@ void DRI2FallbackDestroy(struct DRI2priv *priv);
 
 BOOL DRI2FallbackCheckSupport(Display *dpy);
 #endif
+LONG PRESENTGetNewSerial(void);
 
 BOOL PRESENTCheckExtension(Display *dpy, int major, int minor);
 

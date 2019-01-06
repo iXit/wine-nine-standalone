@@ -117,8 +117,12 @@ struct PRESENTPixmapPriv {
     PRESENTPixmapPriv *next;
 };
 
-/* TODO: use atomics */
-static uint32_t last_serial_given = 0;
+LONG PRESENTGetNewSerial(void)
+{
+    static LONG last_serial_given = 0;
+
+    return InterlockedIncrement(&last_serial_given);
+}
 
 BOOL DRI3CheckExtension(Display *dpy, int major, int minor)
 {
@@ -943,8 +947,7 @@ BOOL PRESENTPixmapInit(PRESENTpriv *present_priv, Pixmap pixmap, PRESENTPixmapPr
 #endif
     free(reply);
 
-    last_serial_given++;
-    (*present_pixmap_priv)->serial = last_serial_given;
+    (*present_pixmap_priv)->serial = PRESENTGetNewSerial();
     present_priv->first_present_priv = *present_pixmap_priv;
 
     LeaveCriticalSection(&present_priv->mutex_present);
@@ -1068,8 +1071,7 @@ BOOL DRI2FallbackPRESENTPixmap(PRESENTpriv *present_priv, struct DRI2priv *dri2_
     (*present_pixmap_priv)->dri2_info.texture_read = texture_read;
     (*present_pixmap_priv)->dri2_info.texture_write = texture_write;
 
-    last_serial_given++;
-    (*present_pixmap_priv)->serial = last_serial_given;
+    (*present_pixmap_priv)->serial = PRESENTGetNewSerial();
     present_priv->first_present_priv = *present_pixmap_priv;
 
     eglBindAPI(current_api);
