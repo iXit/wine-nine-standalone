@@ -880,11 +880,20 @@ void DRI2DestroyPixmap(struct DRI2priv *dri2_priv, PRESENTPixmapPriv *present_pi
 #endif
 
 /* Destroy the content, except the link and the struct mem */
-static void PRESENTDestroyPixmapContent(Display *dpy, PRESENTPixmapPriv *present_pixmap)
+static void PRESENTDestroyPixmapContent(PRESENTPixmapPriv *present_pixmap)
 {
+    PRESENTpriv *present_priv = present_pixmap->present_priv;
+    xcb_void_cookie_t cookie;
+    xcb_generic_error_t *error;
+
     WINE_TRACE("Releasing pixmap priv %p\n", present_pixmap);
 
-    XFreePixmap(dpy, present_pixmap->pixmap);
+    cookie = xcb_free_pixmap(present_priv->xcb_connection,
+                             present_pixmap->pixmap);
+
+    error = xcb_request_check(present_priv->xcb_connection, cookie);
+    if (error)
+        WINE_ERR("Failed to free pixmap\n");
 }
 
 void PRESENTDestroy(Display *dpy, struct DRI2priv *dri2_priv, struct DRIBackend *dri_backend, PRESENTpriv *present_priv)
@@ -899,7 +908,7 @@ void PRESENTDestroy(Display *dpy, struct DRI2priv *dri2_priv, struct DRIBackend 
     while (current)
     {
         PRESENTPixmapPriv *next = current->next;
-        PRESENTDestroyPixmapContent(dpy, current);
+        PRESENTDestroyPixmapContent(current);
         DRIBackendDestroyPixmap(dri_backend, dri2_priv, current);
         HeapFree(GetProcessHeap(), 0, current);
         current = next;
@@ -960,8 +969,10 @@ BOOL DRI2FallbackPRESENTPixmap(PRESENTpriv *present_priv, struct DRI2priv *dri2_
         int bpp, PRESENTPixmapPriv **present_pixmap_priv)
 {
     Window root = RootWindow(dri2_priv->dpy, DefaultScreen(dri2_priv->dpy));
-    Pixmap pixmap;
+    xcb_void_cookie_t cookie;
+    xcb_generic_error_t *error;
     EGLImageKHR image;
+    xcb_pixmap_t pixmap;
     GLuint texture_read, texture_write, fbo_read, fbo_write;
     EGLint attribs[] = {
         EGL_WIDTH, 0,
@@ -975,10 +986,18 @@ BOOL DRI2FallbackPRESENTPixmap(PRESENTpriv *present_priv, struct DRI2priv *dri2_
     EGLenum current_api = 0;
     int status;
 
+    WINE_TRACE("fd=%d, width=%d, height=%d, stride=%d, depth=%d, bpp=%d\n",
+            fd, width, height, stride, depth, bpp);
+
     EnterCriticalSection(&present_priv->mutex_present);
 
-    pixmap = XCreatePixmap(dri2_priv->dpy, root, width, height, 24);
-    if (!pixmap)
+    pixmap = xcb_generate_id(present_priv->xcb_connection);
+
+    cookie = xcb_create_pixmap(present_priv->xcb_connection, depth,
+                               pixmap, root, width, height);
+
+    error = xcb_request_check(present_priv->xcb_connection, cookie);
+    if (error)
         goto fail;
 
     attribs[1] = width;
@@ -1111,7 +1130,7 @@ BOOL PRESENTTryFreePixmap(Display *dpy, struct DRI2priv *dri2_priv, struct DRIBa
         current = current->next;
     current->next = present_pixmap_priv->next;
 free_priv:
-    PRESENTDestroyPixmapContent(dpy, present_pixmap_priv);
+    PRESENTDestroyPixmapContent(present_pixmap_priv);
     DRIBackendDestroyPixmap(dri_backend, dri2_priv, present_pixmap_priv);
     HeapFree(GetProcessHeap(), 0, present_pixmap_priv);
     LeaveCriticalSection(&present_priv->mutex_present);
