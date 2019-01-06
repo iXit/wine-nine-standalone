@@ -1308,6 +1308,7 @@ static HRESULT DRI3Present_ChangePresentParameters(struct DRI3Present *This,
         XChangeProperty(This->gdi_display, d3d->drawable,
                         _NET_WM_BYPASS_COMPOSITOR, XA_CARDINAL, 32,
                         PropModeReplace, (unsigned char *)&value, 1);
+        release_d3d_drawable(d3d);
     }
 
     return D3D_OK;
