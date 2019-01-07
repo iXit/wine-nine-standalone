@@ -16,6 +16,17 @@ Gallium Nine Standalone consists of two parts:
 * ``d3d9-nine.dll``: Gallium Nine Direct3D 9 library
 * ``ninewinecfg.exe``: GUI to enable/disable Gallium Nine with some additional info about the current state
 
+Objective
+---------
+
+* Official distro packages
+
+  Gallium Nine is a fork of the WINE tree, without any chances to be merged upstream. The decoupling of the WINE tree makes it its own upstream.
+
+* Ease updates for the user
+
+  WINE can be updated independent of Gallium Nine Standalone. Users can mix releases of both projects to their liking.
+
 Requirements
 ------------
 * A Gallium based graphics driver (`Mesa 3D <https://www.mesa3d.org/>`_)
