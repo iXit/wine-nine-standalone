@@ -9,7 +9,12 @@ About
 
 Gallium Nine Standalone, as the name implies, is a standalone version of the `WINE <https://www.winehq.org/>`_ parts of `Gallium Nine <https://github.com/iXit/wine>`_.
 
-This decouples Gallium Nine from WINE, so that it can be used with any WINE version - there is no need for any WINE patches. A stable, development, or staging WINE release is sufficient.
+This decouples Gallium Nine from the WINE tree, so that it can be used with any WINE version. There is no need for any WINE patches. A stable, development, or staging WINE release is sufficient.
+
+Gallium Nine Standalone consists of two parts:
+
+* ``d3d9-nine.dll``: Gallium Nine Direct3D 9 library
+* ``ninewinecfg.exe``: GUI to enable/disable Gallium Nine with some additional info about the current state
 
 Requirements
 ------------
@@ -18,7 +23,7 @@ Requirements
 
 Compiling
 ---------
-Gallium Nine Standalone requires `The Meson Build system <https://mesonbuild.com/>`_ and ``winegcc`` to build binaries usable by WINE.
+Gallium Nine Standalone requires the `Meson Build system <https://mesonbuild.com/>`_ and ``winegcc`` to build binaries usable by WINE.
 
 The build dependencies are:
 
@@ -40,7 +45,7 @@ And optionally, for the DRI2 fallback:
 
 On `Debian <https://www.debian.org/>`_ and `Ubuntu <https://www.ubuntu.com/>`_ the required development packages are:
 
-    ``libc6-dev wine64-tools libwine-dev libd3dadapter9-mesa-dev libx11-dev libx11-xcb-dev libxcb1-dev libxcb-dri3-dev libxcb-present-dev libxcb-xfixes0-dev libgl1-mesa-dev libegl1-mesa-dev``
+   ``libc6-dev wine64-tools libwine-dev libd3dadapter9-mesa-dev libx11-dev libx11-xcb-dev libxcb1-dev libxcb-dri3-dev libxcb-present-dev libxcb-xfixes0-dev libgl1-mesa-dev libegl1-mesa-dev``
 
 Most DirectX 9 games are 32bit, for which you require 32bit binaries. For the few 64bit DirectX 9 games 64bit binaries are required.
 
