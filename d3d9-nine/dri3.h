@@ -11,6 +11,8 @@
 #include <wingdi.h>
 #include <X11/Xlib.h>
 
+struct DRIBackend;
+
 BOOL DRI3CheckExtension(Display *dpy, int major, int minor);
 
 #ifdef D3D9NINE_DRI2
@@ -48,7 +50,7 @@ BOOL PRESENTInit(Display *dpy, PRESENTpriv **present_priv);
  * If never a PRESENTPixmapPriv has to be destroyed,
  * please destroy the current PRESENTpriv and create a new one.
  * This will take care than all pixmaps are released */
-void PRESENTDestroy(Display *dpy, PRESENTpriv *present_priv);
+void PRESENTDestroy(Display *dpy, struct DRI2priv *dri2_priv, struct DRIBackend *dri_backend, PRESENTpriv *present_priv);
 
 BOOL PRESENTPixmapInit(PRESENTpriv *present_priv, Pixmap pixmap, PRESENTPixmapPriv **present_pixmap_priv);
 
@@ -58,13 +60,13 @@ BOOL DRI2PresentPixmap(struct DRI2priv *dri2_priv, PRESENTPixmapPriv *present_pi
 BOOL DRI2FallbackPRESENTPixmap(PRESENTpriv *present_priv, struct DRI2priv *priv,
         int fd, int width, int height, int stride, int depth,
         int bpp, PRESENTPixmapPriv **present_pixmap_priv);
+void DRI2DestroyPixmap(struct DRI2priv *dri2_priv, PRESENTPixmapPriv *present_pixmap);
+
 #endif
 
-BOOL PRESENTTryFreePixmap(Display *dpy, PRESENTPixmapPriv *present_pixmap_priv);
+BOOL PRESENTTryFreePixmap(Display *dpy, struct DRI2priv *dri2_priv, struct DRIBackend *dri_backend, PRESENTPixmapPriv *present_pixmap_priv);
 
 BOOL PRESENTHelperCopyFront(Display *dpy, PRESENTPixmapPriv *present_pixmap_priv);
-
-struct DRIBackend;
 
 BOOL PRESENTPixmapPrepare(XID window, PRESENTPixmapPriv *present_pixmap_priv);
 

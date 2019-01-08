@@ -60,6 +60,7 @@
 #include <EGL/eglext.h>
 #endif
 
+#include "backend.h"
 #include "dri3.h"
 
 WINE_DEFAULT_DEBUG_CHANNEL(d3d9nine);
@@ -857,35 +858,38 @@ static BOOL PRESENTPrivChangeWindow(PRESENTpriv *present_priv, XID window)
     return (present_priv->window != 0);
 }
 
+#ifdef D3D9NINE_DRI2
+void DRI2DestroyPixmap(struct DRI2priv *dri2_priv, PRESENTPixmapPriv *present_pixmap)
+{
+    EGLenum current_api;
+    current_api = eglQueryAPI();
+
+    eglBindAPI(EGL_OPENGL_API);
+    if (eglMakeCurrent(dri2_priv->display, EGL_NO_SURFACE, EGL_NO_SURFACE,
+             dri2_priv->context))
+    {
+        glDeleteFramebuffers(1, &present_pixmap->dri2_info.fbo_read);
+        glDeleteFramebuffers(1, &present_pixmap->dri2_info.fbo_write);
+        glDeleteTextures(1, &present_pixmap->dri2_info.texture_read);
+        glDeleteTextures(1, &present_pixmap->dri2_info.texture_write);
+    }
+    else
+        WINE_ERR("eglMakeCurrent failed with 0x%0X\n", eglGetError());
+
+    eglMakeCurrent(dri2_priv->display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+    eglBindAPI(current_api);
+}
+#endif
+
 /* Destroy the content, except the link and the struct mem */
 static void PRESENTDestroyPixmapContent(Display *dpy, PRESENTPixmapPriv *present_pixmap)
 {
     WINE_TRACE("Releasing pixmap priv %p\n", present_pixmap);
-    XFreePixmap(dpy, present_pixmap->pixmap);
-#ifdef D3D9NINE_DRI2
-    if (present_pixmap->dri2_info.is_dri2)
-    {
-        struct DRI2priv *dri2_priv = present_pixmap->dri2_info.dri2_priv;
-        EGLenum current_api;
-        current_api = eglQueryAPI();
-        eglBindAPI(EGL_OPENGL_API);
-        if (eglMakeCurrent(dri2_priv->display, EGL_NO_SURFACE, EGL_NO_SURFACE, dri2_priv->context))
-        {
-            glDeleteFramebuffers(1, &present_pixmap->dri2_info.fbo_read);
-            glDeleteFramebuffers(1, &present_pixmap->dri2_info.fbo_write);
-            glDeleteTextures(1, &present_pixmap->dri2_info.texture_read);
-            glDeleteTextures(1, &present_pixmap->dri2_info.texture_write);
-        }
-        else
-            WINE_ERR("eglMakeCurrent failed with 0x%0X\n", eglGetError());
 
-        eglMakeCurrent(dri2_priv->display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
-        eglBindAPI(current_api);
-    }
-#endif
+    XFreePixmap(dpy, present_pixmap->pixmap);
 }
 
-void PRESENTDestroy(Display *dpy, PRESENTpriv *present_priv)
+void PRESENTDestroy(Display *dpy, struct DRI2priv *dri2_priv, struct DRIBackend *dri_backend, PRESENTpriv *present_priv)
 {
     PRESENTPixmapPriv *current = NULL;
 
@@ -898,6 +902,7 @@ void PRESENTDestroy(Display *dpy, PRESENTpriv *present_priv)
     {
         PRESENTPixmapPriv *next = current->next;
         PRESENTDestroyPixmapContent(dpy, current);
+        DRIBackendDestroyPixmap(dri_backend, dri2_priv, current);
         HeapFree(GetProcessHeap(), 0, current);
         current = next;
     }
@@ -1088,7 +1093,7 @@ fail:
 
 #endif
 
-BOOL PRESENTTryFreePixmap(Display *dpy, PRESENTPixmapPriv *present_pixmap_priv)
+BOOL PRESENTTryFreePixmap(Display *dpy, struct DRI2priv *dri2_priv, struct DRIBackend *dri_backend, PRESENTPixmapPriv *present_pixmap_priv)
 {
     PRESENTpriv *present_priv = present_pixmap_priv->present_priv;
     PRESENTPixmapPriv *current;
@@ -1114,6 +1119,7 @@ BOOL PRESENTTryFreePixmap(Display *dpy, PRESENTPixmapPriv *present_pixmap_priv)
     current->next = present_pixmap_priv->next;
 free_priv:
     PRESENTDestroyPixmapContent(dpy, present_pixmap_priv);
+    DRIBackendDestroyPixmap(dri_backend, dri2_priv, present_pixmap_priv);
     HeapFree(GetProcessHeap(), 0, present_pixmap_priv);
     LeaveCriticalSection(&present_priv->mutex_present);
     return TRUE;
