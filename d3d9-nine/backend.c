@@ -72,3 +72,28 @@ void DRIBackendClose(struct DRIBackend *dri_backend)
         HeapFree(GetProcessHeap(), 0, dri_backend);
     }
 }
+
+BOOL DRIBackendCheckExtension(Display *dpy)
+{
+    WINE_TRACE("dpy=%p\n", dpy);
+
+    if (!dpy)
+        return FALSE;
+
+    if (!DRI3CheckExtension(dpy, 1, 0))
+    {
+#ifndef D3D9NINE_DRI2
+        WINE_ERR("Unable to query DRI3.\n");
+        return FALSE;
+#else
+        WINE_ERR("Unable to query DRI3. Trying DRI2 fallback (slower performance).\n");
+        is_dri2_fallback = 1;
+        if (!DRI2FallbackCheckSupport(dpy))
+        {
+            WINE_ERR("DRI2 fallback unsupported\n");
+            return FALSE;
+        }
+#endif
+    }
+    return TRUE;
+}

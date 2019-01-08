@@ -1712,20 +1712,10 @@ BOOL present_has_d3dadapter(Display *gdi_display)
         goto cleanup;
     }
 
-    if (!DRI3CheckExtension(gdi_display, 1, 0))
+    if (!DRIBackendCheckExtension(gdi_display))
     {
-#ifndef D3D9NINE_DRI2
-        WINE_ERR("Unable to query DRI3.\n");
+        WINE_ERR("Required extensions for DRIBackend not available.\n");
         goto cleanup;
-#else
-        WINE_ERR("Unable to query DRI3. Trying DRI2 fallback (slower performance).\n");
-        is_dri2_fallback = 1;
-        if (!DRI2FallbackCheckSupport(gdi_display))
-        {
-            WINE_ERR("DRI2 fallback unsupported\n");
-            goto cleanup;
-        }
-#endif
     }
 
     return TRUE;

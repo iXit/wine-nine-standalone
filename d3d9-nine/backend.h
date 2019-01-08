@@ -18,4 +18,6 @@ void DRIBackendClose(struct DRIBackend *dri_backend);
 
 int DRIBackendFd(struct DRIBackend *dri_backend);
 
+BOOL DRIBackendCheckExtension(Display *dpy);
+
 #endif /* __NINE_BACKEND_H */
