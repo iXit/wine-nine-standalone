@@ -39,4 +39,6 @@ BOOL DRIBackendHelperCopyFront(Display *dpy, PRESENTPixmapPriv *present_pixmap_p
 
 BOOL DRIBackendInit(struct DRIBackend *dri_backend, struct DRI2priv **dri2_priv);
 
+void DRIBackendDestroy(struct DRIBackend *dri_backend, struct DRI2priv *dri2_priv);
+
 #endif /* __NINE_BACKEND_H */

@@ -171,3 +171,13 @@ BOOL DRIBackendInit(struct DRIBackend *dri_backend, struct DRI2priv **dri2_priv)
 #endif
     return TRUE;
 }
+
+void DRIBackendDestroy(struct DRIBackend *dri_backend, struct DRI2priv *dri2_pri)
+{
+    WINE_TRACE("dri_backend=%p dri2_pri=%p\n", dri_backend, dri2_pri);
+
+#ifdef D3D9NINE_DRI2
+    if (is_dri2_fallback)
+        DRI2FallbackDestroy(dri2_pri);
+#endif
+}

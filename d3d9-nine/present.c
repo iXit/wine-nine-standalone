@@ -388,10 +388,7 @@ static ULONG WINAPI DRI3Present_Release(struct DRI3Present *This)
             destroy_d3dadapter_drawable(This->gdi_display, This->d3d->wnd);
         ChangeDisplaySettingsExW(This->devname, &(This->initial_mode), 0, CDS_FULLSCREEN, NULL);
         PRESENTDestroy(This->gdi_display, This->present_priv);
-#ifdef D3D9NINE_DRI2
-        if (is_dri2_fallback)
-            DRI2FallbackDestroy(This->dri2_priv);
-#endif
+        DRIBackendDestroy(This->dri_backend, This->dri2_priv);
         HeapFree(GetProcessHeap(), 0, This);
     }
     return refs;
