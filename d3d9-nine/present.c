@@ -1418,10 +1418,13 @@ static HRESULT DRI3Present_new(Display *gdi_display, const WCHAR *devname,
     lstrcpyW(This->devname, devname);
 
     PRESENTInit(gdi_display, &(This->present_priv));
-#ifdef D3D9NINE_DRI2
-    if (is_dri2_fallback && !DRI2FallbackInit(gdi_display, &(This->dri2_priv)))
-        return D3DERR_INVALIDCALL;
-#endif
+
+    if (!DRIBackendInit(This->dri_backend, &(This->dri2_priv)))
+    {
+        HeapFree(GetProcessHeap(), 0, This);
+        return D3DERR_DRIVERINTERNALERROR;
+    }
+
     *out = This;
 
     return D3D_OK;

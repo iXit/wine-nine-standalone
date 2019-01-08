@@ -160,3 +160,14 @@ BOOL DRIBackendHelperCopyFront(Display *dpy, PRESENTPixmapPriv *present_pixmap_p
     else
         return FALSE;
 }
+
+BOOL DRIBackendInit(struct DRIBackend *dri_backend, struct DRI2priv **dri2_priv)
+{
+    WINE_TRACE("dri_backend=%p dri2_priv=%p\n", dri_backend, dri2_priv);
+
+#ifdef D3D9NINE_DRI2
+    if (is_dri2_fallback && !DRI2FallbackInit(dri_backend->dpy, dri2_priv))
+        return FALSE;
+#endif
+    return TRUE;
+}

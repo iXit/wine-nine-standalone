@@ -167,7 +167,6 @@ BOOL DRI3CheckExtension(Display *dpy, int major, int minor)
 }
 
 #ifdef D3D9NINE_DRI2
-
 BOOL DRI2FallbackInit(Display *dpy, struct DRI2priv **priv)
 {
     PFNGLEGLIMAGETARGETTEXTURE2DOESPROC glEGLImageTargetTexture2DOES_func;
