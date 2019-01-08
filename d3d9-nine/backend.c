@@ -24,7 +24,7 @@ struct DRIBackend {
 };
 
 #ifdef D3D9NINE_DRI2
-extern int is_dri2_fallback;
+int is_dri2_fallback;
 #endif
 
 BOOL DRIBackendOpen(Display *dpy, int screen, struct DRIBackend **dri_backend)
@@ -147,4 +147,16 @@ BOOL DRIBackendD3DWindowBufferFromDmaBuf(struct DRIBackend *dri_backend,
     }
 
     return TRUE;
+}
+
+BOOL DRIBackendHelperCopyFront(Display *dpy, PRESENTPixmapPriv *present_pixmap_priv)
+{
+#ifdef D3D9NINE_DRI2
+    if (is_dri2_fallback)
+        return FALSE;
+#endif
+    if (PRESENTHelperCopyFront(dpy, present_pixmap_priv))
+        return TRUE;
+    else
+        return FALSE;
 }
