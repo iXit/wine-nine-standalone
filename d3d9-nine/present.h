@@ -15,7 +15,10 @@ HRESULT present_create_present_group(Display *gdi_display, const WCHAR *device_n
         HWND focus, D3DPRESENT_PARAMETERS *params, unsigned nparams, ID3DPresentGroup **group,
         boolean ex, DWORD BehaviorFlags);
 
-HRESULT present_create_adapter9(Display *gdi_display, HDC hdc, ID3DAdapter9 **adapter);
+struct DRIBackend;
+
+HRESULT present_create_adapter9(Display *gdi_display, HDC hdc,
+        struct DRIBackend *dri_backend, ID3DAdapter9 **adapter);
 
 BOOL present_has_d3dadapter(Display *gdi_display);
 

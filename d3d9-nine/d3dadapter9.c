@@ -15,6 +15,7 @@
 
 #include "present.h"
 #include "device_wrap.h"
+#include "backend.h"
 
 WINE_DEFAULT_DEBUG_CHANNEL(d3d9nine);
 
@@ -42,6 +43,8 @@ struct adapter_group
 
     /* driver stuff */
     ID3DAdapter9 *adapter;
+    /* DRI backend */
+    struct DRIBackend *dri_backend;
 };
 
 struct adapter_map
@@ -122,6 +125,8 @@ static ULONG WINAPI d3dadapter9_Release(struct d3dadapter9 *This)
 
                 if (This->groups[i].adapter)
                     ID3DAdapter9_Release(This->groups[i].adapter);
+                if (This->groups[i].dri_backend)
+                    DRIBackendClose(This->groups[i].dri_backend);
             }
             HeapFree(GetProcessHeap(), 0, This->groups);
         }
@@ -558,6 +563,7 @@ static void remove_group(struct d3dadapter9 *This)
         HeapFree(GetProcessHeap(), 0, group->outputs[i].modes);
     }
     HeapFree(GetProcessHeap(), 0, group->outputs);
+    DRIBackendClose(group->dri_backend);
 
     ZeroMemory(group, sizeof(struct adapter_group));
     This->ngroups--;
@@ -673,7 +679,16 @@ static HRESULT fill_groups(struct d3dadapter9 *This)
             goto end_group;
         }
 
-        hr = present_create_adapter9(This->gdi_display, hdc, &group->adapter);
+        if (!DRIBackendOpen(This->gdi_display, DefaultScreen(This->gdi_display),
+                &group->dri_backend))
+        {
+            WINE_ERR("Unable to open DRIBackend for display %d.\n", i);
+            goto end_group;
+        }
+
+        hr = present_create_adapter9(This->gdi_display, hdc, group->dri_backend,
+               &group->adapter);
+
         DeleteDC(hdc);
         if (FAILED(hr))
         {

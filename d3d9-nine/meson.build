@@ -10,6 +10,7 @@ d3d9_res = custom_target(
 d3d9_dll = shared_library(
   'd3d9-nine.dll',
   [
+    'backend.c',
     'd3d9_main.c',
     'd3dadapter9.c',
     'device_wrap.c',
