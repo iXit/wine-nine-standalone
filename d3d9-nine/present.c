@@ -91,6 +91,7 @@ struct d3d_drawable
     unsigned int depth;
 };
 
+struct DRI2priv;
 struct DRI3Present
 {
     /* COM vtable */
@@ -101,9 +102,9 @@ struct DRI3Present
     D3DPRESENT_PARAMETERS params;
     HWND focus_wnd;
     PRESENTpriv *present_priv;
-#ifdef D3D9NINE_DRI2
+
+    /* FIXME: */
     struct DRI2priv *dri2_priv;
-#endif
 
     WCHAR devname[32];
     HCURSOR hCursor;
@@ -127,11 +128,8 @@ struct DRI3Present
     BOOL allow_discard_delayed_release;
     BOOL tear_free_discard;
     struct d3d_drawable *d3d;
-};
 
-struct D3DWindowBuffer
-{
-    PRESENTPixmapPriv *present_pixmap_priv;
+    struct DRIBackend *dri_backend;
 };
 
 static void free_d3dadapter_drawable(struct d3d_drawable *d3d)
@@ -435,37 +433,10 @@ static HRESULT WINAPI DRI3Present_D3DWindowBufferFromDmaBuf(struct DRI3Present *
         int dmaBufFd, int width, int height, int stride, int depth,
         int bpp, struct D3DWindowBuffer **out)
 {
-    Pixmap pixmap;
-
-#ifdef D3D9NINE_DRI2
-    if (is_dri2_fallback)
+    if (!DRIBackendD3DWindowBufferFromDmaBuf(This->dri_backend, This->present_priv,
+            This->dri2_priv, dmaBufFd, width, height, stride, depth, bpp, out))
     {
-        *out = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY,
-                sizeof(struct D3DWindowBuffer));
-        if (!DRI2FallbackPRESENTPixmap(This->present_priv, This->dri2_priv,
-                dmaBufFd, width, height, stride, depth,
-                bpp, &((*out)->present_pixmap_priv)))
-        {
-            WINE_ERR("DRI2FallbackPRESENTPixmap failed\n");
-            HeapFree(GetProcessHeap(), 0, *out);
-            return D3DERR_DRIVERINTERNALERROR;
-        }
-        return D3D_OK;
-    }
-#endif
-    if (!DRI3PixmapFromDmaBuf(This->gdi_display, DefaultScreen(This->gdi_display),
-            dmaBufFd, width, height, stride, depth, bpp, &pixmap))
-    {
-        WINE_ERR("DRI3PixmapFromDmaBuf failed\n");
-        return D3DERR_DRIVERINTERNALERROR;
-    }
-
-    *out = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY,
-            sizeof(struct D3DWindowBuffer));
-    if (!PRESENTPixmapInit(This->present_priv, pixmap, &((*out)->present_pixmap_priv)))
-    {
-        WINE_ERR("PRESENTPixmapInit failed\n");
-        HeapFree(GetProcessHeap(), 0, *out);
+        WINE_ERR("DRIBackendD3DWindowBufferFromDmaBuf failed\n");
         return D3DERR_DRIVERINTERNALERROR;
     }
 
@@ -1359,7 +1330,7 @@ static HRESULT DRI3Present_ChangePresentParameters(struct DRI3Present *This,
 
 static HRESULT DRI3Present_new(Display *gdi_display, const WCHAR *devname,
         D3DPRESENT_PARAMETERS *params, HWND focus_wnd, struct DRI3Present **out,
-        boolean ex, boolean no_window_changes)
+        boolean ex, boolean no_window_changes, struct DRIBackend *dri_backend)
 {
     struct DRI3Present *This;
     HWND focus_window;
@@ -1387,6 +1358,7 @@ static HRESULT DRI3Present_new(Display *gdi_display, const WCHAR *devname,
     This->focus_wnd = focus_wnd;
     This->ex = ex;
     This->no_window_changes = no_window_changes;
+    This->dri_backend = dri_backend;
 
     /* store current resolution */
     ZeroMemory(&(This->initial_mode), sizeof(This->initial_mode));
@@ -1470,6 +1442,7 @@ struct DRI3PresentGroup
     unsigned npresent_backends;
     Display *gdi_display;
     boolean no_window_changes;
+    struct DRIBackend *dri_backend;
 };
 
 static ULONG WINAPI DRI3PresentGroup_AddRef(struct DRI3PresentGroup *This)
@@ -1545,7 +1518,7 @@ static HRESULT WINAPI DRI3PresentGroup_CreateAdditionalPresent(struct DRI3Presen
     HRESULT hr;
     hr = DRI3Present_new(This->gdi_display, This->present_backends[0]->devname,
             pPresentationParameters, 0, (struct DRI3Present **)ppPresent,
-            This->ex, This->no_window_changes);
+            This->ex, This->no_window_changes, This->dri_backend);
 
     return hr;
 }
@@ -1569,7 +1542,8 @@ static ID3DPresentGroupVtbl DRI3PresentGroup_vtable = {
 
 HRESULT present_create_present_group(Display *gdi_display, const WCHAR *device_name,
         UINT adapter, HWND focus_wnd, D3DPRESENT_PARAMETERS *params,
-        unsigned nparams, ID3DPresentGroup **group, boolean ex, DWORD BehaviorFlags)
+        unsigned nparams, ID3DPresentGroup **group, boolean ex, DWORD BehaviorFlags,
+        struct DRIBackend *dri_backend)
 {
     struct DRI3PresentGroup *This;
     DISPLAY_DEVICEW dd;
@@ -1588,6 +1562,7 @@ HRESULT present_create_present_group(Display *gdi_display, const WCHAR *device_n
     This->vtable = &DRI3PresentGroup_vtable;
     This->refs = 1;
     This->ex = ex;
+    This->dri_backend = dri_backend;
     This->npresent_backends = nparams;
     This->no_window_changes = !!(BehaviorFlags & D3DCREATE_NOWINDOWCHANGES);
     This->present_backends = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY,
@@ -1615,7 +1590,8 @@ HRESULT present_create_present_group(Display *gdi_display, const WCHAR *device_n
 
         /* create an ID3DPresent for it */
         hr = DRI3Present_new(gdi_display, dd.DeviceName, &params[i],
-                focus_wnd, &This->present_backends[i], ex, This->no_window_changes);
+                focus_wnd, &This->present_backends[i], ex, This->no_window_changes,
+                This->dri_backend);
         if (FAILED(hr))
         {
             DRI3PresentGroup_Release(This);

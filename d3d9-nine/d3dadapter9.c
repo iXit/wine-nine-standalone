@@ -479,7 +479,7 @@ static HRESULT WINAPI DECLSPEC_HOTPATCH d3dadapter9_CreateDeviceEx(struct d3dada
         }
         hr = present_create_present_group(This->gdi_display, group->devname, ordinal,
                 hFocusWindow, pPresentationParameters, nparams, &present, This->ex,
-                BehaviorFlags);
+                BehaviorFlags, group->dri_backend);
     }
 
     if (FAILED(hr))

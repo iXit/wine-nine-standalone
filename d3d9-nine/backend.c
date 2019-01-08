@@ -97,3 +97,54 @@ BOOL DRIBackendCheckExtension(Display *dpy)
     }
     return TRUE;
 }
+
+BOOL DRIBackendD3DWindowBufferFromDmaBuf(struct DRIBackend *dri_backend,
+        PRESENTpriv *present_priv, struct DRI2priv *dri2_priv,
+        int dmaBufFd, int width, int height, int stride, int depth,
+        int bpp, struct D3DWindowBuffer **out)
+{
+    Pixmap pixmap;
+
+    WINE_TRACE("dri_backend=%p present_priv=%p dmaBufFd=%d\n",
+            dri_backend, present_priv, dmaBufFd);
+
+    if (!out)
+        return FALSE;
+
+    *out = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY,
+            sizeof(struct D3DWindowBuffer));
+    if (!*out)
+        return FALSE;
+
+#ifdef D3D9NINE_DRI2
+    if (is_dri2_fallback)
+    {
+        if (!DRI2FallbackPRESENTPixmap(present_priv, dri2_priv,
+                dmaBufFd, width, height, stride, depth,
+                bpp, &((*out)->present_pixmap_priv)))
+        {
+            WINE_ERR("DRI2FallbackPRESENTPixmap failed\n");
+            HeapFree(GetProcessHeap(), 0, *out);
+            return FALSE;
+        }
+        return TRUE;
+    }
+#endif
+
+    if (!DRI3PixmapFromDmaBuf(dri_backend->dpy, dri_backend->screen,
+            dmaBufFd, width, height, stride, depth, bpp, &pixmap))
+    {
+        WINE_ERR("DRI3PixmapFromDmaBuf failed\n");
+        HeapFree(GetProcessHeap(), 0, *out);
+        return FALSE;
+    }
+
+    if (!PRESENTPixmapInit(present_priv, pixmap, &((*out)->present_pixmap_priv)))
+    {
+        WINE_ERR("PRESENTPixmapInit failed\n");
+        HeapFree(GetProcessHeap(), 0, *out);
+        return FALSE;
+    }
+
+    return TRUE;
+}
