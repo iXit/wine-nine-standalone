@@ -41,4 +41,7 @@ BOOL DRIBackendInit(struct DRIBackend *dri_backend, struct DRI2priv **dri2_priv)
 
 void DRIBackendDestroy(struct DRIBackend *dri_backend, struct DRI2priv *dri2_priv);
 
+void DRIBackendPresentPixmap(struct DRIBackend *dri_backend, struct DRI2priv *dri2_priv,
+        PRESENTPixmapPriv *present_priv);
+
 #endif /* __NINE_BACKEND_H */

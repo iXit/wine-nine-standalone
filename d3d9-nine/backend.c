@@ -192,3 +192,15 @@ void DRIBackendDestroy(struct DRIBackend *dri_backend, struct DRI2priv *dri2_pri
         DRI2FallbackDestroy(dri2_pri);
 #endif
 }
+
+void DRIBackendPresentPixmap(struct DRIBackend *dri_backend, struct DRI2priv *dri2_priv,
+        PRESENTPixmapPriv *present_priv)
+{
+    WINE_TRACE("dri_backend=%p dri2_priv=%p present_priv=%p\n", dri_backend, dri2_priv,
+        present_priv);
+
+#ifdef D3D9NINE_DRI2
+    if (dri_backend->type == TYPE_DRI2)
+        DRI2PresentPixmap(dri2_priv, present_priv);
+#endif
+}

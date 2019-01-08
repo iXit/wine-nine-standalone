@@ -539,7 +539,17 @@ static HRESULT WINAPI DRI3Present_PresentBuffer( struct DRI3Present *This,
         }
     }
 
-    if (!PRESENTPixmap(This->gdi_display, d3d->drawable, buffer->present_pixmap_priv,
+    if (!PRESENTPixmapPrepare(d3d->drawable, buffer->present_pixmap_priv))
+    {
+        release_d3d_drawable(d3d);
+        WINE_ERR("PresentPrepare call failed\n");
+        return D3DERR_DRIVERINTERNALERROR;
+    }
+
+    /* FIMXE: Do we need to aquire present mutex here? */
+    DRIBackendPresentPixmap(This->dri_backend, This->dri2_priv, buffer->present_pixmap_priv);
+
+    if (!PRESENTPixmap(d3d->drawable, buffer->present_pixmap_priv,
             This->present_interval, This->present_async, This->present_swapeffectcopy,
             pSourceRect, pDestRect, pDirtyRegion))
     {

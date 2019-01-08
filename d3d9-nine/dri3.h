@@ -53,6 +53,8 @@ void PRESENTDestroy(Display *dpy, PRESENTpriv *present_priv);
 BOOL PRESENTPixmapInit(PRESENTpriv *present_priv, Pixmap pixmap, PRESENTPixmapPriv **present_pixmap_priv);
 
 #ifdef D3D9NINE_DRI2
+BOOL DRI2PresentPixmap(struct DRI2priv *dri2_priv, PRESENTPixmapPriv *present_pixmap_priv);
+
 BOOL DRI2FallbackPRESENTPixmap(PRESENTpriv *present_priv, struct DRI2priv *priv,
         int fd, int width, int height, int stride, int depth,
         int bpp, PRESENTPixmapPriv **present_pixmap_priv);
@@ -62,7 +64,11 @@ BOOL PRESENTTryFreePixmap(Display *dpy, PRESENTPixmapPriv *present_pixmap_priv);
 
 BOOL PRESENTHelperCopyFront(Display *dpy, PRESENTPixmapPriv *present_pixmap_priv);
 
-BOOL PRESENTPixmap(Display *dpy, XID window, PRESENTPixmapPriv *present_pixmap_priv,
+struct DRIBackend;
+
+BOOL PRESENTPixmapPrepare(XID window, PRESENTPixmapPriv *present_pixmap_priv);
+
+BOOL PRESENTPixmap(XID window, PRESENTPixmapPriv *present_pixmap_priv,
         const UINT PresentationInterval, const BOOL PresentAsync, const BOOL SwapEffectCopy,
         const RECT *pSourceRect, const RECT *pDestRect, const RGNDATA *pDirtyRegion);
 

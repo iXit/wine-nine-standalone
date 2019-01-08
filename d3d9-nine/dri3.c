@@ -1149,21 +1149,40 @@ BOOL PRESENTHelperCopyFront(Display *dpy, PRESENTPixmapPriv *present_pixmap_priv
     return (error != NULL);
 }
 
-BOOL PRESENTPixmap(Display *dpy, XID window, PRESENTPixmapPriv *present_pixmap_priv,
-        const UINT PresentationInterval, const BOOL PresentAsync, const BOOL SwapEffectCopy,
-        const RECT *pSourceRect, const RECT *pDestRect, const RGNDATA *pDirtyRegion)
+#ifdef D3D9NINE_DRI2
+BOOL DRI2PresentPixmap(struct DRI2priv *dri2_priv, PRESENTPixmapPriv *present_pixmap_priv)
+{
+    EGLenum current_api = 0;
+
+    current_api = eglQueryAPI();
+    eglBindAPI(EGL_OPENGL_API);
+    if (eglMakeCurrent(dri2_priv->display, EGL_NO_SURFACE,
+            EGL_NO_SURFACE, dri2_priv->context))
+    {
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, present_pixmap_priv->dri2_info.fbo_read);
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, present_pixmap_priv->dri2_info.fbo_write);
+
+        glBlitFramebuffer(0, 0, present_pixmap_priv->width, present_pixmap_priv->height,
+                0, 0, present_pixmap_priv->width, present_pixmap_priv->height,
+                GL_COLOR_BUFFER_BIT, GL_NEAREST);
+        glFlush(); /* Perhaps useless */
+    }
+    else
+    {
+        WINE_ERR("eglMakeCurrent failed with 0x%0X\n", eglGetError());
+        return FALSE;
+    }
+
+    eglMakeCurrent(dri2_priv->display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+    eglBindAPI(current_api);
+
+    return TRUE;
+}
+#endif
+
+BOOL PRESENTPixmapPrepare(XID window, PRESENTPixmapPriv *present_pixmap_priv)
 {
     PRESENTpriv *present_priv = present_pixmap_priv->present_priv;
-#ifdef D3D9NINE_DRI2
-    struct DRI2priv *dri2_priv = present_pixmap_priv->dri2_info.dri2_priv;
-    EGLenum current_api = 0;
-#endif
-    xcb_void_cookie_t cookie;
-    xcb_generic_error_t *error;
-    int64_t target_msc, presentationInterval;
-    xcb_xfixes_region_t valid, update;
-    int16_t x_off, y_off;
-    uint32_t options = XCB_PRESENT_OPTION_NONE;
 
     EnterCriticalSection(&present_priv->mutex_present);
 
@@ -1187,28 +1206,25 @@ BOOL PRESENTPixmap(Display *dpy, XID window, PRESENTPixmapPriv *present_pixmap_p
         LeaveCriticalSection(&present_priv->mutex_present);
         return FALSE;
     }
-#ifdef D3D9NINE_DRI2
-    if (present_pixmap_priv->dri2_info.is_dri2)
-    {
-        current_api = eglQueryAPI();
-        eglBindAPI(EGL_OPENGL_API);
-        if (eglMakeCurrent(dri2_priv->display, EGL_NO_SURFACE, EGL_NO_SURFACE, dri2_priv->context))
-        {
-            glBindFramebuffer(GL_READ_FRAMEBUFFER, present_pixmap_priv->dri2_info.fbo_read);
-            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, present_pixmap_priv->dri2_info.fbo_write);
 
-            glBlitFramebuffer(0, 0, present_pixmap_priv->width, present_pixmap_priv->height,
-                              0, 0, present_pixmap_priv->width, present_pixmap_priv->height,
-                              GL_COLOR_BUFFER_BIT, GL_NEAREST);
-            glFlush(); /* Perhaps useless */
-        }
-        else
-            WINE_ERR("eglMakeCurrent failed with 0x%0X\n", eglGetError());
+    LeaveCriticalSection(&present_priv->mutex_present);
+    return TRUE;
+}
 
-        eglMakeCurrent(dri2_priv->display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
-        eglBindAPI(current_api);
-    }
-#endif
+BOOL PRESENTPixmap(XID window, PRESENTPixmapPriv *present_pixmap_priv,
+        const UINT PresentationInterval, const BOOL PresentAsync, const BOOL SwapEffectCopy,
+        const RECT *pSourceRect, const RECT *pDestRect, const RGNDATA *pDirtyRegion)
+{
+    PRESENTpriv *present_priv = present_pixmap_priv->present_priv;
+    xcb_void_cookie_t cookie;
+    xcb_generic_error_t *error;
+    int64_t target_msc, presentationInterval;
+    xcb_xfixes_region_t valid, update;
+    int16_t x_off, y_off;
+    uint32_t options = XCB_PRESENT_OPTION_NONE;
+
+    EnterCriticalSection(&present_priv->mutex_present);
+
     target_msc = present_priv->last_msc;
 
     presentationInterval = PresentationInterval;
