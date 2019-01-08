@@ -468,7 +468,7 @@ static HRESULT WINAPI DRI3Present_WaitBufferReleased(struct DRI3Present *This,
 static HRESULT WINAPI DRI3Present_FrontBufferCopy(struct DRI3Present *This,
         struct D3DWindowBuffer *buffer)
 {
-    if (!DRIBackendHelperCopyFront(This->gdi_display, buffer->present_pixmap_priv))
+    if (!DRIBackendHelperCopyFront(This->dri_backend, buffer->present_pixmap_priv))
     {
         return D3DERR_DRIVERINTERNALERROR;
     }

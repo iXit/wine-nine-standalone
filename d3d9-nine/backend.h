@@ -35,7 +35,7 @@ BOOL DRIBackendD3DWindowBufferFromDmaBuf(struct DRIBackend *dri_backend,
         int dmaBufFd, int width, int height, int stride, int depth,
         int bpp, struct D3DWindowBuffer **out);
 
-BOOL DRIBackendHelperCopyFront(Display *dpy, PRESENTPixmapPriv *present_pixmap_priv);
+BOOL DRIBackendHelperCopyFront(struct DRIBackend *dri_backend, PRESENTPixmapPriv *present_pixmap_priv);
 
 BOOL DRIBackendInit(struct DRIBackend *dri_backend, struct DRI2priv **dri2_priv);
 
