@@ -106,8 +106,6 @@ struct PRESENTPixmapPriv {
     uint32_t serial;
 #ifdef D3D9NINE_DRI2
     struct {
-        BOOL is_dri2;
-        struct DRI2priv *dri2_priv;
         GLuint fbo_read;
         GLuint fbo_write;
         GLuint texture_read;
@@ -946,9 +944,6 @@ BOOL PRESENTPixmapInit(PRESENTpriv *present_priv, Pixmap pixmap, PRESENTPixmapPr
     (*present_pixmap_priv)->width = reply->width;
     (*present_pixmap_priv)->height = reply->height;
     (*present_pixmap_priv)->depth = reply->depth;
-#ifdef D3D9NINE_DRI2
-    (*present_pixmap_priv)->dri2_info.is_dri2 = FALSE;
-#endif
     free(reply);
 
     (*present_pixmap_priv)->serial = PRESENTGetNewSerial();
@@ -1070,8 +1065,6 @@ BOOL DRI2FallbackPRESENTPixmap(PRESENTpriv *present_priv, struct DRI2priv *dri2_
     (*present_pixmap_priv)->width = width;
     (*present_pixmap_priv)->height = height;
     (*present_pixmap_priv)->depth = depth;
-    (*present_pixmap_priv)->dri2_info.is_dri2 = TRUE;
-    (*present_pixmap_priv)->dri2_info.dri2_priv = dri2_priv;
     (*present_pixmap_priv)->dri2_info.fbo_read = fbo_read;
     (*present_pixmap_priv)->dri2_info.fbo_write = fbo_write;
     (*present_pixmap_priv)->dri2_info.texture_read = texture_read;
