@@ -997,8 +997,10 @@ BOOL DRI2FallbackPRESENTPixmap(PRESENTpriv *present_priv, struct DRI2priv *dri2_
     image = dri2_priv->eglCreateImageKHR_func(dri2_priv->display,
             EGL_NO_CONTEXT, EGL_LINUX_DMA_BUF_EXT, NULL, attribs);
 
-    if (image == EGL_NO_IMAGE_KHR)
+    if (image == EGL_NO_IMAGE_KHR) {
+        WINE_ERR("eglCreateImageKHR failed with 0x%0X\n", eglGetError());
         goto fail;
+    }
     close(fd);
 
     if (eglMakeCurrent(dri2_priv->display, EGL_NO_SURFACE, EGL_NO_SURFACE, dri2_priv->context))
