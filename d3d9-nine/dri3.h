@@ -50,7 +50,7 @@ BOOL PRESENTInit(Display *dpy, PRESENTpriv **present_priv);
  * If never a PRESENTPixmapPriv has to be destroyed,
  * please destroy the current PRESENTpriv and create a new one.
  * This will take care than all pixmaps are released */
-void PRESENTDestroy(Display *dpy, struct DRI2priv *dri2_priv, struct DRIBackend *dri_backend, PRESENTpriv *present_priv);
+void PRESENTDestroy(struct DRI2priv *dri2_priv, struct DRIBackend *dri_backend, PRESENTpriv *present_priv);
 
 BOOL PRESENTPixmapInit(PRESENTpriv *present_priv, Pixmap pixmap, PRESENTPixmapPriv **present_pixmap_priv);
 
@@ -64,9 +64,9 @@ void DRI2DestroyPixmap(struct DRI2priv *dri2_priv, PRESENTPixmapPriv *present_pi
 
 #endif
 
-BOOL PRESENTTryFreePixmap(Display *dpy, struct DRI2priv *dri2_priv, struct DRIBackend *dri_backend, PRESENTPixmapPriv *present_pixmap_priv);
+BOOL PRESENTTryFreePixmap(struct DRI2priv *dri2_priv, struct DRIBackend *dri_backend, PRESENTPixmapPriv *present_pixmap_priv);
 
-BOOL PRESENTHelperCopyFront(Display *dpy, PRESENTPixmapPriv *present_pixmap_priv);
+BOOL PRESENTHelperCopyFront(PRESENTPixmapPriv *present_pixmap_priv);
 
 BOOL PRESENTPixmapPrepare(XID window, PRESENTPixmapPriv *present_pixmap_priv);
 

@@ -387,7 +387,7 @@ static ULONG WINAPI DRI3Present_Release(struct DRI3Present *This)
         if (This->d3d)
             destroy_d3dadapter_drawable(This->gdi_display, This->d3d->wnd);
         ChangeDisplaySettingsExW(This->devname, &(This->initial_mode), 0, CDS_FULLSCREEN, NULL);
-        PRESENTDestroy(This->gdi_display, This->dri2_priv, This->dri_backend, This->present_priv);
+        PRESENTDestroy(This->dri2_priv, This->dri_backend, This->present_priv);
         DRIBackendDestroy(This->dri_backend, This->dri2_priv);
         HeapFree(GetProcessHeap(), 0, This);
     }
@@ -448,7 +448,7 @@ static HRESULT WINAPI DRI3Present_DestroyD3DWindowBuffer(struct DRI3Present *Thi
      * But if it can delete it right away, we may have
      * better performance */
     //WINE_TRACE("This=%p buffer=%p of priv %p\n", This, buffer, buffer->present_pixmap_priv);
-    PRESENTTryFreePixmap(This->gdi_display, This->dri2_priv, This->dri_backend, buffer->present_pixmap_priv);
+    PRESENTTryFreePixmap(This->dri2_priv, This->dri_backend, buffer->present_pixmap_priv);
     HeapFree(GetProcessHeap(), 0, buffer);
     return D3D_OK;
 }

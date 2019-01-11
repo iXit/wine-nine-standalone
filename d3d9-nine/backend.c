@@ -165,7 +165,7 @@ BOOL DRIBackendHelperCopyFront(struct DRIBackend *dri_backend, PRESENTPixmapPriv
     if (dri_backend->type == TYPE_DRI2)
         return FALSE;
 #endif
-    if (PRESENTHelperCopyFront(dri_backend->dpy, present_pixmap_priv))
+    if (PRESENTHelperCopyFront(present_pixmap_priv))
         return TRUE;
     else
         return FALSE;
