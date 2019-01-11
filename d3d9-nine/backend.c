@@ -38,6 +38,12 @@ struct DRIpriv {
 #endif
 };
 
+struct DRIPixmapPriv {
+#ifdef D3D9NINE_DRI2
+    struct DRI2PixmapPriv *dri2_pixmap_priv;
+#endif
+};
+
 BOOL DRIBackendOpen(Display *dpy, int screen, struct DRIBackend **dri_backend)
 {
     WINE_TRACE("dpy=%p screen=%d dri_backend=%p\n", dpy, screen, dri_backend);
@@ -137,11 +143,22 @@ BOOL DRIBackendD3DWindowBufferFromDmaBuf(struct DRIBackend *dri_backend,
 #ifdef D3D9NINE_DRI2
     if (dri_backend->type == TYPE_DRI2)
     {
+        (*out)->dri_pixmap_priv = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY,
+                sizeof(struct DRIPixmapPriv));
+        if (!(*out)->dri_pixmap_priv)
+        {
+            HeapFree(GetProcessHeap(), 0, *out);
+            return FALSE;
+        }
+
         if (!DRI2FallbackPRESENTPixmap(present_priv, dri_priv->dri2_priv,
-                dmaBufFd, width, height, stride, depth,
-                bpp, &((*out)->present_pixmap_priv), &((*out)->dri2_pixmap_priv)))
+                dmaBufFd, width, height, stride, depth, bpp,
+                &((*out)->present_pixmap_priv),
+                &((*out)->dri_pixmap_priv)->dri2_pixmap_priv))
+
         {
             WINE_ERR("DRI2FallbackPRESENTPixmap failed\n");
+            HeapFree(GetProcessHeap(), 0, (*out)->dri_pixmap_priv);
             HeapFree(GetProcessHeap(), 0, *out);
             return FALSE;
         }
@@ -209,25 +226,28 @@ void DRIBackendDestroy(struct DRIBackend *dri_backend, struct DRIpriv *dri_priv)
 }
 
 void DRIBackendPresentPixmap(struct DRIBackend *dri_backend, struct DRIpriv *dri_priv,
-        struct DRI2PixmapPriv *dri2_pixmap_priv)
+        struct DRIPixmapPriv *dri_pixmap_priv)
 {
-    WINE_TRACE("dri_backend=%p dri_priv=%p dri2_pixmap_priv=%p\n", dri_backend, dri_priv,
-        dri2_pixmap_priv);
+    WINE_TRACE("dri_backend=%p dri_priv=%p dri_pixmap_priv=%p\n", dri_backend, dri_priv,
+        dri_pixmap_priv);
 
 #ifdef D3D9NINE_DRI2
     if (dri_backend->type == TYPE_DRI2)
-        DRI2PresentPixmap(dri_priv->dri2_priv, dri2_pixmap_priv);
+        DRI2PresentPixmap(dri_priv->dri2_priv, dri_pixmap_priv->dri2_pixmap_priv);
 #endif
 }
 
 void DRIBackendDestroyPixmap(struct DRIBackend *dri_backend, struct DRIpriv *dri_priv,
-        struct DRI2PixmapPriv *dri2_pixmap_priv)
+        struct DRIPixmapPriv *dri_pixmap_priv)
 {
-    WINE_TRACE("dri_backend=%p dri_priv=%p dri2_pixmap_priv=%p\n", dri_backend, dri_priv,
-        dri2_pixmap_priv);
+    WINE_TRACE("dri_backend=%p dri_priv=%p dri_pixmap_priv=%p\n", dri_backend, dri_priv,
+        dri_pixmap_priv);
 
 #ifdef D3D9NINE_DRI2
     if (dri_backend->type == TYPE_DRI2)
-        DRI2DestroyPixmap(dri_priv->dri2_priv, dri2_pixmap_priv);
+    {
+        DRI2DestroyPixmap(dri_priv->dri2_priv, dri_pixmap_priv->dri2_pixmap_priv);
+        HeapFree(GetProcessHeap(), 0, dri_pixmap_priv);
+    }
 #endif
 }

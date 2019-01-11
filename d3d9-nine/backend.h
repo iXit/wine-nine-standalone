@@ -14,6 +14,7 @@ struct DRIBackend;
 struct PRESENTpriv;
 struct PRESENTPixmapPriv;
 struct DRIpriv;
+struct DRIPixmapPriv;
 struct DRI2PixmapPriv;
 typedef struct PRESENTPriv PRESENTpriv;
 typedef struct PRESENTPixmapPriv PRESENTPixmapPriv;
@@ -22,7 +23,7 @@ struct D3DWindowBuffer
 {
     PRESENTPixmapPriv *present_pixmap_priv;
 
-    struct DRI2PixmapPriv *dri2_pixmap_priv;
+    struct DRIPixmapPriv *dri_pixmap_priv;
 };
 
 BOOL DRIBackendOpen(Display *dpy, int screen, struct DRIBackend **dri_backend);
@@ -45,9 +46,9 @@ BOOL DRIBackendInit(struct DRIBackend *dri_backend, struct DRIpriv **dri_priv);
 void DRIBackendDestroy(struct DRIBackend *dri_backend, struct DRIpriv *dri_priv);
 
 void DRIBackendPresentPixmap(struct DRIBackend *dri_backend, struct DRIpriv *dri_priv,
-        struct DRI2PixmapPriv *dri2_pixmap_priv);
+        struct DRIPixmapPriv *dri_pixmap_priv);
 
 void DRIBackendDestroyPixmap(struct DRIBackend *dri_backend, struct DRIpriv *dri_priv,
-        struct DRI2PixmapPriv *dri2_pixmap_priv);
+        struct DRIPixmapPriv *dri_pixmap_priv);
 
 #endif /* __NINE_BACKEND_H */
