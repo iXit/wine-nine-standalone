@@ -91,7 +91,7 @@ struct d3d_drawable
     unsigned int depth;
 };
 
-struct DRI2priv;
+struct DRIpriv;
 struct DRI3Present
 {
     /* COM vtable */
@@ -103,8 +103,7 @@ struct DRI3Present
     HWND focus_wnd;
     PRESENTpriv *present_priv;
 
-    /* FIXME: */
-    struct DRI2priv *dri2_priv;
+    struct DRIpriv *dri_priv;
 
     WCHAR devname[32];
     HCURSOR hCursor;
@@ -388,7 +387,7 @@ static ULONG WINAPI DRI3Present_Release(struct DRI3Present *This)
             destroy_d3dadapter_drawable(This->gdi_display, This->d3d->wnd);
         ChangeDisplaySettingsExW(This->devname, &(This->initial_mode), 0, CDS_FULLSCREEN, NULL);
         PRESENTDestroy(This->present_priv);
-        DRIBackendDestroy(This->dri_backend, This->dri2_priv);
+        DRIBackendDestroy(This->dri_backend, This->dri_priv);
         HeapFree(GetProcessHeap(), 0, This);
     }
     return refs;
@@ -431,7 +430,7 @@ static HRESULT WINAPI DRI3Present_D3DWindowBufferFromDmaBuf(struct DRI3Present *
         int bpp, struct D3DWindowBuffer **out)
 {
     if (!DRIBackendD3DWindowBufferFromDmaBuf(This->dri_backend, This->present_priv,
-            This->dri2_priv, dmaBufFd, width, height, stride, depth, bpp, out))
+            This->dri_priv, dmaBufFd, width, height, stride, depth, bpp, out))
     {
         WINE_ERR("DRIBackendD3DWindowBufferFromDmaBuf failed\n");
         return D3DERR_DRIVERINTERNALERROR;
@@ -449,7 +448,7 @@ static HRESULT WINAPI DRI3Present_DestroyD3DWindowBuffer(struct DRI3Present *Thi
      * better performance */
     //WINE_TRACE("This=%p buffer=%p of priv %p\n", This, buffer, buffer->present_pixmap_priv);
     PRESENTTryFreePixmap(buffer->present_pixmap_priv);
-    DRIBackendDestroyPixmap(This->dri_backend, This->dri2_priv, buffer->dri2_pixmap_priv);
+    DRIBackendDestroyPixmap(This->dri_backend, This->dri_priv, buffer->dri2_pixmap_priv);
     HeapFree(GetProcessHeap(), 0, buffer);
     return D3D_OK;
 }
@@ -548,7 +547,7 @@ static HRESULT WINAPI DRI3Present_PresentBuffer( struct DRI3Present *This,
     }
 
     /* FIMXE: Do we need to aquire present mutex here? */
-    DRIBackendPresentPixmap(This->dri_backend, This->dri2_priv, buffer->dri2_pixmap_priv);
+    DRIBackendPresentPixmap(This->dri_backend, This->dri_priv, buffer->dri2_pixmap_priv);
 
     if (!PRESENTPixmap(d3d->drawable, buffer->present_pixmap_priv,
             This->present_interval, This->present_async, This->present_swapeffectcopy,
@@ -1431,7 +1430,7 @@ static HRESULT DRI3Present_new(Display *gdi_display, const WCHAR *devname,
         return D3DERR_DRIVERINTERNALERROR;
     }
 
-    if (!DRIBackendInit(This->dri_backend, &(This->dri2_priv)))
+    if (!DRIBackendInit(This->dri_backend, &(This->dri_priv)))
     {
         HeapFree(GetProcessHeap(), 0, This);
         return D3DERR_DRIVERINTERNALERROR;
