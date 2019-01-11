@@ -31,6 +31,7 @@ BOOL PRESENTCheckExtension(Display *dpy, int major, int minor);
 BOOL DRI3Open(Display *dpy, int screen, int *device_fd);
 
 #ifdef D3D9NINE_DRI2
+struct DRI2PixmapPriv;
 BOOL DRI2FallbackOpen(Display *dpy, int screen, int *device_fd);
 #endif
 
@@ -50,21 +51,23 @@ BOOL PRESENTInit(Display *dpy, PRESENTpriv **present_priv);
  * If never a PRESENTPixmapPriv has to be destroyed,
  * please destroy the current PRESENTpriv and create a new one.
  * This will take care than all pixmaps are released */
-void PRESENTDestroy(struct DRI2priv *dri2_priv, struct DRIBackend *dri_backend, PRESENTpriv *present_priv);
+void PRESENTDestroy(PRESENTpriv *present_priv);
 
 BOOL PRESENTPixmapInit(PRESENTpriv *present_priv, Pixmap pixmap, PRESENTPixmapPriv **present_pixmap_priv);
 
 #ifdef D3D9NINE_DRI2
-BOOL DRI2PresentPixmap(struct DRI2priv *dri2_priv, PRESENTPixmapPriv *present_pixmap_priv);
+BOOL DRI2PresentPixmap(struct DRI2priv *dri2_priv, struct DRI2PixmapPriv *dri2_pixmap_priv);
 
 BOOL DRI2FallbackPRESENTPixmap(PRESENTpriv *present_priv, struct DRI2priv *priv,
         int fd, int width, int height, int stride, int depth,
-        int bpp, PRESENTPixmapPriv **present_pixmap_priv);
-void DRI2DestroyPixmap(struct DRI2priv *dri2_priv, PRESENTPixmapPriv *present_pixmap);
+        int bpp, PRESENTPixmapPriv **present_pixmap_priv,
+        struct DRI2PixmapPriv **dri2_pixmap_priv);
+
+void DRI2DestroyPixmap(struct DRI2priv *dri2_priv, struct DRI2PixmapPriv *dri2_pixmap_priv);
 
 #endif
 
-BOOL PRESENTTryFreePixmap(struct DRI2priv *dri2_priv, struct DRIBackend *dri_backend, PRESENTPixmapPriv *present_pixmap_priv);
+BOOL PRESENTTryFreePixmap(PRESENTPixmapPriv *present_pixmap_priv);
 
 BOOL PRESENTHelperCopyFront(PRESENTPixmapPriv *present_pixmap_priv);
 

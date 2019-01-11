@@ -387,7 +387,7 @@ static ULONG WINAPI DRI3Present_Release(struct DRI3Present *This)
         if (This->d3d)
             destroy_d3dadapter_drawable(This->gdi_display, This->d3d->wnd);
         ChangeDisplaySettingsExW(This->devname, &(This->initial_mode), 0, CDS_FULLSCREEN, NULL);
-        PRESENTDestroy(This->dri2_priv, This->dri_backend, This->present_priv);
+        PRESENTDestroy(This->present_priv);
         DRIBackendDestroy(This->dri_backend, This->dri2_priv);
         HeapFree(GetProcessHeap(), 0, This);
     }
@@ -448,7 +448,8 @@ static HRESULT WINAPI DRI3Present_DestroyD3DWindowBuffer(struct DRI3Present *Thi
      * But if it can delete it right away, we may have
      * better performance */
     //WINE_TRACE("This=%p buffer=%p of priv %p\n", This, buffer, buffer->present_pixmap_priv);
-    PRESENTTryFreePixmap(This->dri2_priv, This->dri_backend, buffer->present_pixmap_priv);
+    PRESENTTryFreePixmap(buffer->present_pixmap_priv);
+    DRIBackendDestroyPixmap(This->dri_backend, This->dri2_priv, buffer->dri2_pixmap_priv);
     HeapFree(GetProcessHeap(), 0, buffer);
     return D3D_OK;
 }
@@ -547,7 +548,7 @@ static HRESULT WINAPI DRI3Present_PresentBuffer( struct DRI3Present *This,
     }
 
     /* FIMXE: Do we need to aquire present mutex here? */
-    DRIBackendPresentPixmap(This->dri_backend, This->dri2_priv, buffer->present_pixmap_priv);
+    DRIBackendPresentPixmap(This->dri_backend, This->dri2_priv, buffer->dri2_pixmap_priv);
 
     if (!PRESENTPixmap(d3d->drawable, buffer->present_pixmap_priv,
             This->present_interval, This->present_async, This->present_swapeffectcopy,
