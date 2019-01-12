@@ -13,6 +13,7 @@
 #include <stdlib.h>
 
 #include "backend.h"
+#include "dri2.h"
 #include "dri3.h"
 
 WINE_DEFAULT_DEBUG_CHANNEL(d3d9nine);

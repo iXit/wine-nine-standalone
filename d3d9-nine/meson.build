@@ -14,6 +14,7 @@ d3d9_dll = shared_library(
     'd3d9_main.c',
     'd3dadapter9.c',
     'device_wrap.c',
+    'dri2.c',
     'dri3.c',
     'present.c',
     'shader_validator.c',

@@ -11,29 +11,13 @@
 #include <wingdi.h>
 #include <X11/Xlib.h>
 
-struct DRIBackend;
-
 BOOL DRI3CheckExtension(Display *dpy, int major, int minor);
 
-#ifdef D3D9NINE_DRI2
-struct DRI2priv;
-
-BOOL DRI2FallbackInit(Display *dpy, struct DRI2priv **priv);
-
-void DRI2FallbackDestroy(struct DRI2priv *priv);
-
-BOOL DRI2FallbackCheckSupport(Display *dpy);
-#endif
 LONG PRESENTGetNewSerial(void);
 
 BOOL PRESENTCheckExtension(Display *dpy, int major, int minor);
 
 BOOL DRI3Open(Display *dpy, int screen, int *device_fd);
-
-#ifdef D3D9NINE_DRI2
-struct DRI2PixmapPriv;
-BOOL DRI2FallbackOpen(Display *dpy, int screen, int *device_fd);
-#endif
 
 BOOL DRI3PixmapFromDmaBuf(Display *dpy, int screen, int fd, int width, int height,
         int stride, int depth, int bpp, Pixmap *pixmap);
@@ -58,18 +42,6 @@ BOOL PRESENTPixmapCreate(PRESENTpriv *present_priv, int screen,
         int bpp);
 
 BOOL PRESENTPixmapInit(PRESENTpriv *present_priv, Pixmap pixmap, PRESENTPixmapPriv **present_pixmap_priv);
-
-#ifdef D3D9NINE_DRI2
-BOOL DRI2PresentPixmap(struct DRI2priv *dri2_priv, struct DRI2PixmapPriv *dri2_pixmap_priv);
-
-BOOL DRI2FallbackPRESENTPixmap(struct DRI2priv *dri2_priv,
-        int fd, int width, int height, int stride, int depth,
-        int bpp, struct DRI2PixmapPriv **dri2_pixmap_priv,
-        Pixmap *pixmap);
-
-void DRI2DestroyPixmap(struct DRI2priv *dri2_priv, struct DRI2PixmapPriv *dri2_pixmap_priv);
-
-#endif
 
 BOOL PRESENTTryFreePixmap(PRESENTPixmapPriv *present_pixmap_priv);
 
