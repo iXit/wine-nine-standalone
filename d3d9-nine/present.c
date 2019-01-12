@@ -21,8 +21,8 @@
 
 #include "../common/library.h"
 #include "backend.h"
-#include "dri3.h"
 #include "wndproc.h"
+#include "xcb_present.h"
 
 WINE_DEFAULT_DEBUG_CHANNEL(d3d9nine);
 

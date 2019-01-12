@@ -19,6 +19,7 @@ d3d9_dll = shared_library(
     'present.c',
     'shader_validator.c',
     'wndproc.c',
+    'xcb_present.c',
     d3d9_res,
   ],
   name_prefix    : '',
