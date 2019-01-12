@@ -437,7 +437,7 @@ static BOOL setRegistryString(LPCSTR path, LPCSTR name, LPCSTR value)
 
     WINE_TRACE("Setting key '%s' at 'HKCU\\%s' to '%s'\n", name, path, value);
 
-    if (RegOpenKeyA(HKEY_CURRENT_USER, path, &regkey) != ERROR_SUCCESS)
+    if (RegCreateKeyA(HKEY_CURRENT_USER, path, &regkey) != ERROR_SUCCESS)
     {
         WINE_TRACE("Failed to open path 'HKCU\\%s'\n", path);
         return FALSE;
