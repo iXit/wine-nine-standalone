@@ -143,6 +143,14 @@ BOOL DRIBackendD3DWindowBufferFromDmaBuf(struct DRIBackend *dri_backend,
 #ifdef D3D9NINE_DRI2
     if (dri_backend->type == TYPE_DRI2)
     {
+        if (!PRESENTPixmapCreate(present_priv, dri_backend->screen, &pixmap,
+                width, height, stride, depth, bpp))
+        {
+            HeapFree(GetProcessHeap(), 0, *out);
+            WINE_ERR("Failed to create pixmap\n");
+            return FALSE;
+        }
+
         (*out)->dri_pixmap_priv = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY,
                 sizeof(struct DRIPixmapPriv));
         if (!(*out)->dri_pixmap_priv)
@@ -151,27 +159,27 @@ BOOL DRIBackendD3DWindowBufferFromDmaBuf(struct DRIBackend *dri_backend,
             return FALSE;
         }
 
-        if (!DRI2FallbackPRESENTPixmap(present_priv, dri_priv->dri2_priv,
+        if (!DRI2FallbackPRESENTPixmap(dri_priv->dri2_priv,
                 dmaBufFd, width, height, stride, depth, bpp,
-                &((*out)->present_pixmap_priv),
-                &((*out)->dri_pixmap_priv)->dri2_pixmap_priv))
-
+                &((*out)->dri_pixmap_priv)->dri2_pixmap_priv, &pixmap))
         {
             WINE_ERR("DRI2FallbackPRESENTPixmap failed\n");
             HeapFree(GetProcessHeap(), 0, (*out)->dri_pixmap_priv);
             HeapFree(GetProcessHeap(), 0, *out);
             return FALSE;
         }
-        return TRUE;
     }
+    else
 #endif
-
-    if (!DRI3PixmapFromDmaBuf(dri_backend->dpy, dri_backend->screen,
-            dmaBufFd, width, height, stride, depth, bpp, &pixmap))
+    if (dri_backend->type == TYPE_DRI3)
     {
-        WINE_ERR("DRI3PixmapFromDmaBuf failed\n");
-        HeapFree(GetProcessHeap(), 0, *out);
-        return FALSE;
+        if (!DRI3PixmapFromDmaBuf(dri_backend->dpy, dri_backend->screen,
+                dmaBufFd, width, height, stride, depth, bpp, &pixmap))
+        {
+            WINE_ERR("DRI3PixmapFromDmaBuf failed\n");
+            HeapFree(GetProcessHeap(), 0, *out);
+            return FALSE;
+        }
     }
 
     if (!PRESENTPixmapInit(present_priv, pixmap, &((*out)->present_pixmap_priv)))

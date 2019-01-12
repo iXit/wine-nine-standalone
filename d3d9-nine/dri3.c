@@ -119,6 +119,19 @@ struct PRESENTPixmapPriv {
     PRESENTPixmapPriv *next;
 };
 
+static xcb_screen_t *screen_of_display(xcb_connection_t *c,
+        int screen)
+{
+  xcb_screen_iterator_t iter;
+
+  iter = xcb_setup_roots_iterator (xcb_get_setup (c));
+  for (; iter.rem; --screen, xcb_screen_next (&iter))
+    if (screen == 0)
+      return iter.data;
+
+  return NULL;
+}
+
 LONG PRESENTGetNewSerial(void)
 {
     static LONG last_serial_given = 0;
@@ -955,6 +968,40 @@ void PRESENTDestroy(PRESENTpriv *present_priv)
     HeapFree(GetProcessHeap(), 0, present_priv);
 }
 
+BOOL PRESENTPixmapCreate(PRESENTpriv *present_priv, int screen,
+        Pixmap *pixmap, int width, int height, int stride, int depth,
+        int bpp)
+{
+    xcb_void_cookie_t cookie;
+    xcb_generic_error_t *error;
+    xcb_screen_t *xcb_screen;
+
+    WINE_TRACE("present_priv=%p, pixmap=%p, width=%d, height=%d, stride=%d,"
+            " depth=%d, bpp=%d\n", present_priv, pixmap, width, height,
+            stride, depth, bpp);
+
+    EnterCriticalSection(&present_priv->mutex_present);
+
+    xcb_screen = screen_of_display (present_priv->xcb_connection, screen);
+    if (!xcb_screen || !xcb_screen->root)
+    {
+        LeaveCriticalSection(&present_priv->mutex_present);
+        return FALSE;
+    }
+
+    *pixmap = xcb_generate_id(present_priv->xcb_connection);
+
+    cookie = xcb_create_pixmap(present_priv->xcb_connection, depth,
+                               *pixmap, xcb_screen->root, width, height);
+
+    error = xcb_request_check(present_priv->xcb_connection, cookie);
+    LeaveCriticalSection(&present_priv->mutex_present);
+
+    if (error)
+        return FALSE;
+    return TRUE;
+}
+
 BOOL PRESENTPixmapInit(PRESENTpriv *present_priv, Pixmap pixmap, PRESENTPixmapPriv **present_pixmap_priv)
 {
     xcb_get_geometry_cookie_t cookie;
@@ -994,16 +1041,12 @@ BOOL PRESENTPixmapInit(PRESENTpriv *present_priv, Pixmap pixmap, PRESENTPixmapPr
 
 #ifdef D3D9NINE_DRI2
 
-BOOL DRI2FallbackPRESENTPixmap(PRESENTpriv *present_priv, struct DRI2priv *dri2_priv,
+BOOL DRI2FallbackPRESENTPixmap(struct DRI2priv *dri2_priv,
         int fd, int width, int height, int stride, int depth,
-        int bpp, PRESENTPixmapPriv **present_pixmap_priv,
-        struct DRI2PixmapPriv **dri2_pixmap_priv)
+        int bpp, struct DRI2PixmapPriv **dri2_pixmap_priv,
+        Pixmap *pixmap)
 {
-    Window root = RootWindow(dri2_priv->dpy, DefaultScreen(dri2_priv->dpy));
-    xcb_void_cookie_t cookie;
-    xcb_generic_error_t *error;
     EGLImageKHR image;
-    xcb_pixmap_t pixmap;
     GLuint texture_read, texture_write, fbo_read, fbo_write;
     EGLint attribs[] = {
         EGL_WIDTH, 0,
@@ -1019,17 +1062,6 @@ BOOL DRI2FallbackPRESENTPixmap(PRESENTpriv *present_priv, struct DRI2priv *dri2_
 
     WINE_TRACE("fd=%d, width=%d, height=%d, stride=%d, depth=%d, bpp=%d\n",
             fd, width, height, stride, depth, bpp);
-
-    EnterCriticalSection(&present_priv->mutex_present);
-
-    pixmap = xcb_generate_id(present_priv->xcb_connection);
-
-    cookie = xcb_create_pixmap(present_priv->xcb_connection, depth,
-                               pixmap, root, width, height);
-
-    error = xcb_request_check(present_priv->xcb_connection, cookie);
-    if (error)
-        goto fail;
 
     attribs[1] = width;
     attribs[3] = height;
@@ -1076,7 +1108,7 @@ BOOL DRI2FallbackPRESENTPixmap(PRESENTpriv *present_priv, struct DRI2priv *dri2_
         image = dri2_priv->eglCreateImageKHR_func(dri2_priv->display,
                                                   dri2_priv->context,
                                                   EGL_NATIVE_PIXMAP_KHR,
-                                                  (void *)pixmap, NULL);
+                                                  (void *)*pixmap, NULL);
         if (image == EGL_NO_IMAGE_KHR)
             goto fail;
 
@@ -1102,30 +1134,11 @@ BOOL DRI2FallbackPRESENTPixmap(PRESENTpriv *present_priv, struct DRI2priv *dri2_
 
     eglMakeCurrent(dri2_priv->display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
 
-    *present_pixmap_priv = (PRESENTPixmapPriv *) HeapAlloc(GetProcessHeap(),
-             HEAP_ZERO_MEMORY, sizeof(PRESENTPixmapPriv));
-
-    if (!*present_pixmap_priv)
-        goto fail;
-
-    (*present_pixmap_priv)->released = TRUE;
-    (*present_pixmap_priv)->pixmap = pixmap;
-    (*present_pixmap_priv)->present_priv = present_priv;
-    (*present_pixmap_priv)->next = present_priv->first_present_priv;
-    (*present_pixmap_priv)->width = width;
-    (*present_pixmap_priv)->height = height;
-    (*present_pixmap_priv)->depth = depth;
-    (*present_pixmap_priv)->serial = PRESENTGetNewSerial();
-    present_priv->first_present_priv = *present_pixmap_priv;
-
     *dri2_pixmap_priv = (struct DRI2PixmapPriv *) HeapAlloc(GetProcessHeap(),
              HEAP_ZERO_MEMORY, sizeof(struct DRI2PixmapPriv));
 
     if (!*dri2_pixmap_priv)
-    {
-        HeapFree(GetProcessHeap(), 0, present_pixmap_priv);
         goto fail;
-    }
 
     (*dri2_pixmap_priv)->fbo_read = fbo_read;
     (*dri2_pixmap_priv)->fbo_write = fbo_write;
@@ -1138,12 +1151,10 @@ BOOL DRI2FallbackPRESENTPixmap(PRESENTpriv *present_priv, struct DRI2priv *dri2_
 
     eglBindAPI(current_api);
 
-    LeaveCriticalSection(&present_priv->mutex_present);
     return TRUE;
 fail:
     eglMakeCurrent(dri2_priv->display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
     eglBindAPI(current_api);
-    LeaveCriticalSection(&present_priv->mutex_present);
     return FALSE;
 }
 

@@ -53,15 +53,19 @@ BOOL PRESENTInit(Display *dpy, PRESENTpriv **present_priv);
  * This will take care than all pixmaps are released */
 void PRESENTDestroy(PRESENTpriv *present_priv);
 
+BOOL PRESENTPixmapCreate(PRESENTpriv *present_priv, int screen,
+        Pixmap *pixmap, int width, int height, int stride, int depth,
+        int bpp);
+
 BOOL PRESENTPixmapInit(PRESENTpriv *present_priv, Pixmap pixmap, PRESENTPixmapPriv **present_pixmap_priv);
 
 #ifdef D3D9NINE_DRI2
 BOOL DRI2PresentPixmap(struct DRI2priv *dri2_priv, struct DRI2PixmapPriv *dri2_pixmap_priv);
 
-BOOL DRI2FallbackPRESENTPixmap(PRESENTpriv *present_priv, struct DRI2priv *priv,
+BOOL DRI2FallbackPRESENTPixmap(struct DRI2priv *dri2_priv,
         int fd, int width, int height, int stride, int depth,
-        int bpp, PRESENTPixmapPriv **present_pixmap_priv,
-        struct DRI2PixmapPriv **dri2_pixmap_priv);
+        int bpp, struct DRI2PixmapPriv **dri2_pixmap_priv,
+        Pixmap *pixmap);
 
 void DRI2DestroyPixmap(struct DRI2priv *dri2_priv, struct DRI2PixmapPriv *dri2_pixmap_priv);
 
