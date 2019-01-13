@@ -25,7 +25,7 @@ Objective
 
 * Ease updates for the user
 
-  WINE can be updated independent of Gallium Nine Standalone. Users can mix releases of both projects to their liking.
+  WINE can be updated independent of Gallium Nine Standalone. Users can mix releases of both projects to their liking. Switching between staging and non-staging does not require a rebuild.
 
 Requirements
 ------------
