@@ -32,6 +32,12 @@ Requirements
 * A Gallium based graphics driver (`Mesa 3D <https://www.mesa3d.org/>`_)
 * Mesa's Gallium Nine state tracker (d3dadapter9.so)
 
+Distro packages
+---------------
+Your distribution may provide a package, avoiding the need to compile the code yourself. The exact usage instructions may vary in this case so check your distribution for the details. The currently known packages are:
+
+* Gentoo Linux - `app-emulation/gallium-nine-standalone <https://packages.gentoo.org/packages/app-emulation/gallium-nine-standalone>`_
+
 Compiling
 ---------
 Gallium Nine Standalone requires the `Meson Build system <https://mesonbuild.com/>`_ and ``winegcc`` to build binaries usable by WINE.
