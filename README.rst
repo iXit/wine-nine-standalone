@@ -36,6 +36,7 @@ Distro packages
 ---------------
 Your distribution may provide a package, avoiding the need to compile the code yourself. The exact usage instructions may vary in this case so check your distribution for the details. The currently known packages are:
 
+* Arch Linux - `gallium-nine-git (AUR) <https://aur.archlinux.org/packages/gallium-nine-git>`_
 * Gentoo Linux - `app-emulation/gallium-nine-standalone <https://packages.gentoo.org/packages/app-emulation/gallium-nine-standalone>`_
 
 Compiling
