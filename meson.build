@@ -42,7 +42,7 @@ foreach h : ['wine/debug.h']
   endif
 endforeach
 
-version = meson.project_version().split('.')
+version = meson.project_version().split('-')[0].split('.')
 wrc = [
         find_program('wrc'),
         '-DNINE_MAJOR=' + version[0],
