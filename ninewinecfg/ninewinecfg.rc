@@ -53,7 +53,7 @@ BEGIN
     CTEXT       "MESA: MIT License",IDC_STATIC,16,76,228,8
 
     GROUPBOX    "Authors",IDC_STATIC,8,100,244,120
-    CTEXT       "Joakim Sindholt\nChristoph Bumiller\nTiziano Bacocco\nDavid Heidelberg\nAxel Davy\nNick Sarnie\nPatrick Rudolph",IDC_STATIC,16,112,228,96
+    CTEXT       "Joakim Sindholt\nChristoph Bumiller\nTiziano Bacocco\nDavid Heidelberg\nAxel Davy\nNick Sarnie\nPatrick Rudolph\nAndre Heider",IDC_STATIC,16,112,228,96
 END
 
 IDD_NINE DIALOG  0, 0, 260, 220
