@@ -67,9 +67,10 @@ foreach fn : ['dlopen', 'dlclose', 'dlsym', 'dladdr']
   endif
 endforeach
 
-dep_d3dadapter9 = dependency('d3dadapter9', required : false)
+dep_d3dadapter9 = dependency('d3d', required : false)
 if not dep_d3dadapter9.found()
-  dep_d3dadapter9 = dependency('d3d')
+  message('trying alternative name for d3d...')
+  dep_d3dadapter9 = dependency('d3dadapter9')
 endif
 
 dep_x11 = dependency('x11')
