@@ -703,6 +703,7 @@ static void load_staging_settings(HWND dialog)
     if (handle)
     {
         CheckDlgButton(dialog, IDC_NINE_STATE3, BST_CHECKED);
+        SetDlgItemTextA(dialog, IDC_NINE_STATE_TIP3, pathbuf);
     }
     else
     {
