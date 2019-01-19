@@ -35,6 +35,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 #include <dlfcn.h>
 #include <wctype.h>
@@ -657,7 +658,7 @@ static void *open_d3dadapter(char *paths, char **res)
 static void load_staging_settings(HWND dialog)
 {
     HMODULE hmod = NULL;
-    char *mod_path = NULL, *reg_path = NULL, *pathbuf = NULL;
+    char *mod_path = NULL, *env, *reg_path = NULL, *pathbuf = NULL;
     LPDIRECT3DCREATE9 Direct3DCreate9Ptr = NULL;
     IDirect3D9 *iface = NULL;
     void *handle;
@@ -675,8 +676,12 @@ static void load_staging_settings(HWND dialog)
     CheckDlgButton(dialog, IDC_NINE_STATE4, BST_UNCHECKED);
     CheckDlgButton(dialog, IDC_NINE_STATE5, BST_UNCHECKED);
 
-    if (getRegistryString(reg_path_nine, reg_key_module_path, &reg_path))
+    env = getenv("D3D_MODULE_PATH");
+
+    if (env)
     {
+        mod_path = env;
+    } else if (getRegistryString(reg_path_nine, reg_key_module_path, &reg_path)) {
         mod_path = reg_path;
     } else {
 #if defined(D3D9NINE_MODULEPATH)

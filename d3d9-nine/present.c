@@ -29,6 +29,7 @@
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <dlfcn.h>
 
 #include "dri3.h"
@@ -1673,12 +1674,25 @@ BOOL present_has_d3dadapter(Display *gdi_display)
     static int done = 0;
     HKEY regkey;
     LSTATUS rc;
-    char *path = NULL, *pathbuf = NULL;
+    char *env, *path = NULL, *pathbuf = NULL;
 
     /* like in opengl.c (single threaded assumption OK?) */
     if (done)
         return handle != NULL;
     done = 1;
+
+    env = getenv("D3D_MODULE_PATH");
+    if (env)
+    {
+        handle = open_d3dadapter(env, &pathbuf);
+
+        if (!handle)
+        {
+            WINE_ERR("Failed to load d3dadapter9 set by D3D_MODULE_PATH (%s)\n", env);
+            goto cleanup;
+        }
+
+    }
 
     if (!RegOpenKeyA(HKEY_CURRENT_USER, "Software\\Wine\\Direct3DNine", &regkey))
     {
@@ -1733,7 +1747,7 @@ use_default_path:
     if (!handle)
     {
         WINE_ERR("d3d9-nine.dll was built without default module path.\n"
-                "Setting Software\\Wine\\Direct3DNine ModulePath is required\n");
+                 "Setting the envvar D3D_MODULE_PATH or regkey Software\\Wine\\Direct3DNine\\ModulePath is required\n");
         goto cleanup;
     }
 #else
