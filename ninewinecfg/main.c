@@ -34,6 +34,7 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <stdio.h>
 #include <unistd.h>
 #include <dlfcn.h>
 #include <wctype.h>
@@ -620,20 +621,48 @@ static void nine_set(BOOL status, BOOL NoOtherArch)
 
 typedef IDirect3D9* (WINAPI *LPDIRECT3DCREATE9)( UINT );
 
+static void *open_d3dadapter(char *paths, char **res)
+{
+    char *next, *end, *p;
+    void *handle = NULL;
+    char path[MAX_PATH];
+    int len;
+
+    end = paths + strlen(paths);
+    for (p = paths; p < end; p = next + 1)
+    {
+        next = strchr(p, ':');
+        if (!next)
+            next = end;
+
+        len = next - p;
+        snprintf(path, sizeof(path), "%.*s", len, p);
+
+        handle = dlopen(path, RTLD_GLOBAL | RTLD_NOW);
+
+        if (handle) {
+            *res = strdup(path);
+            break;
+        }
+
+        WINE_TRACE("Failed to load '%s': %s\n", path, dlerror());
+    }
+
+    if (handle)
+        WINE_TRACE("Loaded '%s'\n", path);
+
+    return handle;
+}
+
 static void load_staging_settings(HWND dialog)
 {
     HMODULE hmod = NULL;
-    char have_modpath = 0;
-    char *mod_path = NULL;
+    char *mod_path = NULL, *reg_path = NULL, *pathbuf = NULL;
     LPDIRECT3DCREATE9 Direct3DCreate9Ptr = NULL;
     IDirect3D9 *iface = NULL;
     void *handle;
 
-#if defined(D3D9NINE_MODULEPATH)
-    have_modpath = 1;
-    mod_path = (char*)D3D9NINE_MODULEPATH;
-#endif
-
+    EnableWindow(GetDlgItem(dialog, IDC_ENABLE_NATIVE_D3D9), 0);
     CheckDlgButton(dialog, IDC_ENABLE_NATIVE_D3D9, nine_get() ? BST_CHECKED : BST_UNCHECKED);
 
     SetDlgItemTextA(dialog, IDC_NINE_STATE_TIP2, NULL);
@@ -646,10 +675,16 @@ static void load_staging_settings(HWND dialog)
     CheckDlgButton(dialog, IDC_NINE_STATE4, BST_UNCHECKED);
     CheckDlgButton(dialog, IDC_NINE_STATE5, BST_UNCHECKED);
 
-    if (!have_modpath && getRegistryString(reg_path_nine, reg_key_module_path, &mod_path))
-        have_modpath = 1;
+    if (getRegistryString(reg_path_nine, reg_key_module_path, &reg_path))
+    {
+        mod_path = reg_path;
+    } else {
+#if defined(D3D9NINE_MODULEPATH)
+        mod_path = D3D9NINE_MODULEPATH;
+#endif
+    }
 
-    if (have_modpath)
+    if (mod_path)
     {
         SetDlgItemTextA(dialog, IDC_NINE_STATE_TIP2, mod_path);
         CheckDlgButton(dialog, IDC_NINE_STATE2, BST_CHECKED);
@@ -659,7 +694,7 @@ static void load_staging_settings(HWND dialog)
         goto out;
     }
 
-    handle = dlopen(mod_path, RTLD_GLOBAL | RTLD_NOW);
+    handle = open_d3dadapter(mod_path, &pathbuf);
     if (handle)
     {
         CheckDlgButton(dialog, IDC_NINE_STATE3, BST_CHECKED);
@@ -709,16 +744,16 @@ static void load_staging_settings(HWND dialog)
         goto out;
     }
 
-    if (hmod)
-        FreeLibrary(hmod);
-
-    return;
+    EnableWindow(GetDlgItem(dialog, IDC_ENABLE_NATIVE_D3D9), 1);
 
 out:
-    EnableWindow(GetDlgItem(dialog, IDC_ENABLE_NATIVE_D3D9), 0);
-
     if (hmod)
         FreeLibrary(hmod);
+
+    if (reg_path)
+        HeapFree(GetProcessHeap(), 0, reg_path);
+
+    free(pathbuf);
 }
 
 static BOOL ProcessCmdLine(WCHAR *cmdline, BOOL *result)
