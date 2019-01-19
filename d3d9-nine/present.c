@@ -28,6 +28,7 @@
 #include <X11/Xatom.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
+#include <stdio.h>
 #include <dlfcn.h>
 
 #include "dri3.h"
@@ -1632,6 +1633,39 @@ HRESULT present_create_adapter9(Display *gdi_display, HDC hdc, ID3DAdapter9 **ou
     return D3D_OK;
 }
 
+static void *open_d3dadapter(char *paths, char **res)
+{
+    char *next, *end, *p;
+    void *handle = NULL;
+    char path[MAX_PATH];
+    int len;
+
+    end = paths + strlen(paths);
+    for (p = paths; p < end; p = next + 1)
+    {
+        next = strchr(p, ':');
+        if (!next)
+            next = end;
+
+        len = next - p;
+        snprintf(path, sizeof(path), "%.*s", len, p);
+
+        handle = dlopen(path, RTLD_GLOBAL | RTLD_NOW);
+
+        if (handle) {
+            *res = strdup(path);
+            break;
+        }
+
+        WINE_TRACE("Failed to load '%s': %s\n", path, dlerror());
+    }
+
+    if (handle)
+        WINE_TRACE("Loaded '%s'\n", path);
+
+    return handle;
+}
+
 BOOL present_has_d3dadapter(Display *gdi_display)
 {
     static const void * WINAPI (*pD3DAdapter9GetProc)(const char *);
@@ -1639,9 +1673,7 @@ BOOL present_has_d3dadapter(Display *gdi_display)
     static int done = 0;
     HKEY regkey;
     LSTATUS rc;
-    char *path = NULL;
-
-    char pathbuf[MAX_PATH];
+    char *path = NULL, *pathbuf = NULL;
 
     /* like in opengl.c (single threaded assumption OK?) */
     if (done)
@@ -1675,53 +1707,25 @@ BOOL present_has_d3dadapter(Display *gdi_display)
             RegCloseKey(regkey);
             return FALSE;
         }
+
         rc = RegQueryValueExA(regkey, "ModulePath", 0, &type, (LPBYTE)path, &size);
+        RegCloseKey(regkey);
         if (rc != ERROR_SUCCESS)
         {
             WINE_ERR("Failed to read Direct3DNine registry\n");
-            RegCloseKey(regkey);
+            HeapFree(GetProcessHeap(), 0, path);
             goto cleanup;
         }
-        /* Split colon separated path for multi-arch support */
-        if (strstr(path, ":"))
-        {
-            char *tmp_path = strstr(path, ":");
 
-            /* Replace colon by string terminate */
-            *tmp_path = 0;
-            tmp_path ++;
-            handle = dlopen(path, RTLD_GLOBAL | RTLD_NOW);
-            if (!handle)
-            {
-                WINE_TRACE("Failed to load '%s': %s\n", path, dlerror());
-
-                handle = dlopen(tmp_path, RTLD_GLOBAL | RTLD_NOW);
-                if (!handle)
-                {
-                    WINE_TRACE("Failed to load '%s': %s\n", tmp_path, dlerror());
-                    WINE_ERR("Failed to load '%s' and '%s' set by ModulePath.\n",
-                            path, tmp_path);
-                    RegCloseKey(regkey);
-                    goto cleanup;
-                }
-            }
-        }
-        else
+        handle = open_d3dadapter(path, &pathbuf);
+        if (!handle)
         {
-            handle = dlopen(path, RTLD_GLOBAL | RTLD_NOW);
-            if (!handle)
-            {
-                WINE_TRACE("Failed to load %s: %s\n", path, dlerror());
-                WINE_ERR("Failed to load '%s' set by ModulePath.\n", path);
-                RegCloseKey(regkey);
-                goto cleanup;
-            }
+            WINE_ERR("Failed to load d3dadapter9 set by ModulePath (%s)\n", path);
+            HeapFree(GetProcessHeap(), 0, path);
+            goto cleanup;
         }
-        memcpy(pathbuf, path, size >= sizeof(pathbuf) ? (sizeof(pathbuf)-1) : size);
-        pathbuf[sizeof(pathbuf)-1] = 0;
 
         HeapFree(GetProcessHeap(), 0, path);
-        RegCloseKey(regkey);
     }
 
 use_default_path:
@@ -1735,23 +1739,20 @@ use_default_path:
 #else
     if (!handle)
     {
-        handle = dlopen(D3D9NINE_MODULEPATH, RTLD_GLOBAL | RTLD_NOW);
+        handle = open_d3dadapter(D3D9NINE_MODULEPATH, &pathbuf);
         if (!handle)
         {
             WINE_ERR("Failed to load '%s': %s\n", D3D9NINE_MODULEPATH, dlerror());
             goto cleanup;
         }
-        memcpy(pathbuf, D3D9NINE_MODULEPATH,
-               sizeof(D3D9NINE_MODULEPATH) >= sizeof(pathbuf) ?
-                   (sizeof(pathbuf)-1) : sizeof(D3D9NINE_MODULEPATH));
-        pathbuf[sizeof(pathbuf)-1] = 0;
     }
 #endif
+
     /* find our entry point in d3dadapter9 */
     pD3DAdapter9GetProc = dlsym(handle, "D3DAdapter9GetProc");
     if (!pD3DAdapter9GetProc)
     {
-        WINE_ERR("Failed to get the entry point from %s: %s", pathbuf, dlerror());
+        WINE_ERR("Failed to get the entry point from %s: %s\n", pathbuf, dlerror());
         goto cleanup;
     }
 
@@ -1801,14 +1802,14 @@ use_default_path:
 cleanup:
     WINE_ERR("\033[1;31m\nNative Direct3D 9 will be unavailable."
             "\nFor more information visit https://wiki.ixit.cz/d3d9\033[0m\n");
+
     if (handle)
     {
         dlclose(handle);
         handle = NULL;
     }
 
-    if (path)
-        HeapFree(GetProcessHeap(), 0, path);
+    free(pathbuf);
 
     return FALSE;
 }
