@@ -6,6 +6,6 @@ BUILD=0
 REVISION=`git rev-list --count HEAD 2>/dev/null || echo "0"`
 STAGE="devel"
 
-echo -n "$MAJOR.$MINOR.$BUILD.$REVISION-$STAGE"
+printf "$MAJOR.$MINOR.$BUILD.$REVISION-$STAGE"
 
 exit 0
