@@ -29,6 +29,6 @@ ninja -C "$TMP/build32" install
 install -m 755 "$SRC/tools/nine-install.sh" "$TMP/nine/"
 tar -C "$TMP" -czf "$TMP/nine.tar.gz" nine
 
-echo "\nenjoy your release: $TMP/nine.tar.gz\n"
+printf "\nenjoy your release: $TMP/nine.tar.gz\n"
 
 exit 0
