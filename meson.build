@@ -36,8 +36,10 @@ if not cc.compiles(code, name: 'winelib check')
   error('A WINE cross compiler is required')
 endif
 
+dep_wine = cc.find_library('wine')
+
 foreach h : ['wine/debug.h']
-  if not cc.has_header(h)
+  if not cc.has_header(h, dependencies : dep_wine)
     error('WINE headers not found')
   endif
 endforeach
