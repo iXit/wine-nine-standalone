@@ -1,4 +1,5 @@
 #!/bin/sh -e
+# SPDX-License-Identifier: LGPL-2.1-or-later
 
 SRC=`dirname $(readlink -f $0)`
 

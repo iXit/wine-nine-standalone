@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
 d3d9_res = custom_target(
   'version.res',
   input   : 'version.rc',

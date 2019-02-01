@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
 ninewinecfg_res = custom_target(
   'ninewinecfg.res',
   input        : 'ninewinecfg.rc',

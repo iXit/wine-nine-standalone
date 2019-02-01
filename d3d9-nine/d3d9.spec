@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: LGPL-2.1-or-later
 @ stdcall Direct3DShaderValidatorCreate9()
 @ stub PSGPError
 @ stub PSGPSampleTexture
