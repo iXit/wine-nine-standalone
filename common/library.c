@@ -2,12 +2,16 @@
 
 #include <d3dadapter/drm.h>
 #include <wine/debug.h>
+
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <X11/Xatom.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <dlfcn.h>
+#include <unistd.h>
 
 #include "library.h"
 #include "registry.h"
@@ -21,6 +25,7 @@ static void *open_d3dadapter(char *paths, char **res, char **err)
     char *next, *end, *p, *lasterr = NULL;
     void *handle = NULL;
     char path[MAX_PATH];
+    struct stat st;
     int len;
 
     end = paths + strlen(paths);
@@ -32,6 +37,9 @@ static void *open_d3dadapter(char *paths, char **res, char **err)
 
         len = next - p;
         snprintf(path, sizeof(path), "%.*s", len, p);
+
+        if (!stat(path, &st) && S_ISDIR(st.st_mode))
+            strcat(path, "/" D3DADAPTER9);
 
         WINE_TRACE("Trying to load '%s'\n", path);
         handle = dlopen(path, RTLD_GLOBAL | RTLD_NOW);

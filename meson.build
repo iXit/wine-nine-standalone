@@ -106,9 +106,8 @@ dep_shlwapi = cc.find_library('shlwapi')
 
 moduledir = dep_d3dadapter9.get_pkgconfig_variable('moduledir')
 if moduledir != ''
-  modulepath = moduledir + '/d3dadapter9.so.1'
-  message('default module path: ' + modulepath)
-  pp_args += '-DD3D9NINE_MODULEPATH="' + modulepath + '"'
+  message('default module path: ' + moduledir)
+  pp_args += '-DD3D9NINE_MODULEPATH="' + moduledir + '"'
 endif
 
 foreach arg : pp_args
