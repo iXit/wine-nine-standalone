@@ -14,6 +14,7 @@ project(
 project_url = 'https://github.com/dhewg/nine'
 
 cc = meson.get_compiler('c')
+find_program(cc.cmd_array()[0], native : true)
 
 null_dep = dependency('', required : false)
 
