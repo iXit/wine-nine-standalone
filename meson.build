@@ -11,7 +11,7 @@ project(
   ],
 )
 
-project_url = 'https://github.com/dhewg/nine'
+project_url = 'https://github.com/iXit/wine-nine-standalone'
 
 cc = meson.get_compiler('c')
 find_program(cc.cmd_array()[0], native : true)
