@@ -28,7 +28,6 @@ pp_args = [
   '-DDECLSPEC_HOTPATCH=__attribute__((__ms_hook_prologue__))',
   '-DNINE_VERSION="v' + meson.project_version() + '"',
   '-DNINE_URL="' + project_url + '"',
-  '-DWINE_STAGING=0',
 ]
 
 code = '''#ifndef __WINE__

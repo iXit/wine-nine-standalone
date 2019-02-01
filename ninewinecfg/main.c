@@ -30,11 +30,6 @@
 
 WINE_DEFAULT_DEBUG_CHANNEL(ninecfg);
 
-#ifndef WINE_STAGING
-#warning DO NOT DEFINE WINE_STAGING TO 1 ON STABLE BRANCHES, ONLY ON WINE-STAGING ENABLED WINES
-#define WINE_STAGING 1
-#endif
-
 static const char * const fn_nine_dll = "d3d9-nine.dll";
 static const char * const reg_path_dll_overrides = "Software\\Wine\\DllOverrides";
 static const char * const reg_path_dll_redirects = "Software\\Wine\\DllRedirects";
@@ -42,15 +37,10 @@ static const char * const reg_key_d3d9 = "d3d9";
 static const char * const reg_path_nine = "Software\\Wine\\Direct3DNine";
 static const char * const reg_key_module_path = "ModulePath";
 
-#if !WINE_STAGING
 static const char * const fn_d3d9_dll = "d3d9.dll";
 static const char * const fn_nine_exe = "ninewinecfg.exe";
 static const char * const reg_value_override = "native";
-#else
-static const char * const reg_value_redirect = fn_nine_dll;
-#endif
 
-#if !WINE_STAGING
 static BOOL isWin64(void)
 {
     return sizeof(void*) == 8;
@@ -345,7 +335,6 @@ static BOOL nine_get_system_path(CHAR *pOut, DWORD SizeOut)
         return !!GetSystemDirectoryA((LPSTR)pOut, SizeOut);
     }
 }
-#endif
 
 /*
  * Winecfg
@@ -478,13 +467,6 @@ static BOOL nine_get(void)
     BOOL ret = FALSE;
     LPSTR value;
 
-#if WINE_STAGING
-    if (getRegistryString(reg_path_dll_redirects, reg_key_d3d9, &value))
-    {
-        ret = !strcmp(value, reg_value_redirect);
-        HeapFree(GetProcessHeap(), 0, value);
-    }
-#else
     CHAR buf[MAX_PATH];
 
     if (getRegistryString(reg_path_dll_overrides, reg_key_d3d9, &value))
@@ -517,29 +499,12 @@ static BOOL nine_get(void)
         WINE_ERR("removing dead symlink\n");
         return FALSE;
     }
-#endif
 
     return ret;
 }
 
 static void nine_set(BOOL status, BOOL NoOtherArch)
 {
-#if WINE_STAGING
-    /* Delete unused DllOverrides key */
-    delRegistryKey(reg_path_dll_overrides, reg_key_d3d9);
-
-    /* Active dll redirect */
-    if (!status)
-    {
-        if (!delRegistryKey(reg_path_dll_redirects, reg_key_d3d9))
-            WINE_ERR("Failed to delete 'HKCU\\%s\\%s'\n'", reg_path_dll_redirects, reg_key_d3d9);
-    }
-    else
-    {
-        if (!setRegistryString(reg_path_dll_redirects, reg_key_d3d9, reg_value_redirect))
-            WINE_ERR("Failed to write 'HKCU\\%s\\%s'\n", reg_path_dll_redirects, reg_key_d3d9);
-    }
-#else
     CHAR dst[MAX_PATH];
 
     /* Prevent infinite recursion if called from other arch already */
@@ -603,7 +568,6 @@ static void nine_set(BOOL status, BOOL NoOtherArch)
     }
     else
         DeleteSymLinkA(dst);
-#endif
 }
 
 typedef IDirect3D9* (WINAPI *LPDIRECT3DCREATE9)( UINT );
