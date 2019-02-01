@@ -7,3 +7,10 @@ option(
   choices : ['auto', 'true', 'false'],
   description : 'enable dri2 support',
 )
+
+option(
+  'distro-independent',
+  type : 'boolean',
+  value : 'false',
+  description : 'find d3dadapter9.so.1 at runtime at known distro library directories',
+)

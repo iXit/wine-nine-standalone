@@ -109,10 +109,18 @@ void *common_load_d3dadapter(char **path, char **err)
 
     return handle;
 #else
-    WINE_ERR("d3d9-nine.dll was built without default module path.\n"
-             "Setting the envvar D3D_MODULE_PATH or "
-             "regkey Software\\Wine\\Direct3DNine\\ModulePath is required\n");
+    handle = open_d3dadapter("/usr/lib/x86_64-linux-gnu/d3d:" // 64bit debian/ubuntu
+                             "/usr/lib/i386-linux-gnu/d3d:"   // 32bit debian/ubuntu
+                             "/usr/lib64/d3d:"                // 64bit gentoo/suse/fedora
+                             "/usr/lib/d3d:"                  // 32bit suse/fedora, 64bit arch
+                             "/usr/lib32/d3d"                 // 32bit arch/gentoo
+                             , path, err);
 
-    return NULL;
+    if (!handle)
+        WINE_ERR(D3DADAPTER9 " was not found in your system.\n"
+                 "Setting the envvar D3D_MODULE_PATH or "
+                 "regkey Software\\Wine\\Direct3DNine\\ModulePath is required\n");
+
+    return handle;
 #endif
 }

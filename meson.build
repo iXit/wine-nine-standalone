@@ -105,8 +105,14 @@ dep_ole32 = cc.find_library('ole32')
 dep_shlwapi = cc.find_library('shlwapi')
 
 moduledir = dep_d3dadapter9.get_pkgconfig_variable('moduledir')
-if moduledir != ''
-  message('default module path: ' + moduledir)
+
+_distroindependent = get_option('distro-independent')
+if (not _distroindependent) and (moduledir == '')
+  error('no d3dadapter9.so.1 default module path available')
+endif
+
+if not _distroindependent
+  message('d3dadapter9.so.1 default module path: ' + moduledir)
   pp_args += '-DD3D9NINE_MODULEPATH="' + moduledir + '"'
 endif
 
