@@ -15,6 +15,9 @@ ninewinecfg_exe = executable(
     ninewinecfg_res,
   ],
   gui_app        : true,
+  link_with      : [
+                     libd3d9common,
+                   ],
   dependencies   : [
                      dep_dl,
                      dep_shell32,

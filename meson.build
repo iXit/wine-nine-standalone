@@ -115,5 +115,6 @@ foreach arg : pp_args
   add_project_arguments(arg, language : ['c'])
 endforeach
 
+subdir('common')
 subdir('d3d9-nine')
 subdir('ninewinecfg')

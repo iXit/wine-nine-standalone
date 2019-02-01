@@ -26,20 +26,14 @@
 #include <dlfcn.h>
 #include <wctype.h>
 
+#include "../common/registry.h"
 #include "resource.h"
 
 WINE_DEFAULT_DEBUG_CHANNEL(ninecfg);
 
 static const char * const fn_nine_dll = "d3d9-nine.dll";
-static const char * const reg_path_dll_overrides = "Software\\Wine\\DllOverrides";
-static const char * const reg_path_dll_redirects = "Software\\Wine\\DllRedirects";
-static const char * const reg_key_d3d9 = "d3d9";
-static const char * const reg_path_nine = "Software\\Wine\\Direct3DNine";
-static const char * const reg_key_module_path = "ModulePath";
-
 static const char * const fn_d3d9_dll = "d3d9.dll";
 static const char * const fn_nine_exe = "ninewinecfg.exe";
-static const char * const reg_value_override = "native";
 
 static BOOL isWin64(void)
 {
@@ -358,110 +352,6 @@ WCHAR* load_string (UINT id)
 /*
  * Gallium nine
  */
-static BOOL getRegistryString(LPCSTR path, LPCSTR name, LPSTR *value)
-{
-    HKEY regkey;
-    DWORD type;
-    DWORD size = 0;
-
-    WINE_TRACE("Getting string key '%s' at 'HKCU\\%s'\n", name, path);
-
-    if (RegOpenKeyA(HKEY_CURRENT_USER, path, &regkey) != ERROR_SUCCESS)
-    {
-        WINE_TRACE("Failed to open path 'HKCU\\%s'\n", path);
-        return FALSE;
-    }
-
-    if (RegQueryValueExA(regkey, name, 0, &type, NULL, &size) != ERROR_SUCCESS)
-    {
-        WINE_TRACE("Failed to query key '%s' at 'HKCU\\%s'\n", name, path);
-        RegCloseKey(regkey);
-        return FALSE;
-    }
-
-    if (type != REG_SZ)
-    {
-        WINE_TRACE("Key '%s' at 'HKCU\\%s' is not a string\n", name, path);
-        RegCloseKey(regkey);
-        return FALSE;
-    }
-
-    *value = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, size + 1);
-    if (!(*value))
-    {
-        RegCloseKey(regkey);
-        return FALSE;
-    }
-
-    if (RegQueryValueExA(regkey, name, 0, &type, (LPBYTE)*value, &size) != ERROR_SUCCESS)
-    {
-        WINE_TRACE("Failed to read value of key '%s' at 'HKCU\\%s'\n", name, path);
-        HeapFree(GetProcessHeap(), 0, *value);
-        RegCloseKey(regkey);
-        return FALSE;
-    }
-
-    RegCloseKey(regkey);
-
-    WINE_TRACE("Value is '%s'\n", *value);
-
-    return TRUE;
-}
-
-static BOOL setRegistryString(LPCSTR path, LPCSTR name, LPCSTR value)
-{
-    HKEY regkey;
-
-    WINE_TRACE("Setting key '%s' at 'HKCU\\%s' to '%s'\n", name, path, value);
-
-    if (RegCreateKeyA(HKEY_CURRENT_USER, path, &regkey) != ERROR_SUCCESS)
-    {
-        WINE_TRACE("Failed to open path 'HKCU\\%s'\n", path);
-        return FALSE;
-    }
-
-    if (RegSetValueExA(regkey, name, 0, REG_SZ, (LPBYTE)value, strlen(value)) != ERROR_SUCCESS)
-    {
-        WINE_TRACE("Failed to write key '%s' at 'HKCU\\%s'\n", name, path);
-        RegCloseKey(regkey);
-        return FALSE;
-    }
-
-    RegCloseKey(regkey);
-
-    return TRUE;
-}
-
-static BOOL delRegistryKey(LPCSTR path, LPCSTR name)
-{
-    HKEY regkey;
-    LSTATUS rc;
-
-    WINE_TRACE("Deleting key '%s' at 'HKCU\\%s'\n", name, path);
-
-    rc = RegOpenKeyA(HKEY_CURRENT_USER, path, &regkey);
-    if (rc == ERROR_FILE_NOT_FOUND)
-        return TRUE;
-
-    if (rc != ERROR_SUCCESS)
-    {
-        WINE_TRACE("Failed to open path 'HKCU\\%s'\n", path);
-        return FALSE;
-    }
-
-    rc = RegDeleteValueA(regkey, name);
-    if (rc != ERROR_FILE_NOT_FOUND && rc != ERROR_SUCCESS)
-    {
-        WINE_TRACE("Failed to delete key '%s' at 'HKCU\\%s'\n", name, path);
-        RegCloseKey(regkey);
-        return FALSE;
-    }
-
-    RegCloseKey(regkey);
-
-    return TRUE;
-}
-
 static BOOL nine_get(void)
 {
     BOOL ret = FALSE;
@@ -469,7 +359,7 @@ static BOOL nine_get(void)
 
     CHAR buf[MAX_PATH];
 
-    if (getRegistryString(reg_path_dll_overrides, reg_key_d3d9, &value))
+    if (common_get_registry_string(reg_path_dll_overrides, reg_key_d3d9, &value))
     {
         ret = !strcmp(value, reg_value_override);
         HeapFree(GetProcessHeap(), 0, value);
@@ -519,17 +409,17 @@ static void nine_set(BOOL status, BOOL NoOtherArch)
     }
 
     /* Delete unused DllRedirects key */
-    delRegistryKey(reg_path_dll_redirects, reg_key_d3d9);
+    common_del_registry_key(reg_path_dll_redirects, reg_key_d3d9);
 
     /* enable native dll */
     if (!status)
     {
-        if (!delRegistryKey(reg_path_dll_overrides, reg_key_d3d9))
+        if (!common_del_registry_key(reg_path_dll_overrides, reg_key_d3d9))
             WINE_ERR("Failed to delete 'HKCU\\%s\\%s'\n'", reg_path_dll_overrides, reg_key_d3d9);
     }
     else
     {
-        if (!setRegistryString(reg_path_dll_overrides, reg_key_d3d9, reg_value_override))
+        if (!common_set_registry_string(reg_path_dll_overrides, reg_key_d3d9, reg_value_override))
             WINE_ERR("Failed to write 'HKCU\\%s\\%s'\n", reg_path_dll_overrides, reg_key_d3d9);
     }
 
@@ -631,7 +521,7 @@ static void load_settings(HWND dialog)
     if (env)
     {
         mod_path = env;
-    } else if (getRegistryString(reg_path_nine, reg_key_module_path, &reg_path)) {
+    } else if (common_get_registry_string(reg_path_nine, reg_key_module_path, &reg_path)) {
         mod_path = reg_path;
     } else {
 #if defined(D3D9NINE_MODULEPATH)

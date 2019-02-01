@@ -20,6 +20,9 @@ d3d9_dll = shared_library(
     d3d9_res,
   ],
   name_prefix    : '',
+  link_with      : [
+                     libd3d9common,
+                   ],
   dependencies   : [
                      dep_d3dadapter9,
                      dep_dl,
