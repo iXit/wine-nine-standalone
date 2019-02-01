@@ -26,6 +26,7 @@
 #include <dlfcn.h>
 #include <wctype.h>
 
+#include "../common/library.h"
 #include "../common/registry.h"
 #include "resource.h"
 
@@ -462,43 +463,10 @@ static void nine_set(BOOL status, BOOL NoOtherArch)
 
 typedef IDirect3D9* (WINAPI *LPDIRECT3DCREATE9)( UINT );
 
-static void *open_d3dadapter(char *paths, char **res)
-{
-    char *next, *end, *p;
-    void *handle = NULL;
-    char path[MAX_PATH];
-    int len;
-
-    end = paths + strlen(paths);
-    for (p = paths; p < end; p = next + 1)
-    {
-        next = strchr(p, ':');
-        if (!next)
-            next = end;
-
-        len = next - p;
-        snprintf(path, sizeof(path), "%.*s", len, p);
-
-        handle = dlopen(path, RTLD_GLOBAL | RTLD_NOW);
-
-        if (handle) {
-            *res = strdup(path);
-            break;
-        }
-
-        WINE_TRACE("Failed to load '%s': %s\n", path, dlerror());
-    }
-
-    if (handle)
-        WINE_TRACE("Loaded '%s'\n", path);
-
-    return handle;
-}
-
 static void load_settings(HWND dialog)
 {
     HMODULE hmod = NULL;
-    char *mod_path = NULL, *env, *reg_path = NULL, *pathbuf = NULL;
+    char *mod_path = NULL, *env, *reg_path = NULL, *path = NULL, *err = NULL;
     LPDIRECT3DCREATE9 Direct3DCreate9Ptr = NULL;
     IDirect3D9 *iface = NULL;
     void *handle;
@@ -539,15 +507,16 @@ static void load_settings(HWND dialog)
         goto out;
     }
 
-    handle = open_d3dadapter(mod_path, &pathbuf);
+    handle = common_load_d3dadapter(&path, &err);
+
     if (handle)
     {
         CheckDlgButton(dialog, IDC_NINE_STATE3, BST_CHECKED);
-        SetDlgItemTextA(dialog, IDC_NINE_STATE_TIP3, pathbuf);
+        SetDlgItemTextA(dialog, IDC_NINE_STATE_TIP3, path);
     }
     else
     {
-        SetDlgItemTextA(dialog, IDC_NINE_STATE_TIP3, dlerror());
+        SetDlgItemTextA(dialog, IDC_NINE_STATE_TIP3, err);
         goto out;
     }
 
@@ -599,7 +568,8 @@ out:
     if (reg_path)
         HeapFree(GetProcessHeap(), 0, reg_path);
 
-    free(pathbuf);
+    free(path);
+    free(err);
 }
 
 static BOOL ProcessCmdLine(WCHAR *cmdline, BOOL *result)

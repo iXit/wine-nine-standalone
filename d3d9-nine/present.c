@@ -19,6 +19,7 @@
 #include <stdlib.h>
 #include <dlfcn.h>
 
+#include "../common/library.h"
 #include "dri3.h"
 #include "wndproc.h"
 
@@ -1621,133 +1622,22 @@ HRESULT present_create_adapter9(Display *gdi_display, HDC hdc, ID3DAdapter9 **ou
     return D3D_OK;
 }
 
-static void *open_d3dadapter(char *paths, char **res)
-{
-    char *next, *end, *p;
-    void *handle = NULL;
-    char path[MAX_PATH];
-    int len;
-
-    end = paths + strlen(paths);
-    for (p = paths; p < end; p = next + 1)
-    {
-        next = strchr(p, ':');
-        if (!next)
-            next = end;
-
-        len = next - p;
-        snprintf(path, sizeof(path), "%.*s", len, p);
-
-        handle = dlopen(path, RTLD_GLOBAL | RTLD_NOW);
-
-        if (handle) {
-            *res = strdup(path);
-            break;
-        }
-
-        WINE_TRACE("Failed to load '%s': %s\n", path, dlerror());
-    }
-
-    if (handle)
-        WINE_TRACE("Loaded '%s'\n", path);
-
-    return handle;
-}
-
 BOOL present_has_d3dadapter(Display *gdi_display)
 {
     static const void * WINAPI (*pD3DAdapter9GetProc)(const char *);
     static void *handle = NULL;
     static int done = 0;
-    HKEY regkey;
-    LSTATUS rc;
-    char *env, *path = NULL, *pathbuf = NULL;
+    char *pathbuf = NULL;
 
     /* like in opengl.c (single threaded assumption OK?) */
     if (done)
         return handle != NULL;
     done = 1;
 
-    env = getenv("D3D_MODULE_PATH");
-    if (env)
-    {
-        handle = open_d3dadapter(env, &pathbuf);
+    handle = common_load_d3dadapter(&pathbuf, NULL);
 
-        if (!handle)
-        {
-            WINE_ERR("Failed to load d3dadapter9 set by D3D_MODULE_PATH (%s)\n", env);
-            goto cleanup;
-        }
-
-    }
-
-    if (!RegOpenKeyA(HKEY_CURRENT_USER, "Software\\Wine\\Direct3DNine", &regkey))
-    {
-        DWORD type;
-        DWORD size = 0;
-
-        rc = RegQueryValueExA(regkey, "ModulePath", 0, &type, NULL, &size);
-        if (rc == ERROR_FILE_NOT_FOUND)
-        {
-            RegCloseKey(regkey);
-            goto use_default_path;
-        }
-
-        WINE_TRACE("Reading registry key for module path\n");
-        if (rc != ERROR_SUCCESS  || type != REG_SZ)
-        {
-            WINE_ERR("Failed to read Direct3DNine ModulePath registry key: Invalid content\n");
-            RegCloseKey(regkey);
-            goto cleanup;
-        }
-
-        path = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, size + 1);
-        if (!path)
-        {
-            WINE_ERR("Out of memory\n");
-            RegCloseKey(regkey);
-            return FALSE;
-        }
-
-        rc = RegQueryValueExA(regkey, "ModulePath", 0, &type, (LPBYTE)path, &size);
-        RegCloseKey(regkey);
-        if (rc != ERROR_SUCCESS)
-        {
-            WINE_ERR("Failed to read Direct3DNine registry\n");
-            HeapFree(GetProcessHeap(), 0, path);
-            goto cleanup;
-        }
-
-        handle = open_d3dadapter(path, &pathbuf);
-        if (!handle)
-        {
-            WINE_ERR("Failed to load d3dadapter9 set by ModulePath (%s)\n", path);
-            HeapFree(GetProcessHeap(), 0, path);
-            goto cleanup;
-        }
-
-        HeapFree(GetProcessHeap(), 0, path);
-    }
-
-use_default_path:
-#if !defined(D3D9NINE_MODULEPATH)
     if (!handle)
-    {
-        WINE_ERR("d3d9-nine.dll was built without default module path.\n"
-                 "Setting the envvar D3D_MODULE_PATH or regkey Software\\Wine\\Direct3DNine\\ModulePath is required\n");
         goto cleanup;
-    }
-#else
-    if (!handle)
-    {
-        handle = open_d3dadapter(D3D9NINE_MODULEPATH, &pathbuf);
-        if (!handle)
-        {
-            WINE_ERR("Failed to load '%s': %s\n", D3D9NINE_MODULEPATH, dlerror());
-            goto cleanup;
-        }
-    }
-#endif
 
     /* find our entry point in d3dadapter9 */
     pD3DAdapter9GetProc = dlsym(handle, "D3DAdapter9GetProc");
