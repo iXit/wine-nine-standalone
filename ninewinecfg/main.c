@@ -605,7 +605,7 @@ static void *open_d3dadapter(char *paths, char **res)
     return handle;
 }
 
-static void load_staging_settings(HWND dialog)
+static void load_settings(HWND dialog)
 {
     HMODULE hmod = NULL;
     char *mod_path = NULL, *env, *reg_path = NULL, *pathbuf = NULL;
@@ -782,7 +782,7 @@ static INT_PTR CALLBACK AppDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM l
     switch (uMsg)
     {
     case WM_INITDIALOG:
-        load_staging_settings(hDlg);
+        load_settings(hDlg);
         break;
 
     case WM_COMMAND:
