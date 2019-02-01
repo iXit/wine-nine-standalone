@@ -1815,7 +1815,7 @@ use_default_path:
 
 cleanup:
     WINE_ERR("\033[1;31m\nNative Direct3D 9 will be unavailable."
-            "\nFor more information visit https://wiki.ixit.cz/d3d9\033[0m\n");
+            "\nFor more information visit " NINE_URL "\033[0m\n");
 
     if (handle)
     {
