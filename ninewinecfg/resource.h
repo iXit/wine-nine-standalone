@@ -18,20 +18,18 @@
 #define IDS_NINECFG_NINE_LOADABLE                7
 #define IDS_NINECFG_D3D_ERROR                    8
 
-#define IDD_NINE                        10
-#define IDD_WINECFG                     11
-#define IDC_ENABLE_NATIVE_D3D9          12
-#define IDC_NINE_STATE2                 14
-#define IDC_NINE_STATE3                 15
-#define IDC_NINE_STATE4                 16
-#define IDC_NINE_STATE5                 17
+#define IDD_NINE                                10
+#define IDC_ENABLE_NATIVE_D3D9                  11
 
-#define IDC_NINE_STATE_TIP2             19
-#define IDC_NINE_STATE_TIP3             20
-#define IDC_NINE_STATE_TIP4             21
-#define IDC_NINE_STATE_TIP5             22
+#define IDC_NINE_STATE_SO                       12
+#define IDC_NINE_STATE_DLL                      13
+#define IDC_NINE_STATE_CREATE                   14
 
-#define IDD_ABOUT                       24
-#define IDC_NINE_URL                    25
+#define IDC_NINE_STATE_TIP_SO                   15
+#define IDC_NINE_STATE_TIP_DLL                  16
+#define IDC_NINE_STATE_TIP_CREATE               17
+
+#define IDD_ABOUT                               20
+#define IDC_NINE_URL                            21
 
 #endif /* __NINECFG_RESOURCE_H */

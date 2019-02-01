@@ -466,7 +466,7 @@ typedef IDirect3D9* (WINAPI *LPDIRECT3DCREATE9)( UINT );
 static void load_settings(HWND dialog)
 {
     HMODULE hmod = NULL;
-    char *mod_path = NULL, *env, *reg_path = NULL, *path = NULL, *err = NULL;
+    char *path = NULL, *err = NULL;
     LPDIRECT3DCREATE9 Direct3DCreate9Ptr = NULL;
     IDirect3D9 *iface = NULL;
     void *handle;
@@ -474,49 +474,24 @@ static void load_settings(HWND dialog)
     EnableWindow(GetDlgItem(dialog, IDC_ENABLE_NATIVE_D3D9), 0);
     CheckDlgButton(dialog, IDC_ENABLE_NATIVE_D3D9, nine_get() ? BST_CHECKED : BST_UNCHECKED);
 
-    SetDlgItemTextA(dialog, IDC_NINE_STATE_TIP2, NULL);
-    SetDlgItemTextA(dialog, IDC_NINE_STATE_TIP3, NULL);
-    SetDlgItemTextA(dialog, IDC_NINE_STATE_TIP4, NULL);
-    SetDlgItemTextA(dialog, IDC_NINE_STATE_TIP5, NULL);
+    SetDlgItemTextA(dialog, IDC_NINE_STATE_TIP_SO, NULL);
+    SetDlgItemTextA(dialog, IDC_NINE_STATE_TIP_DLL, NULL);
+    SetDlgItemTextA(dialog, IDC_NINE_STATE_TIP_CREATE, NULL);
 
-    CheckDlgButton(dialog, IDC_NINE_STATE2, BST_UNCHECKED);
-    CheckDlgButton(dialog, IDC_NINE_STATE3, BST_UNCHECKED);
-    CheckDlgButton(dialog, IDC_NINE_STATE4, BST_UNCHECKED);
-    CheckDlgButton(dialog, IDC_NINE_STATE5, BST_UNCHECKED);
-
-    env = getenv("D3D_MODULE_PATH");
-
-    if (env)
-    {
-        mod_path = env;
-    } else if (common_get_registry_string(reg_path_nine, reg_key_module_path, &reg_path)) {
-        mod_path = reg_path;
-    } else {
-#if defined(D3D9NINE_MODULEPATH)
-        mod_path = D3D9NINE_MODULEPATH;
-#endif
-    }
-
-    if (mod_path)
-    {
-        SetDlgItemTextA(dialog, IDC_NINE_STATE_TIP2, mod_path);
-        CheckDlgButton(dialog, IDC_NINE_STATE2, BST_CHECKED);
-    }
-    else
-    {
-        goto out;
-    }
+    CheckDlgButton(dialog, IDC_NINE_STATE_SO, BST_UNCHECKED);
+    CheckDlgButton(dialog, IDC_NINE_STATE_DLL, BST_UNCHECKED);
+    CheckDlgButton(dialog, IDC_NINE_STATE_CREATE, BST_UNCHECKED);
 
     handle = common_load_d3dadapter(&path, &err);
 
     if (handle)
     {
-        CheckDlgButton(dialog, IDC_NINE_STATE3, BST_CHECKED);
-        SetDlgItemTextA(dialog, IDC_NINE_STATE_TIP3, path);
+        CheckDlgButton(dialog, IDC_NINE_STATE_SO, BST_CHECKED);
+        SetDlgItemTextA(dialog, IDC_NINE_STATE_TIP_SO, path);
     }
     else
     {
-        SetDlgItemTextA(dialog, IDC_NINE_STATE_TIP3, err);
+        SetDlgItemTextA(dialog, IDC_NINE_STATE_TIP_SO, err);
         goto out;
     }
 
@@ -527,14 +502,14 @@ static void load_settings(HWND dialog)
 
     if (hmod && Direct3DCreate9Ptr)
     {
-        CheckDlgButton(dialog, IDC_NINE_STATE4, BST_CHECKED);
+        CheckDlgButton(dialog, IDC_NINE_STATE_DLL, BST_CHECKED);
         {
             Dl_info info;
 
             if (dladdr(hmod, &info) && info.dli_fname)
-                SetDlgItemTextA(dialog, IDC_NINE_STATE_TIP4, info.dli_fname);
+                SetDlgItemTextA(dialog, IDC_NINE_STATE_TIP_DLL, info.dli_fname);
             else
-                SetDlgItemTextA(dialog, IDC_NINE_STATE_TIP4, dlerror());
+                SetDlgItemTextA(dialog, IDC_NINE_STATE_TIP_DLL, dlerror());
         }
     }
     else
@@ -543,7 +518,7 @@ static void load_settings(HWND dialog)
         FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM, NULL, GetLastError(),
                       MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPWSTR)buf, 256, NULL);
 
-        SetDlgItemTextW(dialog, IDC_NINE_STATE_TIP4, buf);
+        SetDlgItemTextW(dialog, IDC_NINE_STATE_TIP_DLL, buf);
         goto out;
     }
 
@@ -551,11 +526,11 @@ static void load_settings(HWND dialog)
     if (iface)
     {
         IDirect3DDevice9_Release(iface);
-        CheckDlgButton(dialog, IDC_NINE_STATE5, BST_CHECKED);
+        CheckDlgButton(dialog, IDC_NINE_STATE_CREATE, BST_CHECKED);
     }
     else
     {
-        SetDlgItemTextW(dialog, IDC_NINE_STATE_TIP5, load_string(IDS_NINECFG_D3D_ERROR));
+        SetDlgItemTextW(dialog, IDC_NINE_STATE_TIP_CREATE, load_string(IDS_NINECFG_D3D_ERROR));
         goto out;
     }
 
@@ -564,9 +539,6 @@ static void load_settings(HWND dialog)
 out:
     if (hmod)
         FreeLibrary(hmod);
-
-    if (reg_path)
-        HeapFree(GetProcessHeap(), 0, reg_path);
 
     free(path);
     free(err);
