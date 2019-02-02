@@ -6,7 +6,7 @@ git:
   depth: false
 
 env:
-  - RELEASE_TARBALL="$HOME/nine-${TRAVIS_TAG:-$TRAVIS_COMMIT}.tar.gz"
+  - RELEASE_TARBALL="$HOME/gallium-nine-standalone-${TRAVIS_TAG:-$TRAVIS_COMMIT}.tar.gz"
 
 addons:
   apt:
