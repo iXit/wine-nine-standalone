@@ -5,7 +5,7 @@ option(
   type : 'combo',
   value : 'auto',
   choices : ['auto', 'true', 'false'],
-  description : 'enable dri2 support',
+  description : 'enable DRI2 support',
 )
 
 option(

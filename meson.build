@@ -92,6 +92,9 @@ if _dri2 != 'false'
   dep_gl = dependency('gl', required : _dri2 == 'true')
   dep_egl = dependency('egl', required : _dri2 == 'true')
   pp_args += '-DD3D9NINE_DRI2=1'
+  message('DRI2 support is enabled')
+else
+  message('DRI2 support is disabled')
 endif
 
 dep_dxguid = cc.find_library('dxguid')
@@ -111,7 +114,9 @@ if (not _distroindependent) and (moduledir == '')
   error('no d3dadapter9.so.1 default module path available')
 endif
 
-if not _distroindependent
+if _distroindependent
+  message('distro independent build')
+else
   message('d3dadapter9.so.1 default module path: ' + moduledir)
   pp_args += '-DD3D9NINE_MODULEPATH="' + moduledir + '"'
 endif
