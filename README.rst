@@ -63,17 +63,9 @@ And optionally, for the DRI2 fallback:
 * libgl
 * libegl
 
-On `Debian <https://www.debian.org/>`_ and `Ubuntu <https://www.ubuntu.com/>`_ the required development packages are:
-
-   ``meson pkg-config``
-
-   in addition to:
-
-   ``libc6-dev wine64-tools libwine-dev libd3dadapter9-mesa-dev libx11-dev libx11-xcb-dev libxcb1-dev libxcb-dri3-dev libxcb-present-dev libxcb-xfixes0-dev libgl1-mesa-dev libegl1-mesa-dev``
-
-   for ``:amd64`` as well as ``:i386``
-
 Most DirectX 9 games are 32bit, for which you require 32bit binaries. For the few 64bit DirectX 9 games 64bit binaries are required.
+
+For distro specific help, see `our wiki <https://github.com/iXit/wine-nine-standalone/wiki>`_.
 
 To get started, it is recommended to use the script ``release.sh``, which will build for both architectures (so the build dependencies for both are required). It creates a tarball of the binaries as well as the runtime script ``nine-install.sh`` to set up a WINE prefix (see Usage_ below).
 
