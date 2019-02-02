@@ -113,7 +113,7 @@ void *common_load_d3dadapter(char **path, char **err)
                              , path, err);
 
     if (!handle)
-        WINE_ERR(D3DADAPTER9 " was not found in your system.\n"
+        WINE_ERR(D3DADAPTER9 " was not found on your system.\n"
                  "Setting the envvar D3D_MODULE_PATH or "
                  "regkey Software\\Wine\\Direct3DNine\\ModulePath is required\n");
 
