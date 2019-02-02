@@ -54,7 +54,7 @@ ninja -C "$TMP/build32" install
 install -m 644 "$SRC/LICENSE" "$TMP/nine/"
 install -m 644 "$SRC/README.rst" "$TMP/nine/"
 install -m 755 "$SRC/tools/nine-install.sh" "$TMP/nine/"
-tar -C "$TMP" -czf "$OUT" nine
+tar --owner=nine:1000 --group=nine:1000 -C "$TMP" -czf "$OUT" nine
 
 printf "\nenjoy your release: $OUT\n"
 
