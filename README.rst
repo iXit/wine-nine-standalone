@@ -41,6 +41,19 @@ Your distribution may provide a package, avoiding the need to compile the code y
 * Arch Linux - releases: `gallium-nine (AUR) <https://aur.archlinux.org/packages/gallium-nine>`_, snapshots: `gallium-nine-git (AUR) <https://aur.archlinux.org/packages/gallium-nine-git>`_
 * Gentoo Linux - `app-emulation/gallium-nine-standalone <https://packages.gentoo.org/packages/app-emulation/gallium-nine-standalone>`_
 
+Usage
+-----
+This part assumes that you used a release binary or the ``release.sh`` script as described below.
+
+* Extract the tarball in e.g. your home directory
+* run the ``nine-install.sh`` script from the directory you extracted the tarball in
+
+The latter symlinks the extracted binaries to your WINE prefix and enables Gallium Nine Standalone. To target another WINE prefix than the standard ``~/.wine``, just set ``WINEPREFIX`` accordingly before you run ``nine-install.sh``.
+
+Gallium Nine Standalone comes with a GUI.
+
+For the 32bit version run ``wine ninewinecfg`` and for 64bit ``wine64 ninewinecfg``.
+
 Compiling
 ---------
 Gallium Nine Standalone requires the `Meson Build system <https://mesonbuild.com/>`_ and ``winegcc`` to build binaries usable by WINE.
@@ -67,17 +80,4 @@ Most DirectX 9 games are 32bit, for which you require 32bit binaries. For the fe
 
 For distro specific help, see `our wiki <https://github.com/iXit/wine-nine-standalone/wiki>`_.
 
-To get started, it is recommended to use the script ``release.sh``, which will build for both architectures (so the build dependencies for both are required). It creates a tarball of the binaries as well as the runtime script ``nine-install.sh`` to set up a WINE prefix (see Usage_ below).
-
-Usage
------
-This part assumes that you used the ``release.sh`` script as described above.
-
-* Extract the tarball in e.g. your home directory
-* run the ``nine-install.sh`` script from the directory you extracted the tarball in
-
-The latter symlinks the extracted binaries to your WINE prefix and enables Gallium Nine Standalone. To target another WINE prefix than the standard ``~/.wine``, just set ``WINEPREFIX`` accordingly before you run ``nine-install.sh``.
-
-Gallium Nine Standalone comes with a GUI.
-
-For the 32bit version run ``wine ninewinecfg`` and for 64bit ``wine64 ninewinecfg``.
+To get started, it is recommended to use the script ``release.sh``, which will build for both architectures (so the build dependencies for both are required). It creates a tarball of the binaries as well as the runtime script ``nine-install.sh`` to set up a WINE prefix (see Usage_ above).
