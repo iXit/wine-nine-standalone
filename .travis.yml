@@ -21,8 +21,8 @@ addons:
       - python3-pip
       - python3-setuptools
       # winehq releases for winegcc fixes
-      - winehq-devel
-      - wine-devel-dev
+      - winehq-stable
+      - wine-stable-dev
       - libx11-dev
       - libx11-xcb-dev
       - libxcb1-dev
