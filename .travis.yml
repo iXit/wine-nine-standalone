@@ -41,10 +41,8 @@ addons:
       - libegl1-mesa-dev:i386
 
 install:
-  # https://github.com/mesonbuild/meson/blob/master/docs/markdown/Continuous-Integration.md#travis-without-docker
-  - export NINJA_LATEST=$(curl -s https://api.github.com/repos/ninja-build/ninja/releases/latest | grep browser_download_url | cut -d '"' -f 4 | grep ninja-linux.zip)
-  - wget "$NINJA_LATEST"
-  - unzip -q ninja-linux.zip -d build
+  - wget "https://github.com/ninja-build/ninja/releases/download/v1.9.0/ninja-linux.zip"
+  - unzip -o -d build ninja-linux.zip
   - export PATH="$PWD/build:$PATH"
   - pip3 install meson
 
