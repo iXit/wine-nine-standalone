@@ -38,7 +38,7 @@ static const char * const fn_nine_exe = "ninewinecfg.exe";
 
 static const char * const err_unknown = "Unknown error";
 static const char * const err_outofmemory = "Out of memory";
-static const char * const err_d3d_notavailable = "No compatible GPU found. On a hybrid graphics setup, you might need to set DRM_PRIME=1 first";
+static const char * const err_d3d_notavailable = "No compatible GPU found. On a hybrid graphics setup, you might need to set DRI_PRIME=1 first";
 
 static BOOL isWin64(void)
 {
