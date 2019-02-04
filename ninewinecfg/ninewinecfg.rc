@@ -22,8 +22,6 @@ BEGIN
     
     IDS_NINECFG_TITLE                        "Nine configuration"
     IDS_NINECFG_TITLE_APP                    "ninecfg"
-    IDS_NINECFG_NINE_LOADABLE                "Tip: Make sure d3d9-nine.dll has the correct ARCH."
-    IDS_NINECFG_D3D_ERROR                    "Tip: Make sure that d3dadapter9.so is installed."
     
 END
 

@@ -36,6 +36,10 @@ static const char * const fn_nine_dll = "d3d9-nine.dll";
 static const char * const fn_d3d9_dll = "d3d9.dll";
 static const char * const fn_nine_exe = "ninewinecfg.exe";
 
+static const char * const err_unknown = "Unknown error";
+static const char * const err_outofmemory = "Out of memory";
+static const char * const err_d3d_notavailable = "No compatible GPU found. On a hybrid graphics setup, you might need to set DRM_PRIME=1 first";
+
 static BOOL isWin64(void)
 {
     return sizeof(void*) == 8;
@@ -461,15 +465,16 @@ static void nine_set(BOOL status, BOOL NoOtherArch)
         DeleteSymLinkA(dst);
 }
 
-typedef IDirect3D9* (WINAPI *LPDIRECT3DCREATE9)( UINT );
+typedef HRESULT (WINAPI *LPDIRECT3DCREATE9EX)(UINT, IDirect3D9Ex **);
 
 static void load_settings(HWND dialog)
 {
     HMODULE hmod = NULL;
     char *path = NULL, *err = NULL;
-    LPDIRECT3DCREATE9 Direct3DCreate9Ptr = NULL;
-    IDirect3D9 *iface = NULL;
+    LPDIRECT3DCREATE9EX Direct3DCreate9ExPtr = NULL;
+    IDirect3D9Ex *iface = NULL;
     void *handle;
+    HRESULT hr;
 
     EnableWindow(GetDlgItem(dialog, IDC_ENABLE_NATIVE_D3D9), 0);
     CheckDlgButton(dialog, IDC_ENABLE_NATIVE_D3D9, nine_get() ? BST_CHECKED : BST_UNCHECKED);
@@ -497,10 +502,10 @@ static void load_settings(HWND dialog)
 
     hmod = LoadLibraryA(fn_nine_dll);
     if (hmod)
-        Direct3DCreate9Ptr = (LPDIRECT3DCREATE9)
-                GetProcAddress(hmod, "Direct3DCreate9");
+        Direct3DCreate9ExPtr = (LPDIRECT3DCREATE9EX)
+                GetProcAddress(hmod, "Direct3DCreate9Ex");
 
-    if (hmod && Direct3DCreate9Ptr)
+    if (hmod && Direct3DCreate9ExPtr)
     {
         CheckDlgButton(dialog, IDC_NINE_STATE_DLL, BST_CHECKED);
         {
@@ -522,15 +527,30 @@ static void load_settings(HWND dialog)
         goto out;
     }
 
-    iface = Direct3DCreate9Ptr(0);
-    if (iface)
+    hr = Direct3DCreate9ExPtr(0, &iface);
+    if (SUCCEEDED(hr))
     {
         IDirect3DDevice9_Release(iface);
         CheckDlgButton(dialog, IDC_NINE_STATE_CREATE, BST_CHECKED);
     }
     else
     {
-        SetDlgItemTextW(dialog, IDC_NINE_STATE_TIP_CREATE, load_string(IDS_NINECFG_D3D_ERROR));
+        const char *msg;
+
+        switch (hr)
+        {
+        case E_OUTOFMEMORY:
+            msg = err_outofmemory;
+            break;
+        case D3DERR_NOTAVAILABLE:
+            msg = err_d3d_notavailable;
+            break;
+        default:
+            msg = err_unknown;
+            break;
+        }
+
+        SetDlgItemTextA(dialog, IDC_NINE_STATE_TIP_CREATE, msg);
         goto out;
     }
 

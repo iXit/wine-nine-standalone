@@ -15,8 +15,6 @@
 #define IDS_NINECFG_TITLE                        4
 #define IDS_NINECFG_TITLE_APP                    5
 #define IDS_NINECFG_NINE_SUPPORT_NOT_COMPILED    6
-#define IDS_NINECFG_NINE_LOADABLE                7
-#define IDS_NINECFG_D3D_ERROR                    8
 
 #define IDD_NINE                                10
 #define IDC_ENABLE_NATIVE_D3D9                  11
