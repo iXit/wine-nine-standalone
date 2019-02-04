@@ -12,17 +12,21 @@ addons:
   apt:
     update: true
     sources:
+      # xenial doesn't have libd3dadapter9-mesa-dev, oibaf has it in mesa-common-dev
       - sourceline: 'ppa:oibaf/graphics-drivers'
+      # xenial doesn't have relevant winegcc fixes
       - sourceline: 'deb https://dl.winehq.org/wine-builds/ubuntu/ xenial main'
         key_url: 'https://dl.winehq.org/wine-builds/winehq.key'
     packages:
+      # x86 cross compiler
       - gcc-multilib
       # required to update meson
       - python3-pip
       - python3-setuptools
-      # winehq releases for winegcc fixes
+      # winehq releases
       - winehq-stable
       - wine-stable-dev
+      # regular dependencies
       - libx11-dev
       - libx11-xcb-dev
       - libxcb1-dev
@@ -41,9 +45,11 @@ addons:
       - libegl1-mesa-dev:i386
 
 install:
+  # update ninja for meson
   - wget "https://github.com/ninja-build/ninja/releases/download/v1.9.0/ninja-linux.zip"
   - unzip -o -d build ninja-linux.zip
   - export PATH="$PWD/build:$PATH"
+  # update meson via python3-pip
   - pip3 install meson
 
 script:
