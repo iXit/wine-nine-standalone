@@ -36,10 +36,6 @@ static const char * const fn_nine_dll = "d3d9-nine.dll";
 static const char * const fn_d3d9_dll = "d3d9.dll";
 static const char * const fn_nine_exe = "ninewinecfg.exe";
 
-static const char * const err_unknown = "Unknown error";
-static const char * const err_outofmemory = "Out of memory";
-static const char * const err_d3d_notavailable = "No compatible GPU found. On a hybrid graphics setup, you might need to set DRI_PRIME=1 first";
-
 static BOOL isWin64(void)
 {
     return sizeof(void*) == 8;
@@ -355,6 +351,13 @@ static WCHAR *load_string (UINT id)
     return newStr;
 }
 
+static void set_dlg_string(HWND hwnd, int dlg_id, int res_id)
+{
+    WCHAR *s = load_string(res_id);
+    SetDlgItemTextW(hwnd, dlg_id, s);
+    HeapFree(GetProcessHeap(), 0, s);
+}
+
 /*
  * Gallium nine
  */
@@ -536,22 +539,22 @@ static void load_settings(HWND dialog)
     }
     else
     {
-        const char *msg;
+        int ids;
 
         switch (hr)
         {
         case E_OUTOFMEMORY:
-            msg = err_outofmemory;
+            ids = IDS_ERR_OUTOFMEMORY;
             break;
         case D3DERR_NOTAVAILABLE:
-            msg = err_d3d_notavailable;
+            ids = IDS_ERR_D3D_NOTAVAILABLE;
             break;
         default:
-            msg = err_unknown;
+            ids = IDS_ERR_UNKNOWN;
             break;
         }
 
-        SetDlgItemTextA(dialog, IDC_NINE_STATE_TIP_CREATE, msg);
+        set_dlg_string(dialog, IDC_NINE_STATE_TIP_CREATE, ids);
         goto out;
     }
 

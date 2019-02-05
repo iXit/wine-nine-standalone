@@ -30,4 +30,8 @@
 #define IDD_ABOUT                               20
 #define IDC_NINE_URL                            21
 
+#define IDS_ERR_UNKNOWN                        100
+#define IDS_ERR_OUTOFMEMORY                    101
+#define IDS_ERR_D3D_NOTAVAILABLE               102
+
 #endif /* __NINECFG_RESOURCE_H */
