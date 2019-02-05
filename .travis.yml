@@ -47,6 +47,7 @@ install:
   # update ninja for meson
   - wget "https://github.com/ninja-build/ninja/releases/download/v1.9.0/ninja-linux.zip"
   - unzip -o -d build ninja-linux.zip
+  - chmod 755 build/ninja
   - export PATH="$PWD/build:$PATH"
   # update meson via python3-pip
   - pip3 install --user setuptools
