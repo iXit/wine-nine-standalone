@@ -22,7 +22,6 @@ addons:
       - gcc-multilib
       # required to update meson
       - python3-pip
-      - python3-setuptools
       # winehq releases
       - winehq-stable
       - wine-stable-dev
@@ -50,7 +49,9 @@ install:
   - unzip -o -d build ninja-linux.zip
   - export PATH="$PWD/build:$PATH"
   # update meson via python3-pip
-  - pip3 install meson
+  - pip3 install --user setuptools
+  - pip3 install --user --upgrade pip
+  - pip3 install --user meson
 
 script:
   - ./release.sh -o "$RELEASE_TARBALL" -- -Ddri2=true -Ddistro-independent=true
