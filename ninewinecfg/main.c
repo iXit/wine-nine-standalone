@@ -338,15 +338,16 @@ static BOOL nine_get_system_path(CHAR *pOut, DWORD SizeOut)
 /*
  * Winecfg
  */
-WCHAR* load_string (UINT id)
+static WCHAR *load_string (UINT id)
 {
     WCHAR buf[1024];
     int len;
     WCHAR* newStr;
 
-    LoadStringW (GetModuleHandleW(NULL), id, buf, sizeof(buf)/sizeof(buf[0]));
+    len = LoadStringW (GetModuleHandleW(NULL), id, buf, sizeof(buf)/sizeof(buf[0]));
+    if (len < 1)
+        return NULL;
 
-    len = lstrlenW (buf);
     newStr = HeapAlloc (GetProcessHeap(), 0, (len + 1) * sizeof (WCHAR));
     memcpy (newStr, buf, len * sizeof (WCHAR));
     newStr[len] = 0;
