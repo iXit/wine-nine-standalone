@@ -334,6 +334,17 @@ static BOOL nine_get_system_path(CHAR *pOut, DWORD SizeOut)
 /*
  * Winecfg
  */
+static LPWSTR load_message(DWORD id)
+{
+    LPWSTR msg = NULL;
+    FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM
+                   | FORMAT_MESSAGE_ALLOCATE_BUFFER
+                   | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, id,
+                   MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+                   (LPWSTR)&msg, 0, NULL);
+    return msg;
+}
+
 static WCHAR *load_string (UINT id)
 {
     WCHAR buf[1024];
@@ -455,15 +466,16 @@ static void nine_set(BOOL status, BOOL NoOtherArch)
             {
                 if (!CreateSymLinkA(dst, info.dli_fname, NULL))
                     WINE_ERR("CreateSymLinkA(%s,%s) failed\n", dst, info.dli_fname);
-
             }
             else
                 WINE_ERR("dladdr failed to get file path\n");
 
             FreeLibrary(hmod);
+        } else {
+            LPWSTR msg = load_message(GetLastError());
+            WINE_ERR("Couldn't load %s: %s\n", fn_nine_dll, wine_dbgstr_w(msg));
+            LocalFree(msg);
         }
-        else
-            WINE_ERR("%s not found.\n", fn_nine_dll);
     }
     else
         DeleteSymLinkA(dst);
@@ -523,11 +535,10 @@ static void load_settings(HWND dialog)
     }
     else
     {
-        wchar_t buf[256];
-        FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM, NULL, GetLastError(),
-                      MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPWSTR)buf, 256, NULL);
+        LPWSTR msg = load_message(GetLastError());
+        SetDlgItemTextW(dialog, IDC_NINE_STATE_TIP_DLL, msg);
+        LocalFree(msg);
 
-        SetDlgItemTextW(dialog, IDC_NINE_STATE_TIP_DLL, buf);
         goto out;
     }
 
