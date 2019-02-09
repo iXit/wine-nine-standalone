@@ -215,7 +215,12 @@ static void DRI3Present_FillOffset(Display *gdi_display, struct d3d_drawable *d3
 
     /* The position of the top left client area
      * compared to wine root window */
-    ClientToScreen(d3d->wnd, &relWineRootPos);
+    if (!ClientToScreen(d3d->wnd, &relWineRootPos))
+    {
+        WINE_ERR("ClientToScreen failed: 0x%x\n", GetLastError());
+        return;
+    }
+
     WINE_TRACE("Coord client area: %d %d\n", relWineRootPos.x, relWineRootPos.y);
 
     /* Now we compute the position of the drawable
