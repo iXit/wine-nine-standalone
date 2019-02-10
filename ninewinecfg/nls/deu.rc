@@ -1,0 +1,33 @@
+/* SPDX-License-Identifier: LGPL-2.1-or-later */
+/*
+ * Copyright 2019 Patrick Rudolph
+ */
+
+#pragma code_page(65001) /* UTF-8 */
+
+STRINGTABLE LANGUAGE LANG_GERMAN, SUBLANG_GERMAN
+BEGIN
+    IDS_TAB_MAIN                             "Globale Einstellungen"
+    IDS_TAB_ABOUT                            "Über"
+
+    IDS_GB_LICENSE                           "Lizenz"
+    IDS_GB_AUTHORS                           "Authoren"
+    IDS_TEXT_MESA_DEP                        "Gallium Nine benötigt einen kompatiblen MESA Grafiktreiber"
+
+    IDS_TEXT_LOAD_D3DADAPTER                 "Laden des d3d9adapter9 war erfolgreich"
+    IDS_TEXT_D3D9_NINE_LOAD                  "d3d9-nine.dll kann geladen werden"
+    IDS_TEXT_CREATE_D3D9_DEV                 "Erzeugen eines Direct3D 9 Geräts war erfolgreich"
+
+    IDS_BTN_ENABLE_NINE                      "&Gallium Nine für bessere D3D9 Grafikleistung nutzen"
+
+    IDS_GB_NINE_SETTINGS                     "Gallium Nine Einstellungen"
+    IDS_GB_INSTALL_STATE                     "Installationsstatus"
+
+    IDS_NINECFG_TITLE                        "Nine Konfigurator"
+    IDS_NINECFG_TITLE_APP                    "ninecfg"
+
+    IDS_ERR_UNKNOWN                          "Unbekannter Fehler"
+    IDS_ERR_OUTOFMEMORY                      "Kein Speicher mehr frei"
+    IDS_ERR_D3D_NOTAVAILABLE                 "Keine kompatible GPU gefunden. Auf einem Hybrid-Grafik System kannst du mit DRI_PRIME=1 evt. die zweite GPU verwenden."
+END
+

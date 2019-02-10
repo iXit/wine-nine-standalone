@@ -1,0 +1,28 @@
+/* SPDX-License-Identifier: LGPL-2.1-or-later */
+/*
+ * Copyright 2019 Patrick Rudolph
+ */
+
+STRINGTABLE LANGUAGE LANG_ENGLISH, SUBLANG_DEFAULT
+BEGIN
+    IDS_TAB_MAIN                             "Global options"
+    IDS_TAB_ABOUT                            "About"
+
+    IDS_GB_LICENSE                           "Licence"
+    IDS_GB_AUTHORS                           "Authors"
+    IDS_TEXT_MESA_DEP                        "Gallium Nine requires a MESA gallium graphics driver"
+
+    IDS_TEXT_LOAD_D3DADAPTER                 "Loading of d3d9adapter9 succeeded"
+    IDS_TEXT_D3D9_NINE_LOAD                  "d3d9-nine.dll is loadable"
+    IDS_TEXT_CREATE_D3D9_DEV                 "Creating a Direct3D 9 device succeeded"
+
+    IDS_BTN_ENABLE_NINE                      "Enable &Gallium Nine for better D3D9 graphic performance"
+
+    IDS_GB_NINE_SETTINGS                     "Gallium Nine settings"
+    IDS_GB_INSTALL_STATE                     "Install state"
+
+    IDS_ERR_UNKNOWN                          "Unknown error"
+    IDS_ERR_OUTOFMEMORY                      "Out of memory"
+    IDS_ERR_D3D_NOTAVAILABLE                 "No compatible GPU found. On a hybrid graphics setup, you might need to set DRI_PRIME=1 first"
+END
+
