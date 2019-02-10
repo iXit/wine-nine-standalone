@@ -91,8 +91,12 @@ _dri2 = get_option('dri2')
 if _dri2 != 'false'
   dep_gl = dependency('gl', required : _dri2 == 'true')
   dep_egl = dependency('egl', required : _dri2 == 'true')
-  pp_args += '-DD3D9NINE_DRI2=1'
-  message('DRI2 support is enabled')
+  if dep_gl.found() and dep_egl.found()
+    pp_args += '-DD3D9NINE_DRI2=1'
+    message('DRI2 support is enabled')
+  else
+    warning('DRI2 support disabled, dependencies not found')
+  endif
 else
   message('DRI2 support is disabled')
 endif
