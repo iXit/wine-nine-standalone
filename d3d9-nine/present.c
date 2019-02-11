@@ -190,6 +190,28 @@ static void get_relative_position(Display *display, Drawable drawable, Drawable 
     offset->y = resy;
 }
 
+static BOOL CALLBACK edm_callback(HMONITOR monitor, HDC hdc, LPRECT rect, LPARAM lp)
+{
+    RECT *r = (RECT *)lp;
+
+    UnionRect(r, r, rect);
+    return TRUE;
+}
+
+/* see wine's get_virtual_screen_rect() */
+static void offset_by_virtual_screen(POINT *pt)
+{
+    RECT r;
+
+    SetRectEmpty(&r);
+    EnumDisplayMonitors(0, NULL, edm_callback, (LPARAM)&r);
+
+    WINE_TRACE("Virtual screen size: %s\n", wine_dbgstr_rect(&r));
+
+    pt->x -= r.left;
+    pt->y -= r.top;
+}
+
 static void DRI3Present_FillOffset(Display *gdi_display, struct d3d_drawable *d3d)
 {
     struct x11drv_escape_get_drawable extesc = { X11DRV_GET_DRAWABLE };
@@ -243,6 +265,8 @@ static void DRI3Present_FillOffset(Display *gdi_display, struct d3d_drawable *d3
         WINE_ERR("ClientToScreen failed: 0x%x\n", GetLastError());
         return;
     }
+    WINE_TRACE("Relative coord client area: %d %d\n", pt.x, pt.y);
+    offset_by_virtual_screen(&pt);
     WINE_TRACE("Coord client area: %d %d\n", pt.x, pt.y);
     d3d->offset.x += pt.x;
     d3d->offset.y += pt.y;
