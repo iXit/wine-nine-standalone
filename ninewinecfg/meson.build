@@ -33,3 +33,14 @@ ninewinecfg_exe = executable(
                    ],
   install        : true
 )
+
+ninewinecfg_fake = executable(
+  'ninewinecfg',
+  objects        : ninewinecfg_exe.extract_all_objects(),
+  name_prefix    : '',
+  name_suffix    : 'exe.fake',
+  link_with      : [
+                     libd3d9common,
+                   ],
+  install        : true,
+)

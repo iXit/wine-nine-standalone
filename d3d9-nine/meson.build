@@ -44,3 +44,14 @@ d3d9_dll = shared_library(
   vs_module_defs : 'd3d9.spec',
   objects        : 'd3d9.spec',
 )
+
+d3d9_fake = shared_library(
+  'd3d9-nine',
+  objects        : d3d9_dll.extract_all_objects(),
+  name_prefix    : '',
+  name_suffix    : 'dll.fake',
+  link_with      : [
+                     libd3d9common,
+                   ],
+  install        : true,
+)
