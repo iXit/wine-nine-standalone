@@ -154,14 +154,48 @@ static void destroy_d3dadapter_drawable(Display *gdi_display, HWND hwnd)
     LeaveCriticalSection(&context_section);
 }
 
+/* Compute the position of a drawable compared to a parent */
+static void get_relative_position(Display *display, Drawable drawable, Drawable parent, POINT *offset)
+{
+    Window Wroot, Wparent, *Wchildren;
+    int resx = 0, resy = 0, dx, dy;
+    unsigned int width, height, border_width, depth, children;
+
+    while (1) {
+        if (!XGetGeometry(display, drawable, &Wroot, &dx, &dy, &width, &height, &border_width, &depth))
+            break;
+
+        WINE_TRACE("Next geometry: %d %d\n", dx, dy);
+
+        /* Should we really add border_width ? */
+        resx += dx + border_width;
+        resy += dy + border_width;
+
+        if (!XQueryTree(display, drawable, &Wroot, &Wparent, &Wchildren, &children))
+            break;
+
+        if (Wchildren)
+            XFree(Wchildren);
+
+        if (Wparent == Wroot || Wparent == parent)
+        {
+            WINE_TRACE("Successfully determined drawable pos (debug: %ld, %ld, %ld)\n", drawable, Wroot, parent);
+            break;
+        }
+
+        drawable = Wparent;
+    }
+
+    offset->x = resx;
+    offset->y = resy;
+}
+
 static void DRI3Present_FillOffset(Display *gdi_display, struct d3d_drawable *d3d)
 {
     struct x11drv_escape_get_drawable extesc = { X11DRV_GET_DRAWABLE };
     HWND desktop;
     Drawable wineRoot;
-    POINT relWineRootPos;
-    POINT relXRootPos;
-    Drawable drawable;
+    POINT pt;
     HDC hdc;
     Window Wroot;
     int x, y;
@@ -178,24 +212,13 @@ static void DRI3Present_FillOffset(Display *gdi_display, struct d3d_drawable *d3
      * In the case of virtual desktop, We assume the root drawable
      * begins at pos (0, 0) */
 
-    /* Note: Another method that works for virtual desktop,
-     * but fails else because of the window manager replacing
-     * decoration issue stated above:
-     * RECT wnd;
-     * GetWindowRect(hwnd, &wnd);
-     * MapWindowPoints(HWND_DESKTOP, hwnd, (LPPOINT) &wnd, 2);
-     * relWineRootPos.x = -wnd.left;
-     * relWineRootPos.y = -wnd.top;
-     */
-
     d3d->offset.x = d3d->offset.y = 0;
-    relWineRootPos.x = relWineRootPos.y = 0;
-    relXRootPos.x = relXRootPos.y = 0;
 
     desktop = GetDesktopWindow();
     hdc = GetDCEx(desktop, 0, DCX_CACHE | DCX_CLIPSIBLINGS);
     if (!hdc)
         return;
+
     if (ExtEscape(hdc, X11DRV_ESCAPE, sizeof(extesc), (LPCSTR)&extesc,
                 sizeof(extesc), (LPSTR)&extesc) <= 0)
     {
@@ -213,43 +236,22 @@ static void DRI3Present_FillOffset(Display *gdi_display, struct d3d_drawable *d3
         d3d->depth= 0;
     }
 
-    /* The position of the top left client area
-     * compared to wine root window */
-    if (!ClientToScreen(d3d->wnd, &relWineRootPos))
+    /* The position of the top left client area compared to wine root window */
+    pt.x = pt.y = 0;
+    if (!ClientToScreen(d3d->wnd, &pt))
     {
         WINE_ERR("ClientToScreen failed: 0x%x\n", GetLastError());
         return;
     }
+    WINE_TRACE("Coord client area: %d %d\n", pt.x, pt.y);
+    d3d->offset.x += pt.x;
+    d3d->offset.y += pt.y;
 
-    WINE_TRACE("Coord client area: %d %d\n", relWineRootPos.x, relWineRootPos.y);
+    get_relative_position(gdi_display, d3d->drawable, wineRoot, &pt);
+    WINE_TRACE("Coord drawable: %d %d\n", pt.x, pt.y);
+    d3d->offset.x -= pt.x;
+    d3d->offset.y -= pt.y;
 
-    /* Now we compute the position of the drawable
-     * compared to wine root window */
-
-    drawable = d3d->drawable;
-
-    while (1) {
-        Window Wparent, *Wchildren;
-        unsigned int numchildren, width, height, depth;
-        if (!XGetGeometry(gdi_display, drawable, &Wroot, &x, &y, &width, &height, &border_width, &depth))
-            break;
-        /* Should we really add border_width ? */
-        relXRootPos.x += x + border_width;
-        relXRootPos.y += y + border_width;
-        if (!XQueryTree(gdi_display, drawable, &Wroot, &Wparent, &Wchildren, &numchildren))
-            break;
-        if (Wchildren)
-            free(Wchildren);
-        drawable = Wparent;
-        if (drawable == Wroot || drawable == wineRoot)
-        {
-            WINE_TRACE("Successfully determined drawable pos (debug: %ld, %ld, %ld)\n", drawable, Wroot, wineRoot);
-            break;
-        }
-    }
-    WINE_TRACE("Coord drawable: %d %d\n", relXRootPos.x, relXRootPos.y);
-    d3d->offset.x = relWineRootPos.x - relXRootPos.x;
-    d3d->offset.y = relWineRootPos.y - relXRootPos.y;
     WINE_TRACE("Offset: %d %d\n", d3d->offset.x, d3d->offset.y);
 }
 
