@@ -212,13 +212,49 @@ static void offset_by_virtual_screen(POINT *pt)
     pt->y -= r.top;
 }
 
-static void DRI3Present_FillOffset(Display *gdi_display, struct d3d_drawable *d3d)
+static BOOL get_wine_drawable_from_dc(HDC hdc, Drawable *drawable)
 {
     struct x11drv_escape_get_drawable extesc = { X11DRV_GET_DRAWABLE };
-    HWND desktop;
+
+    if (ExtEscape(hdc, X11DRV_ESCAPE, sizeof(extesc), (LPCSTR)&extesc,
+                  sizeof(extesc), (LPSTR)&extesc) <= 0)
+    {
+        WINE_ERR("Unexpected error in X Drawable lookup (hdc=%p)\n", hdc);
+        return FALSE;
+    }
+
+    if (drawable)
+        *drawable = extesc.drawable;
+
+    return TRUE;
+}
+
+static BOOL get_wine_drawable_from_wnd(HWND hwnd, Drawable *drawable, HDC *hdc)
+{
+    HDC h;
+
+    h = GetDCEx(hwnd, 0, DCX_CACHE | DCX_CLIPSIBLINGS);
+    if (!h)
+        return FALSE;
+
+    if (!get_wine_drawable_from_dc(h, drawable))
+    {
+        ReleaseDC(hwnd, h);
+        return FALSE;
+    }
+
+    if (hdc)
+        *hdc = h;
+    else
+        ReleaseDC(hwnd, h);
+
+    return TRUE;
+}
+
+static void DRI3Present_FillOffset(Display *gdi_display, struct d3d_drawable *d3d)
+{
     Drawable wineRoot;
     POINT pt;
-    HDC hdc;
     Window Wroot;
     int x, y;
     unsigned int border_width;
@@ -236,20 +272,8 @@ static void DRI3Present_FillOffset(Display *gdi_display, struct d3d_drawable *d3
 
     d3d->offset.x = d3d->offset.y = 0;
 
-    desktop = GetDesktopWindow();
-    hdc = GetDCEx(desktop, 0, DCX_CACHE | DCX_CLIPSIBLINGS);
-    if (!hdc)
+    if (!get_wine_drawable_from_wnd(GetDesktopWindow(), &wineRoot, NULL))
         return;
-
-    if (ExtEscape(hdc, X11DRV_ESCAPE, sizeof(extesc), (LPCSTR)&extesc,
-                sizeof(extesc), (LPSTR)&extesc) <= 0)
-    {
-        WINE_ERR("Unexpected error in X Drawable lookup (hwnd=%p, hdc=%p)\n", desktop, hdc);
-        ReleaseDC(desktop, hdc);
-        return;
-    }
-    ReleaseDC(desktop, hdc);
-    wineRoot = extesc.drawable;
 
     if (!XGetGeometry(gdi_display, d3d->drawable, &Wroot, &x, &y, &d3d->width, &d3d->height, &border_width, &d3d->depth))
     {
@@ -281,7 +305,6 @@ static void DRI3Present_FillOffset(Display *gdi_display, struct d3d_drawable *d3
 
 static struct d3d_drawable *create_d3dadapter_drawable(Display *gdi_display, HWND hwnd)
 {
-    struct x11drv_escape_get_drawable extesc = { X11DRV_GET_DRAWABLE };
     struct d3d_drawable *d3d;
 
     WINE_TRACE("hwnd=%p\n", hwnd);
@@ -293,18 +316,14 @@ static struct d3d_drawable *create_d3dadapter_drawable(Display *gdi_display, HWN
         return NULL;
     }
 
-    d3d->hdc = GetDCEx(hwnd, 0, DCX_CACHE | DCX_CLIPSIBLINGS);
-    if (ExtEscape(d3d->hdc, X11DRV_ESCAPE, sizeof(extesc), (LPCSTR)&extesc,
-            sizeof(extesc), (LPSTR)&extesc) <= 0)
+    if (!get_wine_drawable_from_wnd(hwnd, &d3d->drawable, &d3d->hdc))
     {
-        WINE_ERR("Unexpected error in X Drawable lookup (hwnd=%p, hdc=%p)\n", hwnd, d3d->hdc);
         ReleaseDC(hwnd, d3d->hdc);
         HeapFree(GetProcessHeap(), 0, d3d);
         return NULL;
     }
 
-    WINE_TRACE("hwnd created drawable: %ld\n", extesc.drawable);
-    d3d->drawable = extesc.drawable;
+    WINE_TRACE("hwnd drawable: %ld\n", d3d->drawable);
     d3d->wnd = hwnd;
     GetWindowRect(hwnd, &d3d->windowRect);
     DRI3Present_FillOffset(gdi_display, d3d);
@@ -1611,7 +1630,6 @@ HRESULT present_create_present_group(Display *gdi_display, const WCHAR *device_n
 
 HRESULT present_create_adapter9(Display *gdi_display, HDC hdc, ID3DAdapter9 **out)
 {
-    struct x11drv_escape_get_drawable extesc = { X11DRV_GET_DRAWABLE };
     HRESULT hr;
     int fd;
 
@@ -1621,9 +1639,8 @@ HRESULT present_create_adapter9(Display *gdi_display, HDC hdc, ID3DAdapter9 **ou
         return D3DERR_DRIVERINTERNALERROR;
     }
 
-    if (ExtEscape(hdc, X11DRV_ESCAPE, sizeof(extesc), (LPCSTR)&extesc,
-            sizeof(extesc), (LPSTR)&extesc) <= 0)
-        WINE_ERR("X11 drawable lookup failed (hdc=%p)\n", hdc);
+    if (!get_wine_drawable_from_dc(hdc, NULL))
+        return D3DERR_DRIVERINTERNALERROR;
 
 #ifdef D3D9NINE_DRI2
     if (!is_dri2_fallback && !DRI3Open(gdi_display, DefaultScreen(gdi_display), &fd))
