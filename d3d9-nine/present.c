@@ -142,7 +142,7 @@ static void free_d3dadapter_drawable(struct d3d_drawable *d3d)
 static void destroy_d3dadapter_drawable(Display *gdi_display, HWND hwnd)
 {
     struct d3d_drawable *d3d;
-    WINE_TRACE("This=%p hwnd=%p\n", gdi_display, hwnd);
+    //WINE_TRACE("This=%p hwnd=%p\n", gdi_display, hwnd);
 
     EnterCriticalSection(&context_section);
     if (!XFindContext(gdi_display, (XID)hwnd,
@@ -259,7 +259,7 @@ static void DRI3Present_FillOffset(Display *gdi_display, struct d3d_drawable *d3
     int x, y;
     unsigned int border_width;
 
-    WINE_TRACE("hwnd=%p\n", d3d->wnd);
+    //WINE_TRACE("hwnd=%p\n", d3d->wnd);
 
     /* Finding the offset is hard because a drawable
      * doesn't always start a the top left of a hwnd window,
@@ -307,7 +307,7 @@ static struct d3d_drawable *create_d3dadapter_drawable(Display *gdi_display, HWN
 {
     struct d3d_drawable *d3d;
 
-    WINE_TRACE("hwnd=%p\n", hwnd);
+    //WINE_TRACE("hwnd=%p\n", hwnd);
 
     d3d = HeapAlloc(GetProcessHeap(), 0, sizeof(*d3d));
     if (!d3d)
@@ -335,7 +335,7 @@ static struct d3d_drawable *get_d3d_drawable(Display *gdi_display, HWND hwnd)
 {
     struct d3d_drawable *d3d, *race;
 
-    WINE_TRACE("hwnd=%p\n", hwnd);
+    //WINE_TRACE("hwnd=%p\n", hwnd);
 
     EnterCriticalSection(&context_section);
     if (!XFindContext(gdi_display, (XID)hwnd, d3d_hwnd_context, (char **)&d3d))
@@ -468,7 +468,7 @@ static HRESULT WINAPI DRI3Present_D3DWindowBufferFromDmaBuf(struct DRI3Present *
         return D3DERR_DRIVERINTERNALERROR;
     }
 
-    WINE_TRACE("This=%p buffer=%p\n", This, *out);
+    //WINE_TRACE("This=%p buffer=%p\n", This, *out);
     return D3D_OK;
 }
 
@@ -478,7 +478,7 @@ static HRESULT WINAPI DRI3Present_DestroyD3DWindowBuffer(struct DRI3Present *Thi
     /* the pixmap is managed by the PRESENT backend.
      * But if it can delete it right away, we may have
      * better performance */
-    WINE_TRACE("This=%p buffer=%p of priv %p\n", This, buffer, buffer->present_pixmap_priv);
+    //WINE_TRACE("This=%p buffer=%p of priv %p\n", This, buffer, buffer->present_pixmap_priv);
     PRESENTTryFreePixmap(This->gdi_display, buffer->present_pixmap_priv);
     HeapFree(GetProcessHeap(), 0, buffer);
     return D3D_OK;
@@ -487,7 +487,7 @@ static HRESULT WINAPI DRI3Present_DestroyD3DWindowBuffer(struct DRI3Present *Thi
 static HRESULT WINAPI DRI3Present_WaitBufferReleased(struct DRI3Present *This,
         struct D3DWindowBuffer *buffer)
 {
-    WINE_TRACE("This=%p buffer=%p\n", This, buffer);
+    //WINE_TRACE("This=%p buffer=%p\n", This, buffer);
     if(!PRESENTWaitPixmapReleased(buffer->present_pixmap_priv))
     {
         WINE_ERR("PRESENTWaitPixmapReleased failed\n");
@@ -526,7 +526,7 @@ static HRESULT WINAPI DRI3Present_PresentBuffer( struct DRI3Present *This,
     else
         hwnd = This->focus_wnd;
 
-    WINE_TRACE("This=%p hwnd=%p\n", This, hwnd);
+    //WINE_TRACE("This=%p hwnd=%p\n", This, hwnd);
 
     d3d = get_d3d_drawable(This->gdi_display, hwnd);
 
@@ -775,7 +775,7 @@ static HRESULT WINAPI DRI3Present_GetWindowInfo( struct DRI3Present *This,
     HRESULT hr;
     RECT pRect;
 
-    WINE_TRACE("This=%p hwnd=%p\n", This, hWnd);
+    //WINE_TRACE("This=%p hwnd=%p\n", This, hWnd);
 
     /* For fullscreen modes, use the dimensions of the X11 window instead of
      * the game window. This is for compability with Valve's "fullscreen hack",
@@ -796,7 +796,7 @@ static HRESULT WINAPI DRI3Present_GetWindowInfo( struct DRI3Present *This,
     hr = GetClientRect(hWnd, &pRect);
     if (!hr)
         return D3DERR_INVALIDCALL;
-    WINE_TRACE("pRect: %d %d %d %d\n", pRect.left, pRect.top, pRect.right, pRect.bottom);
+    //WINE_TRACE("pRect: %d %d %d %d\n", pRect.left, pRect.top, pRect.right, pRect.bottom);
     *width = pRect.right - pRect.left;
     *height = pRect.bottom - pRect.top;
     *depth = 24; //TODO
@@ -849,7 +849,7 @@ static HRESULT WINAPI DRI3Present_SetPresentParameters2( struct DRI3Present *Thi
 
 static BOOL WINAPI DRI3Present_IsBufferReleased( struct DRI3Present *This, struct D3DWindowBuffer *buffer )
 {
-    WINE_TRACE("This=%p buffer=%p\n", This, buffer);
+    //WINE_TRACE("This=%p buffer=%p\n", This, buffer);
     return PRESENTIsPixmapReleased(buffer->present_pixmap_priv);
 }
 
