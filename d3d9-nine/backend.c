@@ -33,12 +33,8 @@ struct dri_backend {
     struct dri_backend_priv *priv; /* backend private data */
 };
 
-struct DRI2priv;
 struct DRIpriv {
     int dummy;
-#ifdef D3D9NINE_DRI2
-    struct DRI2priv *dri2_priv;
-#endif
 };
 
 struct DRIPixmapPriv {
@@ -162,7 +158,7 @@ BOOL DRIBackendD3DWindowBufferFromDmaBuf(struct dri_backend *dri_backend,
             return FALSE;
         }
 
-        if (!DRI2FallbackPRESENTPixmap(dri_priv->dri2_priv,
+        if (!DRI2FallbackPRESENTPixmap(dri_backend->priv,
                 dmaBufFd, width, height, stride, depth, bpp,
                 &((*out)->dri_pixmap_priv)->dri2_pixmap_priv, &pixmap))
         {
@@ -218,7 +214,7 @@ BOOL DRIBackendInit(struct dri_backend *dri_backend, struct DRIpriv **dri_priv)
 
 #ifdef D3D9NINE_DRI2
     if (dri_backend->type == TYPE_DRI2 &&
-           !DRI2FallbackInit(dri_backend->dpy, &((*dri_priv)->dri2_priv)))
+           !DRI2FallbackInit(dri_backend->dpy, &dri_backend->priv))
         return FALSE;
 #endif
     return TRUE;
@@ -230,7 +226,7 @@ void DRIBackendDestroy(struct dri_backend *dri_backend, struct DRIpriv *dri_priv
 
 #ifdef D3D9NINE_DRI2
     if (dri_backend->type == TYPE_DRI2)
-        DRI2FallbackDestroy(dri_priv->dri2_priv);
+        DRI2FallbackDestroy(dri_backend->priv);
 #endif
 
     HeapFree(GetProcessHeap(), 0, dri_priv);
@@ -244,7 +240,7 @@ void DRIBackendPresentPixmap(struct dri_backend *dri_backend, struct DRIpriv *dr
 
 #ifdef D3D9NINE_DRI2
     if (dri_backend->type == TYPE_DRI2)
-        DRI2PresentPixmap(dri_priv->dri2_priv, dri_pixmap_priv->dri2_pixmap_priv);
+        DRI2PresentPixmap(dri_backend->priv, dri_pixmap_priv->dri2_pixmap_priv);
 #endif
 }
 
@@ -257,7 +253,7 @@ void DRIBackendDestroyPixmap(struct dri_backend *dri_backend, struct DRIpriv *dr
 #ifdef D3D9NINE_DRI2
     if (dri_backend->type == TYPE_DRI2)
     {
-        DRI2DestroyPixmap(dri_priv->dri2_priv, dri_pixmap_priv->dri2_pixmap_priv);
+        DRI2DestroyPixmap(dri_backend->priv, dri_pixmap_priv->dri2_pixmap_priv);
         HeapFree(GetProcessHeap(), 0, dri_pixmap_priv);
     }
 #endif

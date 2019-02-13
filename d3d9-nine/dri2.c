@@ -255,8 +255,9 @@ BOOL DRI2FallbackOpen(Display *dpy, int screen, int *device_fd)
     return TRUE;
 }
 
-BOOL DRI2FallbackInit(Display *dpy, struct DRI2priv **priv)
+BOOL DRI2FallbackInit(Display *dpy, struct dri_backend_priv **priv)
 {
+    struct DRI2priv *p;
     PFNGLEGLIMAGETARGETTEXTURE2DOESPROC glEGLImageTargetTexture2DOES_func;
     PFNEGLCREATEIMAGEKHRPROC eglCreateImageKHR_func;
     PFNEGLGETPLATFORMDISPLAYEXTPROC eglGetPlatformDisplayEXT_func;
@@ -333,16 +334,19 @@ BOOL DRI2FallbackInit(Display *dpy, struct DRI2priv **priv)
 
     eglMakeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
 
-    *priv = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY,
-            sizeof(struct DRI2priv));
-    if (!*priv)
+    p = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(struct DRI2priv));
+    if (!p)
         goto clean_egl;
-    (*priv)->dpy = dpy;
-    (*priv)->display = display;
-    (*priv)->context = context;
-    (*priv)->glEGLImageTargetTexture2DOES_func = glEGLImageTargetTexture2DOES_func;
-    (*priv)->eglCreateImageKHR_func = eglCreateImageKHR_func;
-    (*priv)->eglDestroyImageKHR_func = eglDestroyImageKHR_func;
+
+    p->dpy = dpy;
+    p->display = display;
+    p->context = context;
+    p->glEGLImageTargetTexture2DOES_func = glEGLImageTargetTexture2DOES_func;
+    p->eglCreateImageKHR_func = eglCreateImageKHR_func;
+    p->eglDestroyImageKHR_func = eglDestroyImageKHR_func;
+
+    *priv = (struct dri_backend_priv *)p;
+
     eglBindAPI(current_api);
     return TRUE;
 
@@ -356,12 +360,13 @@ clean_egl_display:
 }
 
 /* hypothesis: at this step all textures, etc are destroyed */
-void DRI2FallbackDestroy(struct DRI2priv *priv)
+void DRI2FallbackDestroy(struct dri_backend_priv *priv)
 {
+    struct DRI2priv *p = (struct DRI2priv *)priv;
     EGLenum current_api;
     struct DRI2PixmapPriv *current;
 
-    current = priv->first_dri2_priv;
+    current = p->first_dri2_priv;
     while (current)
     {
         struct DRI2PixmapPriv *next = current->next;
@@ -371,8 +376,8 @@ void DRI2FallbackDestroy(struct DRI2priv *priv)
 
     current_api = eglQueryAPI();
     eglBindAPI(EGL_OPENGL_API);
-    eglMakeCurrent(priv->display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
-    eglDestroyContext(priv->display, priv->context);
+    eglMakeCurrent(p->display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+    eglDestroyContext(p->display, p->context);
     if (display)
     {
         /* destroy display connection with last device */
@@ -385,12 +390,12 @@ void DRI2FallbackDestroy(struct DRI2priv *priv)
     }
     eglBindAPI(current_api);
 
-    HeapFree(GetProcessHeap(), 0, priv);
+    HeapFree(GetProcessHeap(), 0, p);
 }
 
 BOOL DRI2FallbackCheckSupport(Display *dpy)
 {
-    struct DRI2priv *priv;
+    struct dri_backend_priv *priv;
     int fd;
     if (!DRI2FallbackInit(dpy, &priv))
         return FALSE;
@@ -401,14 +406,14 @@ BOOL DRI2FallbackCheckSupport(Display *dpy)
     return TRUE;
 }
 
-BOOL DRI2PresentPixmap(struct DRI2priv *dri2_priv, struct DRI2PixmapPriv *dri2_pixmap_priv)
+BOOL DRI2PresentPixmap(struct dri_backend_priv *priv, struct DRI2PixmapPriv *dri2_pixmap_priv)
 {
+    struct DRI2priv *p = (struct DRI2priv *)priv;
     EGLenum current_api = 0;
 
     current_api = eglQueryAPI();
     eglBindAPI(EGL_OPENGL_API);
-    if (eglMakeCurrent(dri2_priv->display, EGL_NO_SURFACE,
-            EGL_NO_SURFACE, dri2_priv->context))
+    if (eglMakeCurrent(p->display, EGL_NO_SURFACE, EGL_NO_SURFACE, p->context))
     {
         glBindFramebuffer(GL_READ_FRAMEBUFFER, dri2_pixmap_priv->fbo_read);
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, dri2_pixmap_priv->fbo_write);
@@ -424,18 +429,19 @@ BOOL DRI2PresentPixmap(struct DRI2priv *dri2_priv, struct DRI2PixmapPriv *dri2_p
         return FALSE;
     }
 
-    eglMakeCurrent(dri2_priv->display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+    eglMakeCurrent(p->display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
     eglBindAPI(current_api);
 
     return TRUE;
 }
 
 
-BOOL DRI2FallbackPRESENTPixmap(struct DRI2priv *dri2_priv,
+BOOL DRI2FallbackPRESENTPixmap(struct dri_backend_priv *priv,
         int fd, int width, int height, int stride, int depth,
         int bpp, struct DRI2PixmapPriv **dri2_pixmap_priv,
         Pixmap *pixmap)
 {
+    struct DRI2priv *p = (struct DRI2priv *)priv;
     EGLImageKHR image;
     GLuint texture_read, texture_write, fbo_read, fbo_write;
     EGLint attribs[] = {
@@ -465,7 +471,7 @@ BOOL DRI2FallbackPRESENTPixmap(struct DRI2priv *dri2_priv,
      * Note that we can delete the EGLImage, but we shouldn't delete the texture,
      * else the fbo is invalid */
 
-    image = dri2_priv->eglCreateImageKHR_func(dri2_priv->display,
+    image = p->eglCreateImageKHR_func(p->display,
             EGL_NO_CONTEXT, EGL_LINUX_DMA_BUF_EXT, NULL, attribs);
 
     if (image == EGL_NO_IMAGE_KHR) {
@@ -474,13 +480,13 @@ BOOL DRI2FallbackPRESENTPixmap(struct DRI2priv *dri2_priv,
     }
     close(fd);
 
-    if (eglMakeCurrent(dri2_priv->display, EGL_NO_SURFACE, EGL_NO_SURFACE, dri2_priv->context))
+    if (eglMakeCurrent(p->display, EGL_NO_SURFACE, EGL_NO_SURFACE, p->context))
     {
         glGenTextures(1, &texture_read);
         glBindTexture(GL_TEXTURE_2D, texture_read);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        dri2_priv->glEGLImageTargetTexture2DOES_func(GL_TEXTURE_2D, image);
+        p->glEGLImageTargetTexture2DOES_func(GL_TEXTURE_2D, image);
         glGenFramebuffers(1, &fbo_read);
         glBindFramebuffer(GL_FRAMEBUFFER, fbo_read);
         glFramebufferTexture2D(GL_FRAMEBUFFER,
@@ -491,14 +497,13 @@ BOOL DRI2FallbackPRESENTPixmap(struct DRI2priv *dri2_priv,
         if (status != GL_FRAMEBUFFER_COMPLETE)
             goto fail;
         glBindTexture(GL_TEXTURE_2D, 0);
-        dri2_priv->eglDestroyImageKHR_func(dri2_priv->display, image);
+        p->eglDestroyImageKHR_func(p->display, image);
 
         /* We bind a newly created pixmap (to which we want to copy the content)
          * to an EGLImage, then to a texture, then to a fbo. */
-        image = dri2_priv->eglCreateImageKHR_func(dri2_priv->display,
-                                                  dri2_priv->context,
-                                                  EGL_NATIVE_PIXMAP_KHR,
-                                                  (void *)*pixmap, NULL);
+        image = p->eglCreateImageKHR_func(p->display, p->context,
+                                          EGL_NATIVE_PIXMAP_KHR,
+                                          (void *)*pixmap, NULL);
         if (image == EGL_NO_IMAGE_KHR)
             goto fail;
 
@@ -506,7 +511,7 @@ BOOL DRI2FallbackPRESENTPixmap(struct DRI2priv *dri2_priv,
         glBindTexture(GL_TEXTURE_2D, texture_write);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        dri2_priv->glEGLImageTargetTexture2DOES_func(GL_TEXTURE_2D, image);
+        p->glEGLImageTargetTexture2DOES_func(GL_TEXTURE_2D, image);
         glGenFramebuffers(1, &fbo_write);
         glBindFramebuffer(GL_FRAMEBUFFER, fbo_write);
         glFramebufferTexture2D(GL_FRAMEBUFFER,
@@ -517,12 +522,12 @@ BOOL DRI2FallbackPRESENTPixmap(struct DRI2priv *dri2_priv,
         if (status != GL_FRAMEBUFFER_COMPLETE)
             goto fail;
         glBindTexture(GL_TEXTURE_2D, 0);
-        dri2_priv->eglDestroyImageKHR_func(dri2_priv->display, image);
+        p->eglDestroyImageKHR_func(p->display, image);
     }
     else
         WINE_ERR("eglMakeCurrent failed with 0x%0X\n", eglGetError());
 
-    eglMakeCurrent(dri2_priv->display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+    eglMakeCurrent(p->display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
 
     *dri2_pixmap_priv = (struct DRI2PixmapPriv *) HeapAlloc(GetProcessHeap(),
              HEAP_ZERO_MEMORY, sizeof(struct DRI2PixmapPriv));
@@ -536,31 +541,32 @@ BOOL DRI2FallbackPRESENTPixmap(struct DRI2priv *dri2_priv,
     (*dri2_pixmap_priv)->texture_write = texture_write;
     (*dri2_pixmap_priv)->width = width;
     (*dri2_pixmap_priv)->height = height;
-    (*dri2_pixmap_priv)->next = dri2_priv->first_dri2_priv;
-    dri2_priv->first_dri2_priv = *dri2_pixmap_priv;
+    (*dri2_pixmap_priv)->next = p->first_dri2_priv;
+    p->first_dri2_priv = *dri2_pixmap_priv;
 
     eglBindAPI(current_api);
 
     return TRUE;
 fail:
-    eglMakeCurrent(dri2_priv->display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+    eglMakeCurrent(p->display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
     eglBindAPI(current_api);
     return FALSE;
 }
 
-void DRI2DestroyPixmap(struct DRI2priv *dri2_priv, struct DRI2PixmapPriv *dri2_pixmap_priv)
+void DRI2DestroyPixmap(struct dri_backend_priv *priv, struct DRI2PixmapPriv *dri2_pixmap_priv)
 {
+    struct DRI2priv *p = (struct DRI2priv *)priv;
     EGLenum current_api;
 
-    if (dri2_priv->first_dri2_priv == dri2_pixmap_priv)
+    if (p->first_dri2_priv == dri2_pixmap_priv)
     {
-        dri2_priv->first_dri2_priv = dri2_pixmap_priv->next;
+        p->first_dri2_priv = dri2_pixmap_priv->next;
     }
     else
     {
         struct DRI2PixmapPriv *current;
 
-        current = dri2_priv->first_dri2_priv;
+        current = p->first_dri2_priv;
         while (current->next != dri2_pixmap_priv)
             current = current->next;
         current->next = dri2_pixmap_priv->next;
@@ -569,8 +575,7 @@ void DRI2DestroyPixmap(struct DRI2priv *dri2_priv, struct DRI2PixmapPriv *dri2_p
     current_api = eglQueryAPI();
 
     eglBindAPI(EGL_OPENGL_API);
-    if (eglMakeCurrent(dri2_priv->display, EGL_NO_SURFACE, EGL_NO_SURFACE,
-             dri2_priv->context))
+    if (eglMakeCurrent(p->display, EGL_NO_SURFACE, EGL_NO_SURFACE, p->context))
     {
         glDeleteFramebuffers(1, &dri2_pixmap_priv->fbo_read);
         glDeleteFramebuffers(1, &dri2_pixmap_priv->fbo_write);
@@ -580,7 +585,7 @@ void DRI2DestroyPixmap(struct DRI2priv *dri2_priv, struct DRI2PixmapPriv *dri2_p
     else
         WINE_ERR("eglMakeCurrent failed with 0x%0X\n", eglGetError());
 
-    eglMakeCurrent(dri2_priv->display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+    eglMakeCurrent(p->display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
     eglBindAPI(current_api);
 
     HeapFree(GetProcessHeap(), 0, dri2_pixmap_priv);
