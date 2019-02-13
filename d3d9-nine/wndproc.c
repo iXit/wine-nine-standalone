@@ -27,7 +27,7 @@ struct nine_wndproc
     HWND window;
     BOOL unicode;
     WNDPROC proc;
-    struct DRI3Present *present;
+    struct DRIPresent *present;
 };
 
 struct nine_wndproc_table
@@ -128,7 +128,7 @@ static struct nine_wndproc *nine_find_wndproc(HWND window)
 static LRESULT CALLBACK nine_wndproc(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
 {
     struct nine_wndproc *entry;
-    struct DRI3Present *present;
+    struct DRIPresent *present;
     BOOL unicode;
     WNDPROC proc;
 
@@ -154,7 +154,7 @@ static LRESULT CALLBACK nine_wndproc(HWND window, UINT message, WPARAM wparam, L
     return CallWindowProcA(proc, window, message, wparam, lparam);
 }
 
-BOOL nine_register_window(HWND window, struct DRI3Present *present)
+BOOL nine_register_window(HWND window, struct DRIPresent *present)
 {
     struct nine_wndproc *entry;
 

@@ -89,7 +89,7 @@ struct d3d_drawable
 };
 
 struct DRIpriv;
-struct DRI3Present
+struct DRIPresent
 {
     /* COM vtable */
     void *vtable;
@@ -246,7 +246,7 @@ static BOOL get_wine_drawable_from_wnd(HWND hwnd, Drawable *drawable, HDC *hdc)
     return TRUE;
 }
 
-static void DRI3Present_FillOffset(Display *gdi_display, struct d3d_drawable *d3d)
+static void DRIPresent_FillOffset(Display *gdi_display, struct d3d_drawable *d3d)
 {
     Drawable wineRoot;
     POINT pt;
@@ -321,7 +321,7 @@ static struct d3d_drawable *create_d3dadapter_drawable(Display *gdi_display, HWN
     WINE_TRACE("hwnd drawable: %ld\n", d3d->drawable);
     d3d->wnd = hwnd;
     GetWindowRect(hwnd, &d3d->windowRect);
-    DRI3Present_FillOffset(gdi_display, d3d);
+    DRIPresent_FillOffset(gdi_display, d3d);
 
     return d3d;
 }
@@ -365,14 +365,14 @@ static void release_d3d_drawable(struct d3d_drawable *d3d)
     LeaveCriticalSection(&context_section);
 }
 
-static ULONG WINAPI DRI3Present_AddRef(struct DRI3Present *This)
+static ULONG WINAPI DRIPresent_AddRef(struct DRIPresent *This)
 {
     ULONG refs = InterlockedIncrement(&This->refs);
     WINE_TRACE("%p increasing refcount to %u.\n", This, refs);
     return refs;
 }
 
-static ULONG WINAPI DRI3Present_Release(struct DRI3Present *This)
+static ULONG WINAPI DRIPresent_Release(struct DRIPresent *This)
 {
     ULONG refs = InterlockedDecrement(&This->refs);
     WINE_TRACE("%p decreasing refcount to %u.\n", This, refs);
@@ -390,7 +390,7 @@ static ULONG WINAPI DRI3Present_Release(struct DRI3Present *This)
     return refs;
 }
 
-static HRESULT WINAPI DRI3Present_QueryInterface(struct DRI3Present *This,
+static HRESULT WINAPI DRIPresent_QueryInterface(struct DRIPresent *This,
         REFIID riid, void **ppvObject)
 {
     if (!ppvObject)
@@ -400,7 +400,7 @@ static HRESULT WINAPI DRI3Present_QueryInterface(struct DRI3Present *This,
             IsEqualGUID(&IID_IUnknown, riid))
     {
         *ppvObject = This;
-        DRI3Present_AddRef(This);
+        DRIPresent_AddRef(This);
         return S_OK;
     }
 
@@ -410,19 +410,19 @@ static HRESULT WINAPI DRI3Present_QueryInterface(struct DRI3Present *This,
     return E_NOINTERFACE;
 }
 
-static HRESULT DRI3Present_ChangePresentParameters(struct DRI3Present *This,
+static HRESULT DRIPresent_ChangePresentParameters(struct DRIPresent *This,
         D3DPRESENT_PARAMETERS *params);
 
-static HRESULT WINAPI DRI3Present_SetPresentParameters(struct DRI3Present *This,
+static HRESULT WINAPI DRIPresent_SetPresentParameters(struct DRIPresent *This,
         D3DPRESENT_PARAMETERS *pPresentationParameters,
         D3DDISPLAYMODEEX *pFullscreenDisplayMode)
 {
     if (pFullscreenDisplayMode)
         WINE_FIXME("Ignoring pFullscreenDisplayMode\n");
-    return DRI3Present_ChangePresentParameters(This, pPresentationParameters);
+    return DRIPresent_ChangePresentParameters(This, pPresentationParameters);
 }
 
-static HRESULT WINAPI DRI3Present_D3DWindowBufferFromDmaBuf(struct DRI3Present *This,
+static HRESULT WINAPI DRIPresent_D3DWindowBufferFromDmaBuf(struct DRIPresent *This,
         int dmaBufFd, int width, int height, int stride, int depth,
         int bpp, struct D3DWindowBuffer **out)
 {
@@ -437,7 +437,7 @@ static HRESULT WINAPI DRI3Present_D3DWindowBufferFromDmaBuf(struct DRI3Present *
     return D3D_OK;
 }
 
-static HRESULT WINAPI DRI3Present_DestroyD3DWindowBuffer(struct DRI3Present *This,
+static HRESULT WINAPI DRIPresent_DestroyD3DWindowBuffer(struct DRIPresent *This,
         struct D3DWindowBuffer *buffer)
 {
     /* the pixmap is managed by the PRESENT backend.
@@ -450,7 +450,7 @@ static HRESULT WINAPI DRI3Present_DestroyD3DWindowBuffer(struct DRI3Present *Thi
     return D3D_OK;
 }
 
-static HRESULT WINAPI DRI3Present_WaitBufferReleased(struct DRI3Present *This,
+static HRESULT WINAPI DRIPresent_WaitBufferReleased(struct DRIPresent *This,
         struct D3DWindowBuffer *buffer)
 {
     //WINE_TRACE("This=%p buffer=%p\n", This, buffer);
@@ -462,7 +462,7 @@ static HRESULT WINAPI DRI3Present_WaitBufferReleased(struct DRI3Present *This,
     return D3D_OK;
 }
 
-static HRESULT WINAPI DRI3Present_FrontBufferCopy(struct DRI3Present *This,
+static HRESULT WINAPI DRIPresent_FrontBufferCopy(struct DRIPresent *This,
         struct D3DWindowBuffer *buffer)
 {
     if (!DRIBackendHelperCopyFront(This->dri_backend, buffer->present_pixmap_priv))
@@ -472,7 +472,7 @@ static HRESULT WINAPI DRI3Present_FrontBufferCopy(struct DRI3Present *This,
     return D3D_OK;
 }
 
-static HRESULT WINAPI DRI3Present_PresentBuffer( struct DRI3Present *This,
+static HRESULT WINAPI DRIPresent_PresentBuffer( struct DRIPresent *This,
         struct D3DWindowBuffer *buffer, HWND hWndOverride, const RECT *pSourceRect,
         const RECT *pDestRect, const RGNDATA *pDirtyRegion, DWORD Flags )
 {
@@ -513,7 +513,7 @@ static HRESULT WINAPI DRI3Present_PresentBuffer( struct DRI3Present *This,
         windowRect.right != d3d->windowRect.right)
     {
         d3d->windowRect = windowRect;
-        DRI3Present_FillOffset(This->gdi_display, d3d);
+        DRIPresent_FillOffset(This->gdi_display, d3d);
     }
 
     GetClientRect(d3d->wnd, &offset);
@@ -560,7 +560,7 @@ static HRESULT WINAPI DRI3Present_PresentBuffer( struct DRI3Present *This,
 }
 
 /* Based on wine's wined3d_get_adapter_raster_status. */
-static HRESULT WINAPI DRI3Present_GetRasterStatus( struct DRI3Present *This,
+static HRESULT WINAPI DRIPresent_GetRasterStatus( struct DRIPresent *This,
         D3DRASTER_STATUS *pRasterStatus )
 {
     LONGLONG freq_per_frame, freq_per_line;
@@ -606,7 +606,7 @@ static HRESULT WINAPI DRI3Present_GetRasterStatus( struct DRI3Present *This,
     return D3D_OK;
 }
 
-static HRESULT WINAPI DRI3Present_GetDisplayMode( struct DRI3Present *This,
+static HRESULT WINAPI DRIPresent_GetDisplayMode( struct DRIPresent *This,
         D3DDISPLAYMODEEX *pMode, D3DDISPLAYROTATION *pRotation )
 {
     DEVMODEW dm;
@@ -646,13 +646,13 @@ static HRESULT WINAPI DRI3Present_GetDisplayMode( struct DRI3Present *This,
     return D3D_OK;
 }
 
-static HRESULT WINAPI DRI3Present_GetPresentStats( struct DRI3Present *This, D3DPRESENTSTATS *pStats )
+static HRESULT WINAPI DRIPresent_GetPresentStats( struct DRIPresent *This, D3DPRESENTSTATS *pStats )
 {
     WINE_FIXME("(%p, %p), stub!\n", This, pStats);
     return D3DERR_INVALIDCALL;
 }
 
-static HRESULT WINAPI DRI3Present_GetCursorPos( struct DRI3Present *This, POINT *pPoint )
+static HRESULT WINAPI DRIPresent_GetCursorPos( struct DRIPresent *This, POINT *pPoint )
 {
     BOOL ok;
     HWND draw_window;
@@ -668,7 +668,7 @@ static HRESULT WINAPI DRI3Present_GetCursorPos( struct DRI3Present *This, POINT 
     return ok ? S_OK : D3DERR_DRIVERINTERNALERROR;
 }
 
-static HRESULT WINAPI DRI3Present_SetCursorPos( struct DRI3Present *This, POINT *pPoint )
+static HRESULT WINAPI DRIPresent_SetCursorPos( struct DRIPresent *This, POINT *pPoint )
 {
     BOOL ok;
     POINT real_pos;
@@ -692,7 +692,7 @@ error:
 }
 
 /* Note: assuming 32x32 cursor */
-static HRESULT WINAPI DRI3Present_SetCursor( struct DRI3Present *This, void *pBitmap,
+static HRESULT WINAPI DRIPresent_SetCursor( struct DRIPresent *This, void *pBitmap,
         POINT *pHotspot, BOOL bShow )
 {
    if (pBitmap)
@@ -723,7 +723,7 @@ static HRESULT WINAPI DRI3Present_SetCursor( struct DRI3Present *This, void *pBi
    return D3D_OK;
 }
 
-static HRESULT WINAPI DRI3Present_SetGammaRamp( struct DRI3Present *This,
+static HRESULT WINAPI DRIPresent_SetGammaRamp( struct DRIPresent *This,
         const D3DGAMMARAMP *pRamp, HWND hWndOverride )
 {
     HWND draw_window = This->params.hDeviceWindow ?
@@ -740,7 +740,7 @@ static HRESULT WINAPI DRI3Present_SetGammaRamp( struct DRI3Present *This,
     return ok ? D3D_OK : D3DERR_DRIVERINTERNALERROR;
 }
 
-static HRESULT WINAPI DRI3Present_GetWindowInfo( struct DRI3Present *This,
+static HRESULT WINAPI DRIPresent_GetWindowInfo( struct DRIPresent *This,
         HWND hWnd, int *width, int *height, int *depth )
 {
     HWND draw_window = This->params.hDeviceWindow ?
@@ -777,14 +777,14 @@ static HRESULT WINAPI DRI3Present_GetWindowInfo( struct DRI3Present *This,
 }
 
 #if WINE_D3DADAPTER_DRIVER_PRESENT_VERSION_MINOR >= 1
-static BOOL WINAPI DRI3Present_GetWindowOccluded(struct DRI3Present *This)
+static BOOL WINAPI DRIPresent_GetWindowOccluded(struct DRIPresent *This)
 {
     return This->occluded;
 }
 #endif
 
 #if WINE_D3DADAPTER_DRIVER_PRESENT_VERSION_MINOR >= 2
-static BOOL WINAPI DRI3Present_ResolutionMismatch(struct DRI3Present *This)
+static BOOL WINAPI DRIPresent_ResolutionMismatch(struct DRIPresent *This)
 {
     /* The resolution might change due to a third party app.
      * Poll this function to get the device's resolution match.
@@ -793,7 +793,7 @@ static BOOL WINAPI DRI3Present_ResolutionMismatch(struct DRI3Present *This)
     return This->resolution_mismatch;
 }
 
-static HANDLE WINAPI DRI3Present_CreateThread( struct DRI3Present *This,
+static HANDLE WINAPI DRIPresent_CreateThread( struct DRIPresent *This,
         void *pThreadfunc, void *pParam )
 {
     LPTHREAD_START_ROUTINE lpStartAddress =
@@ -802,7 +802,7 @@ static HANDLE WINAPI DRI3Present_CreateThread( struct DRI3Present *This,
     return CreateThread(NULL, 0, lpStartAddress, pParam, 0, NULL);
 }
 
-static BOOL WINAPI DRI3Present_WaitForThread( struct DRI3Present *This, HANDLE thread )
+static BOOL WINAPI DRIPresent_WaitForThread( struct DRIPresent *This, HANDLE thread )
 {
     DWORD ExitCode = 0;
     while (GetExitCodeThread(thread, &ExitCode) && ExitCode == STILL_ACTIVE)
@@ -813,20 +813,20 @@ static BOOL WINAPI DRI3Present_WaitForThread( struct DRI3Present *This, HANDLE t
 #endif
 
 #if WINE_D3DADAPTER_DRIVER_PRESENT_VERSION_MINOR >= 3
-static HRESULT WINAPI DRI3Present_SetPresentParameters2( struct DRI3Present *This, D3DPRESENT_PARAMETERS2 *pParams )
+static HRESULT WINAPI DRIPresent_SetPresentParameters2( struct DRIPresent *This, D3DPRESENT_PARAMETERS2 *pParams )
 {
     This->allow_discard_delayed_release = pParams->AllowDISCARDDelayedRelease;
     This->tear_free_discard = pParams->AllowDISCARDDelayedRelease && pParams->TearFreeDISCARD;
     return D3D_OK;
 }
 
-static BOOL WINAPI DRI3Present_IsBufferReleased( struct DRI3Present *This, struct D3DWindowBuffer *buffer )
+static BOOL WINAPI DRIPresent_IsBufferReleased( struct DRIPresent *This, struct D3DWindowBuffer *buffer )
 {
     //WINE_TRACE("This=%p buffer=%p\n", This, buffer);
     return PRESENTIsPixmapReleased(buffer->present_pixmap_priv);
 }
 
-static HRESULT WINAPI DRI3Present_WaitBufferReleaseEvent( struct DRI3Present *This )
+static HRESULT WINAPI DRIPresent_WaitBufferReleaseEvent( struct DRIPresent *This )
 {
     PRESENTWaitReleaseEvent(This->present_priv);
     return D3D_OK;
@@ -835,36 +835,36 @@ static HRESULT WINAPI DRI3Present_WaitBufferReleaseEvent( struct DRI3Present *Th
 
 /*----------*/
 
-static ID3DPresentVtbl DRI3Present_vtable = {
-    (void *)DRI3Present_QueryInterface,
-    (void *)DRI3Present_AddRef,
-    (void *)DRI3Present_Release,
-    (void *)DRI3Present_SetPresentParameters,
-    (void *)DRI3Present_D3DWindowBufferFromDmaBuf,
-    (void *)DRI3Present_DestroyD3DWindowBuffer,
-    (void *)DRI3Present_WaitBufferReleased,
-    (void *)DRI3Present_FrontBufferCopy,
-    (void *)DRI3Present_PresentBuffer,
-    (void *)DRI3Present_GetRasterStatus,
-    (void *)DRI3Present_GetDisplayMode,
-    (void *)DRI3Present_GetPresentStats,
-    (void *)DRI3Present_GetCursorPos,
-    (void *)DRI3Present_SetCursorPos,
-    (void *)DRI3Present_SetCursor,
-    (void *)DRI3Present_SetGammaRamp,
-    (void *)DRI3Present_GetWindowInfo,
+static ID3DPresentVtbl DRIPresent_vtable = {
+    (void *)DRIPresent_QueryInterface,
+    (void *)DRIPresent_AddRef,
+    (void *)DRIPresent_Release,
+    (void *)DRIPresent_SetPresentParameters,
+    (void *)DRIPresent_D3DWindowBufferFromDmaBuf,
+    (void *)DRIPresent_DestroyD3DWindowBuffer,
+    (void *)DRIPresent_WaitBufferReleased,
+    (void *)DRIPresent_FrontBufferCopy,
+    (void *)DRIPresent_PresentBuffer,
+    (void *)DRIPresent_GetRasterStatus,
+    (void *)DRIPresent_GetDisplayMode,
+    (void *)DRIPresent_GetPresentStats,
+    (void *)DRIPresent_GetCursorPos,
+    (void *)DRIPresent_SetCursorPos,
+    (void *)DRIPresent_SetCursor,
+    (void *)DRIPresent_SetGammaRamp,
+    (void *)DRIPresent_GetWindowInfo,
 #if WINE_D3DADAPTER_DRIVER_PRESENT_VERSION_MINOR >= 1
-    (void *)DRI3Present_GetWindowOccluded,
+    (void *)DRIPresent_GetWindowOccluded,
 #endif
 #if WINE_D3DADAPTER_DRIVER_PRESENT_VERSION_MINOR >= 2
-    (void *)DRI3Present_ResolutionMismatch,
-    (void *)DRI3Present_CreateThread,
-    (void *)DRI3Present_WaitForThread,
+    (void *)DRIPresent_ResolutionMismatch,
+    (void *)DRIPresent_CreateThread,
+    (void *)DRIPresent_WaitForThread,
 #endif
 #if WINE_D3DADAPTER_DRIVER_PRESENT_VERSION_MINOR >= 3
-    (void *)DRI3Present_SetPresentParameters2,
-    (void *)DRI3Present_IsBufferReleased,
-    (void *)DRI3Present_WaitBufferReleaseEvent,
+    (void *)DRIPresent_SetPresentParameters2,
+    (void *)DRIPresent_IsBufferReleased,
+    (void *)DRIPresent_WaitBufferReleaseEvent,
 #endif
 };
 
@@ -888,7 +888,7 @@ static LONG fullscreen_exstyle(LONG exstyle)
     return exstyle;
 }
 
-static HRESULT DRI3Present_ChangeDisplaySettingsIfNeccessary(struct DRI3Present *This, DEVMODEW *new_mode)
+static HRESULT DRIPresent_ChangeDisplaySettingsIfNeccessary(struct DRIPresent *This, DEVMODEW *new_mode)
 {
     DEVMODEW current_mode;
     LONG hr;
@@ -936,7 +936,7 @@ static HRESULT DRI3Present_ChangeDisplaySettingsIfNeccessary(struct DRI3Present 
     return D3D_OK;
 }
 
-LRESULT device_process_message(struct DRI3Present *present, HWND window, BOOL unicode,
+LRESULT device_process_message(struct DRIPresent *present, HWND window, BOOL unicode,
         UINT message, WPARAM wparam, LPARAM lparam, WNDPROC proc)
 {
     boolean drop_wnd_messages;
@@ -994,7 +994,7 @@ LRESULT device_process_message(struct DRI3Present *present, HWND window, BOOL un
             ZeroMemory(&new_mode, sizeof(DEVMODEW));
             new_mode.dmSize = sizeof(new_mode);
             if (EnumDisplaySettingsW(present->devname, ENUM_REGISTRY_SETTINGS, &new_mode))
-                DRI3Present_ChangeDisplaySettingsIfNeccessary(present, &new_mode);
+                DRIPresent_ChangeDisplaySettingsIfNeccessary(present, &new_mode);
 
             if (!present->no_window_changes &&
                     IsWindowVisible(present->params.hDeviceWindow))
@@ -1024,7 +1024,7 @@ LRESULT device_process_message(struct DRI3Present *present, HWND window, BOOL un
                     new_mode.dmFields |= DM_DISPLAYFREQUENCY;
                     new_mode.dmDisplayFrequency = present->params.FullScreen_RefreshRateInHz;
                 }
-                DRI3Present_ChangeDisplaySettingsIfNeccessary(present, &new_mode);
+                DRIPresent_ChangeDisplaySettingsIfNeccessary(present, &new_mode);
             }
         }
         present->drop_wnd_messages = drop_wnd_messages;
@@ -1046,7 +1046,7 @@ LRESULT device_process_message(struct DRI3Present *present, HWND window, BOOL un
         return CallWindowProcA(proc, window, message, wparam, lparam);
 }
 
-static void setup_fullscreen_window(struct DRI3Present *This,
+static void setup_fullscreen_window(struct DRIPresent *This,
         HWND hwnd, int w, int h)
 {
     boolean drop_wnd_messages;
@@ -1070,7 +1070,7 @@ static void setup_fullscreen_window(struct DRI3Present *This,
     This->drop_wnd_messages = drop_wnd_messages;
 }
 
-static void move_fullscreen_window(struct DRI3Present *This,
+static void move_fullscreen_window(struct DRIPresent *This,
         HWND hwnd, int w, int h)
 {
     boolean drop_wnd_messages;
@@ -1093,7 +1093,7 @@ static void move_fullscreen_window(struct DRI3Present *This,
     This->drop_wnd_messages = drop_wnd_messages;
 }
 
-static void restore_fullscreen_window(struct DRI3Present *This,
+static void restore_fullscreen_window(struct DRIPresent *This,
         HWND hwnd)
 {
     boolean drop_wnd_messages;
@@ -1132,7 +1132,7 @@ static void restore_fullscreen_window(struct DRI3Present *This,
     This->style_ex = 0;
 }
 
-static void DRI3Present_UpdatePresentationInterval(struct DRI3Present *This)
+static void DRIPresent_UpdatePresentationInterval(struct DRIPresent *This)
 {
     switch(This->params.PresentationInterval)
     {
@@ -1174,7 +1174,7 @@ static void DRI3Present_UpdatePresentationInterval(struct DRI3Present *This)
           This->allow_discard_delayed_release));
 }
 
-static HRESULT DRI3Present_ChangePresentParameters(struct DRI3Present *This,
+static HRESULT DRIPresent_ChangePresentParameters(struct DRIPresent *This,
         D3DPRESENT_PARAMETERS *params)
 {
     HWND focus_window = This->focus_wnd ? This->focus_wnd : params->hDeviceWindow;
@@ -1220,7 +1220,7 @@ static HRESULT DRI3Present_ChangePresentParameters(struct DRI3Present *This,
                 new_mode.dmDisplayFrequency = params->FullScreen_RefreshRateInHz;
             }
             new_mode.dmSize = sizeof(DEVMODEW);
-            hr = DRI3Present_ChangeDisplaySettingsIfNeccessary(This, &new_mode);
+            hr = DRIPresent_ChangeDisplaySettingsIfNeccessary(This, &new_mode);
             if (FAILED(hr))
                 return hr;
 
@@ -1232,7 +1232,7 @@ static HRESULT DRI3Present_ChangePresentParameters(struct DRI3Present *This,
             WINE_TRACE("Setting fullscreen mode: %dx%d@%d\n", This->initial_mode.dmPelsWidth,
                     This->initial_mode.dmPelsHeight, This->initial_mode.dmDisplayFrequency);
 
-            hr = DRI3Present_ChangeDisplaySettingsIfNeccessary(This, &This->initial_mode);
+            hr = DRIPresent_ChangeDisplaySettingsIfNeccessary(This, &This->initial_mode);
             if (FAILED(hr))
                 return hr;
 
@@ -1307,7 +1307,7 @@ static HRESULT DRI3Present_ChangePresentParameters(struct DRI3Present *This,
     This->params.MultiSampleType = params->MultiSampleType;
     This->params.MultiSampleQuality = params->MultiSampleQuality;
 
-    DRI3Present_UpdatePresentationInterval(This);
+    DRIPresent_UpdatePresentationInterval(This);
 
     if (!params->Windowed) {
         struct d3d_drawable *d3d = get_d3d_drawable(This->gdi_display, focus_window);
@@ -1329,11 +1329,11 @@ static HRESULT DRI3Present_ChangePresentParameters(struct DRI3Present *This,
 
 /* The following code isn't based on WINE's wined3d or d3d9. */
 
-static HRESULT DRI3Present_new(Display *gdi_display, const WCHAR *devname,
-        D3DPRESENT_PARAMETERS *params, HWND focus_wnd, struct DRI3Present **out,
+static HRESULT DRIPresent_new(Display *gdi_display, const WCHAR *devname,
+        D3DPRESENT_PARAMETERS *params, HWND focus_wnd, struct DRIPresent **out,
         boolean ex, boolean no_window_changes, struct DRIBackend *dri_backend)
 {
-    struct DRI3Present *This;
+    struct DRIPresent *This;
     HWND focus_window;
     DEVMODEW new_mode;
     HRESULT hr;
@@ -1346,7 +1346,7 @@ static HRESULT DRI3Present_new(Display *gdi_display, const WCHAR *devname,
     }
 
     This = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY,
-                     sizeof(struct DRI3Present));
+                     sizeof(struct DRIPresent));
     if (!This)
     {
         WINE_ERR("Out of memory.\n");
@@ -1354,7 +1354,7 @@ static HRESULT DRI3Present_new(Display *gdi_display, const WCHAR *devname,
     }
 
     This->gdi_display = gdi_display;
-    This->vtable = &DRI3Present_vtable;
+    This->vtable = &DRIPresent_vtable;
     This->refs = 1;
     This->focus_wnd = focus_wnd;
     This->ex = ex;
@@ -1390,7 +1390,7 @@ static HRESULT DRI3Present_new(Display *gdi_display, const WCHAR *devname,
             new_mode.dmDisplayFrequency = params->FullScreen_RefreshRateInHz;
         }
 
-        hr = DRI3Present_ChangeDisplaySettingsIfNeccessary(This, &new_mode);
+        hr = DRIPresent_ChangeDisplaySettingsIfNeccessary(This, &new_mode);
         if (FAILED(hr))
         {
             nine_unregister_window(focus_window);
@@ -1417,7 +1417,7 @@ static HRESULT DRI3Present_new(Display *gdi_display, const WCHAR *devname,
 
     This->params = *params;
 
-    DRI3Present_UpdatePresentationInterval(This);
+    DRIPresent_UpdatePresentationInterval(This);
 
     lstrcpyW(This->devname, devname);
 
@@ -1438,7 +1438,7 @@ static HRESULT DRI3Present_new(Display *gdi_display, const WCHAR *devname,
     return D3D_OK;
 }
 
-struct DRI3PresentGroup
+struct DRIPresentGroup
 {
     /* COM vtable */
     void *vtable;
@@ -1446,21 +1446,21 @@ struct DRI3PresentGroup
     LONG refs;
 
     boolean ex;
-    struct DRI3Present **present_backends;
+    struct DRIPresent **present_backends;
     unsigned npresent_backends;
     Display *gdi_display;
     boolean no_window_changes;
     struct DRIBackend *dri_backend;
 };
 
-static ULONG WINAPI DRI3PresentGroup_AddRef(struct DRI3PresentGroup *This)
+static ULONG WINAPI DRIPresentGroup_AddRef(struct DRIPresentGroup *This)
 {
     ULONG refs = InterlockedIncrement(&This->refs);
     WINE_TRACE("%p increasing refcount to %u.\n", This, refs);
     return refs;
 }
 
-static ULONG WINAPI DRI3PresentGroup_Release(struct DRI3PresentGroup *This)
+static ULONG WINAPI DRIPresentGroup_Release(struct DRIPresentGroup *This)
 {
     ULONG refs = InterlockedDecrement(&This->refs);
     WINE_TRACE("%p decreasing refcount to %u.\n", This, refs);
@@ -1472,7 +1472,7 @@ static ULONG WINAPI DRI3PresentGroup_Release(struct DRI3PresentGroup *This)
             for (i = 0; i < This->npresent_backends; ++i)
             {
                 if (This->present_backends[i])
-                    DRI3Present_Release(This->present_backends[i]);
+                    DRIPresent_Release(This->present_backends[i]);
             }
             HeapFree(GetProcessHeap(), 0, This->present_backends);
         }
@@ -1481,7 +1481,7 @@ static ULONG WINAPI DRI3PresentGroup_Release(struct DRI3PresentGroup *This)
     return refs;
 }
 
-static HRESULT WINAPI DRI3PresentGroup_QueryInterface(struct DRI3PresentGroup *This,
+static HRESULT WINAPI DRIPresentGroup_QueryInterface(struct DRIPresentGroup *This,
         REFIID riid, void **ppvObject )
 {
     if (!ppvObject)
@@ -1490,7 +1490,7 @@ static HRESULT WINAPI DRI3PresentGroup_QueryInterface(struct DRI3PresentGroup *T
             IsEqualGUID(&IID_IUnknown, riid))
     {
         *ppvObject = This;
-        DRI3PresentGroup_AddRef(This);
+        DRIPresentGroup_AddRef(This);
         return S_OK;
     }
 
@@ -1500,52 +1500,52 @@ static HRESULT WINAPI DRI3PresentGroup_QueryInterface(struct DRI3PresentGroup *T
     return E_NOINTERFACE;
 }
 
-static UINT WINAPI DRI3PresentGroup_GetMultiheadCount(struct DRI3PresentGroup *This)
+static UINT WINAPI DRIPresentGroup_GetMultiheadCount(struct DRIPresentGroup *This)
 {
     WINE_FIXME("(%p), stub!\n", This);
     return 1;
 }
 
-static HRESULT WINAPI DRI3PresentGroup_GetPresent(struct DRI3PresentGroup *This,
+static HRESULT WINAPI DRIPresentGroup_GetPresent(struct DRIPresentGroup *This,
         UINT Index, ID3DPresent **ppPresent)
 {
-    if (Index >= DRI3PresentGroup_GetMultiheadCount(This))
+    if (Index >= DRIPresentGroup_GetMultiheadCount(This))
     {
         WINE_ERR("Index >= MultiHeadCount\n");
         return D3DERR_INVALIDCALL;
     }
-    DRI3Present_AddRef(This->present_backends[Index]);
+    DRIPresent_AddRef(This->present_backends[Index]);
     *ppPresent = (ID3DPresent *)This->present_backends[Index];
 
     return D3D_OK;
 }
 
-static HRESULT WINAPI DRI3PresentGroup_CreateAdditionalPresent(struct DRI3PresentGroup *This,
+static HRESULT WINAPI DRIPresentGroup_CreateAdditionalPresent(struct DRIPresentGroup *This,
         D3DPRESENT_PARAMETERS *pPresentationParameters, ID3DPresent **ppPresent)
 {
     HRESULT hr;
-    hr = DRI3Present_new(This->gdi_display, This->present_backends[0]->devname,
-            pPresentationParameters, 0, (struct DRI3Present **)ppPresent,
+    hr = DRIPresent_new(This->gdi_display, This->present_backends[0]->devname,
+            pPresentationParameters, 0, (struct DRIPresent **)ppPresent,
             This->ex, This->no_window_changes, This->dri_backend);
 
     return hr;
 }
 
-static void WINAPI DRI3PresentGroup_GetVersion(struct DRI3PresentGroup *This,
+static void WINAPI DRIPresentGroup_GetVersion(struct DRIPresentGroup *This,
         int *major, int *minor)
 {
     *major = WINE_D3DADAPTER_DRIVER_PRESENT_VERSION_MAJOR;
     *minor = WINE_D3DADAPTER_DRIVER_PRESENT_VERSION_MINOR;
 }
 
-static ID3DPresentGroupVtbl DRI3PresentGroup_vtable = {
-    (void *)DRI3PresentGroup_QueryInterface,
-    (void *)DRI3PresentGroup_AddRef,
-    (void *)DRI3PresentGroup_Release,
-    (void *)DRI3PresentGroup_GetMultiheadCount,
-    (void *)DRI3PresentGroup_GetPresent,
-    (void *)DRI3PresentGroup_CreateAdditionalPresent,
-    (void *)DRI3PresentGroup_GetVersion
+static ID3DPresentGroupVtbl DRIPresentGroup_vtable = {
+    (void *)DRIPresentGroup_QueryInterface,
+    (void *)DRIPresentGroup_AddRef,
+    (void *)DRIPresentGroup_Release,
+    (void *)DRIPresentGroup_GetMultiheadCount,
+    (void *)DRIPresentGroup_GetPresent,
+    (void *)DRIPresentGroup_CreateAdditionalPresent,
+    (void *)DRIPresentGroup_GetVersion
 };
 
 HRESULT present_create_present_group(Display *gdi_display, const WCHAR *device_name,
@@ -1553,13 +1553,13 @@ HRESULT present_create_present_group(Display *gdi_display, const WCHAR *device_n
         unsigned nparams, ID3DPresentGroup **group, boolean ex, DWORD BehaviorFlags,
         struct DRIBackend *dri_backend)
 {
-    struct DRI3PresentGroup *This;
+    struct DRIPresentGroup *This;
     DISPLAY_DEVICEW dd;
     HRESULT hr;
     unsigned i;
 
     This = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY,
-            sizeof(struct DRI3PresentGroup));
+            sizeof(struct DRIPresentGroup));
     if (!This)
     {
         WINE_ERR("Out of memory.\n");
@@ -1567,17 +1567,17 @@ HRESULT present_create_present_group(Display *gdi_display, const WCHAR *device_n
     }
 
     This->gdi_display = gdi_display;
-    This->vtable = &DRI3PresentGroup_vtable;
+    This->vtable = &DRIPresentGroup_vtable;
     This->refs = 1;
     This->ex = ex;
     This->dri_backend = dri_backend;
     This->npresent_backends = nparams;
     This->no_window_changes = !!(BehaviorFlags & D3DCREATE_NOWINDOWCHANGES);
     This->present_backends = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY,
-            This->npresent_backends * sizeof(struct DRI3Present *));
+            This->npresent_backends * sizeof(struct DRIPresent *));
     if (!This->present_backends)
     {
-        DRI3PresentGroup_Release(This);
+        DRIPresentGroup_Release(This);
         WINE_ERR("Out of memory.\n");
         return E_OUTOFMEMORY;
     }
@@ -1597,12 +1597,12 @@ HRESULT present_create_present_group(Display *gdi_display, const WCHAR *device_n
         }
 
         /* create an ID3DPresent for it */
-        hr = DRI3Present_new(gdi_display, dd.DeviceName, &params[i],
+        hr = DRIPresent_new(gdi_display, dd.DeviceName, &params[i],
                 focus_wnd, &This->present_backends[i], ex, This->no_window_changes,
                 This->dri_backend);
         if (FAILED(hr))
         {
-            DRI3PresentGroup_Release(This);
+            DRIPresentGroup_Release(This);
             return hr;
         }
     }

@@ -14,15 +14,15 @@
 
 #include <windef.h>
 
-struct DRI3Present;
+struct DRIPresent;
 
-BOOL nine_register_window(HWND window, struct DRI3Present *present);
+BOOL nine_register_window(HWND window, struct DRIPresent *present);
 BOOL nine_unregister_window(HWND window);
 
 BOOL nine_dll_init(HINSTANCE hInstDLL);
 BOOL nine_dll_destroy(HINSTANCE hInstDLL);
 
-LRESULT device_process_message(struct DRI3Present *present, HWND window, BOOL unicode,
+LRESULT device_process_message(struct DRIPresent *present, HWND window, BOOL unicode,
         UINT message, WPARAM wparam, LPARAM lparam, WNDPROC proc);
 
 #define NINE_WINDOW_CLASS_NAME "Gallium_Nine_Window"
