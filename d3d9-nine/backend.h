@@ -26,7 +26,7 @@ struct D3DWindowBuffer
     struct DRIPixmapPriv *dri_pixmap_priv;
 };
 
-BOOL DRIBackendOpen(Display *dpy, int screen, struct dri_backend **dri_backend);
+struct dri_backend *backend_create(Display *dpy, int screen);
 
 void DRIBackendClose(struct dri_backend *dri_backend);
 

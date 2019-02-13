@@ -46,40 +46,39 @@ struct DRIPixmapPriv {
 #endif
 };
 
-BOOL DRIBackendOpen(Display *dpy, int screen, struct dri_backend **dri_backend)
+struct dri_backend *backend_create(Display *dpy, int screen)
 {
-    WINE_TRACE("dpy=%p screen=%d dri_backend=%p\n", dpy, screen, dri_backend);
+    struct dri_backend *dri_backend;
 
+    WINE_TRACE("dpy=%p screen=%d\n", dpy, screen);
+
+    dri_backend = HeapAlloc(GetProcessHeap(), 0, sizeof(struct dri_backend));
     if (!dri_backend)
-        return FALSE;
+        return NULL;
 
-    *dri_backend = HeapAlloc(GetProcessHeap(), 0, sizeof(struct dri_backend));
-    if (!*dri_backend)
-        return FALSE;
+    dri_backend->dpy = dpy;
+    dri_backend->fd = -1;
+    dri_backend->screen = screen;
+    dri_backend->type = TYPE_INVALID;
 
-    (*dri_backend)->dpy = dpy;
-    (*dri_backend)->screen = screen;
-    (*dri_backend)->type = TYPE_INVALID;
-
-    if (DRI3Open(dpy, screen, &((*dri_backend)->fd)))
+    if (DRI3Open(dri_backend->dpy, dri_backend->screen, &dri_backend->fd))
     {
-        (*dri_backend)->type = TYPE_DRI3;
-        return TRUE;
+        dri_backend->type = TYPE_DRI3;
+        return dri_backend;
     }
-
-    WINE_ERR("DRI3Open failed (fd=%d)\n", (*dri_backend)->fd);
+    WINE_ERR("DRI3Open failed (fd=%d)\n", dri_backend->fd);
 
 #ifdef D3D9NINE_DRI2
-    if (DRI2FallbackOpen(dpy, screen, &((*dri_backend)->fd)))
+    if (DRI2FallbackOpen(dri_backend->dpy, dri_backend->screen, &dri_backend->fd))
     {
-        (*dri_backend)->type = TYPE_DRI2;
-        return TRUE;
+        dri_backend->type = TYPE_DRI2;
+        return dri_backend;
     }
-    WINE_ERR("DRI2Open failed (fd=%d)\n", (*dri_backend)->fd);
+    WINE_ERR("DRI2Open failed (fd=%d)\n", dri_backend->fd);
 #endif
 
     HeapFree(GetProcessHeap(), 0, dri_backend);
-    return FALSE;
+    return NULL;
 }
 
 int DRIBackendFd(struct dri_backend *dri_backend)
