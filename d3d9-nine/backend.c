@@ -30,6 +30,7 @@ struct dri_backend {
     int fd;
     int screen;
     enum DRI_TYPE type;
+    struct dri_backend_priv *priv; /* backend private data */
 };
 
 struct DRI2priv;
@@ -60,6 +61,7 @@ struct dri_backend *backend_create(Display *dpy, int screen)
     dri_backend->fd = -1;
     dri_backend->screen = screen;
     dri_backend->type = TYPE_INVALID;
+    dri_backend->priv = NULL;
 
     if (DRI3Open(dri_backend->dpy, dri_backend->screen, &dri_backend->fd))
     {

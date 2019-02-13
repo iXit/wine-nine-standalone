@@ -11,6 +11,7 @@
 #include <X11/Xlib.h>
 
 struct dri_backend;
+struct dri_backend_priv;
 struct PRESENTpriv;
 struct PRESENTPixmapPriv;
 struct DRIpriv;
