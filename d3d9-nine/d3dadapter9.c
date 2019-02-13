@@ -649,7 +649,7 @@ static HRESULT fill_groups(struct d3dadapter9 *This)
     HRESULT hr;
     int i, j, k;
 
-    WCHAR wdisp[] = {'D','I','S','P','L','A','Y',0};
+    const WCHAR wdisp[] = {'D','I','S','P','L','A','Y',0};
 
     ZeroMemory(&dd, sizeof(dd));
     ZeroMemory(&dm, sizeof(dm));
