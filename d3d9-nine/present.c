@@ -42,9 +42,6 @@ WINE_DEFAULT_DEBUG_CHANNEL(d3d9nine);
 #endif
 
 static const struct D3DAdapter9DRM *d3d9_drm = NULL;
-#ifdef D3D9NINE_DRI2
-int is_dri2_fallback = 0;
-#endif
 
 /* Start section of x11drv.h */
 #define X11DRV_ESCAPE 6789
