@@ -14,7 +14,6 @@ struct dri_backend;
 struct dri_backend_priv;
 struct PRESENTpriv;
 struct PRESENTPixmapPriv;
-struct DRIpriv;
 struct DRIPixmapPriv;
 struct DRI2PixmapPriv;
 typedef struct PRESENTPriv PRESENTpriv;
@@ -36,20 +35,20 @@ int DRIBackendFd(struct dri_backend *dri_backend);
 BOOL DRIBackendCheckExtension(Display *dpy);
 
 BOOL DRIBackendD3DWindowBufferFromDmaBuf(struct dri_backend *dri_backend,
-        PRESENTpriv *present_priv, struct DRIpriv *dri_priv,
+        PRESENTpriv *present_priv,
         int dmaBufFd, int width, int height, int stride, int depth,
         int bpp, struct D3DWindowBuffer **out);
 
 BOOL DRIBackendHelperCopyFront(struct dri_backend *dri_backend, PRESENTPixmapPriv *present_pixmap_priv);
 
-BOOL DRIBackendInit(struct dri_backend *dri_backend, struct DRIpriv **dri_priv);
+BOOL DRIBackendInit(struct dri_backend *dri_backend);
 
-void DRIBackendDestroy(struct dri_backend *dri_backend, struct DRIpriv *dri_priv);
+void DRIBackendDestroy(struct dri_backend *dri_backend);
 
-void DRIBackendPresentPixmap(struct dri_backend *dri_backend, struct DRIpriv *dri_priv,
+void DRIBackendPresentPixmap(struct dri_backend *dri_backend,
         struct DRIPixmapPriv *dri_pixmap_priv);
 
-void DRIBackendDestroyPixmap(struct dri_backend *dri_backend, struct DRIpriv *dri_priv,
+void DRIBackendDestroyPixmap(struct dri_backend *dri_backend,
         struct DRIPixmapPriv *dri_pixmap_priv);
 
 #endif /* __NINE_BACKEND_H */
