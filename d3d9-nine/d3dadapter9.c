@@ -44,7 +44,7 @@ struct adapter_group
     /* driver stuff */
     ID3DAdapter9 *adapter;
     /* DRI backend */
-    struct DRIBackend *dri_backend;
+    struct dri_backend *dri_backend;
 };
 
 struct adapter_map

@@ -25,7 +25,7 @@ enum DRI_TYPE {
     TYPE_DRI2,
 };
 
-struct DRIBackend {
+struct dri_backend {
     Display *dpy;
     int fd;
     int screen;
@@ -46,14 +46,14 @@ struct DRIPixmapPriv {
 #endif
 };
 
-BOOL DRIBackendOpen(Display *dpy, int screen, struct DRIBackend **dri_backend)
+BOOL DRIBackendOpen(Display *dpy, int screen, struct dri_backend **dri_backend)
 {
     WINE_TRACE("dpy=%p screen=%d dri_backend=%p\n", dpy, screen, dri_backend);
 
     if (!dri_backend)
         return FALSE;
 
-    *dri_backend = HeapAlloc(GetProcessHeap(), 0, sizeof(struct DRIBackend));
+    *dri_backend = HeapAlloc(GetProcessHeap(), 0, sizeof(struct dri_backend));
     if (!*dri_backend)
         return FALSE;
 
@@ -82,14 +82,14 @@ BOOL DRIBackendOpen(Display *dpy, int screen, struct DRIBackend **dri_backend)
     return FALSE;
 }
 
-int DRIBackendFd(struct DRIBackend *dri_backend)
+int DRIBackendFd(struct dri_backend *dri_backend)
 {
     WINE_TRACE("dri_backend=%p\n", dri_backend);
 
     return dri_backend ? dri_backend->fd : -1;
 }
 
-void DRIBackendClose(struct DRIBackend *dri_backend)
+void DRIBackendClose(struct dri_backend *dri_backend)
 {
     WINE_TRACE("dri_backend=%p\n", dri_backend);
 
@@ -124,7 +124,7 @@ BOOL DRIBackendCheckExtension(Display *dpy)
     return TRUE;
 }
 
-BOOL DRIBackendD3DWindowBufferFromDmaBuf(struct DRIBackend *dri_backend,
+BOOL DRIBackendD3DWindowBufferFromDmaBuf(struct dri_backend *dri_backend,
         PRESENTpriv *present_priv, struct DRIpriv *dri_priv,
         int dmaBufFd, int width, int height, int stride, int depth,
         int bpp, struct D3DWindowBuffer **out)
@@ -194,7 +194,7 @@ BOOL DRIBackendD3DWindowBufferFromDmaBuf(struct DRIBackend *dri_backend,
     return TRUE;
 }
 
-BOOL DRIBackendHelperCopyFront(struct DRIBackend *dri_backend, PRESENTPixmapPriv *present_pixmap_priv)
+BOOL DRIBackendHelperCopyFront(struct dri_backend *dri_backend, PRESENTPixmapPriv *present_pixmap_priv)
 {
 #ifdef D3D9NINE_DRI2
     if (dri_backend->type == TYPE_DRI2)
@@ -206,7 +206,7 @@ BOOL DRIBackendHelperCopyFront(struct DRIBackend *dri_backend, PRESENTPixmapPriv
         return FALSE;
 }
 
-BOOL DRIBackendInit(struct DRIBackend *dri_backend, struct DRIpriv **dri_priv)
+BOOL DRIBackendInit(struct dri_backend *dri_backend, struct DRIpriv **dri_priv)
 {
     WINE_TRACE("dri_backend=%p dri_priv=%p\n", dri_backend, dri_priv);
 
@@ -223,7 +223,7 @@ BOOL DRIBackendInit(struct DRIBackend *dri_backend, struct DRIpriv **dri_priv)
     return TRUE;
 }
 
-void DRIBackendDestroy(struct DRIBackend *dri_backend, struct DRIpriv *dri_priv)
+void DRIBackendDestroy(struct dri_backend *dri_backend, struct DRIpriv *dri_priv)
 {
     WINE_TRACE("dri_backend=%p dri_priv=%p\n", dri_backend, dri_priv);
 
@@ -235,7 +235,7 @@ void DRIBackendDestroy(struct DRIBackend *dri_backend, struct DRIpriv *dri_priv)
     HeapFree(GetProcessHeap(), 0, dri_priv);
 }
 
-void DRIBackendPresentPixmap(struct DRIBackend *dri_backend, struct DRIpriv *dri_priv,
+void DRIBackendPresentPixmap(struct dri_backend *dri_backend, struct DRIpriv *dri_priv,
         struct DRIPixmapPriv *dri_pixmap_priv)
 {
     WINE_TRACE("dri_backend=%p dri_priv=%p dri_pixmap_priv=%p\n", dri_backend, dri_priv,
@@ -247,7 +247,7 @@ void DRIBackendPresentPixmap(struct DRIBackend *dri_backend, struct DRIpriv *dri
 #endif
 }
 
-void DRIBackendDestroyPixmap(struct DRIBackend *dri_backend, struct DRIpriv *dri_priv,
+void DRIBackendDestroyPixmap(struct dri_backend *dri_backend, struct DRIpriv *dri_priv,
         struct DRIPixmapPriv *dri_pixmap_priv)
 {
     WINE_TRACE("dri_backend=%p dri_priv=%p dri_pixmap_priv=%p\n", dri_backend, dri_priv,

@@ -125,7 +125,7 @@ struct DRIPresent
     BOOL tear_free_discard;
     struct d3d_drawable *d3d;
 
-    struct DRIBackend *dri_backend;
+    struct dri_backend *dri_backend;
 };
 
 static void free_d3dadapter_drawable(struct d3d_drawable *d3d)
@@ -1331,7 +1331,7 @@ static HRESULT DRIPresent_ChangePresentParameters(struct DRIPresent *This,
 
 static HRESULT DRIPresent_new(Display *gdi_display, const WCHAR *devname,
         D3DPRESENT_PARAMETERS *params, HWND focus_wnd, struct DRIPresent **out,
-        boolean ex, boolean no_window_changes, struct DRIBackend *dri_backend)
+        boolean ex, boolean no_window_changes, struct dri_backend *dri_backend)
 {
     struct DRIPresent *This;
     HWND focus_window;
@@ -1450,7 +1450,7 @@ struct DRIPresentGroup
     unsigned npresent_backends;
     Display *gdi_display;
     boolean no_window_changes;
-    struct DRIBackend *dri_backend;
+    struct dri_backend *dri_backend;
 };
 
 static ULONG WINAPI DRIPresentGroup_AddRef(struct DRIPresentGroup *This)
@@ -1551,7 +1551,7 @@ static ID3DPresentGroupVtbl DRIPresentGroup_vtable = {
 HRESULT present_create_present_group(Display *gdi_display, const WCHAR *device_name,
         UINT adapter, HWND focus_wnd, D3DPRESENT_PARAMETERS *params,
         unsigned nparams, ID3DPresentGroup **group, boolean ex, DWORD BehaviorFlags,
-        struct DRIBackend *dri_backend)
+        struct dri_backend *dri_backend)
 {
     struct DRIPresentGroup *This;
     DISPLAY_DEVICEW dd;
@@ -1614,7 +1614,7 @@ HRESULT present_create_present_group(Display *gdi_display, const WCHAR *device_n
 }
 
 HRESULT present_create_adapter9(Display *gdi_display, HDC hdc,
-        struct DRIBackend *dri_backend, ID3DAdapter9 **out)
+        struct dri_backend *dri_backend, ID3DAdapter9 **out)
 {
     HRESULT hr;
     int fd;

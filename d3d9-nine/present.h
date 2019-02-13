@@ -11,14 +11,14 @@
 #include <d3dadapter/present.h>
 #include <X11/Xlib.h>
 
-struct DRIBackend;
+struct dri_backend;
 
 HRESULT present_create_present_group(Display *gdi_display, const WCHAR *device_name, UINT adapter,
         HWND focus, D3DPRESENT_PARAMETERS *params, unsigned nparams, ID3DPresentGroup **group,
-        boolean ex, DWORD BehaviorFlags, struct DRIBackend *dri_backend);
+        boolean ex, DWORD BehaviorFlags, struct dri_backend *dri_backend);
 
 HRESULT present_create_adapter9(Display *gdi_display, HDC hdc,
-        struct DRIBackend *dri_backend, ID3DAdapter9 **adapter);
+        struct dri_backend *dri_backend, ID3DAdapter9 **adapter);
 
 BOOL present_has_d3dadapter(Display *gdi_display);
 
