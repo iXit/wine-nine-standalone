@@ -442,7 +442,7 @@ static HRESULT WINAPI DRIPresent_DestroyD3DWindowBuffer(struct DRIPresent *This,
      * better performance */
     //WINE_TRACE("This=%p buffer=%p of priv %p\n", This, buffer, buffer->present_pixmap_priv);
     PRESENTTryFreePixmap(buffer->present_pixmap_priv);
-    DRIBackendDestroyPixmap(This->dri_backend, buffer->dri_pixmap_priv);
+    DRIBackendDestroyPixmap(This->dri_backend, buffer->priv);
     HeapFree(GetProcessHeap(), 0, buffer);
     return D3D_OK;
 }
@@ -541,7 +541,7 @@ static HRESULT WINAPI DRIPresent_PresentBuffer( struct DRIPresent *This,
     }
 
     /* FIMXE: Do we need to aquire present mutex here? */
-    DRIBackendPresentPixmap(This->dri_backend, buffer->dri_pixmap_priv);
+    DRIBackendPresentPixmap(This->dri_backend, buffer->priv);
 
     if (!PRESENTPixmap(d3d->drawable, buffer->present_pixmap_priv,
             This->present_interval, This->present_async, This->present_swapeffectcopy,

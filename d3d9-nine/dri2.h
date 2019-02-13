@@ -15,8 +15,6 @@
 
 #include "backend.h"
 
-struct DRI2PixmapPriv;
-
 BOOL DRI2FallbackOpen(Display *dpy, int screen, int *device_fd);
 
 BOOL DRI2FallbackInit(Display *dpy, struct dri_backend_priv **priv);
@@ -25,14 +23,13 @@ void DRI2FallbackDestroy(struct dri_backend_priv *priv);
 
 BOOL DRI2FallbackCheckSupport(Display *dpy);
 
-BOOL DRI2PresentPixmap(struct dri_backend_priv *priv, struct DRI2PixmapPriv *dri2_pixmap_priv);
+BOOL DRI2PresentPixmap(struct dri_backend_priv *priv, struct buffer_priv *buffer_priv);
 
 BOOL DRI2FallbackPRESENTPixmap(struct dri_backend_priv *priv,
         int fd, int width, int height, int stride, int depth,
-        int bpp, struct DRI2PixmapPriv **dri2_pixmap_priv,
-        Pixmap *pixmap);
+        int bpp, struct buffer_priv **buffer_priv, Pixmap *pixmap);
 
-void DRI2DestroyPixmap(struct dri_backend_priv *priv, struct DRI2PixmapPriv *dri2_pixmap_priv);
+void DRI2DestroyPixmap(struct dri_backend_priv *priv, struct buffer_priv *buffer_priv);
 
 #endif
 
