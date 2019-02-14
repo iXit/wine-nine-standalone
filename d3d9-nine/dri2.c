@@ -51,7 +51,8 @@
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
 
-#include "dri2.h"
+#include "backend.h"
+#include "xcb_present.h"
 
 WINE_DEFAULT_DEBUG_CHANNEL(d3d9nine);
 
@@ -223,7 +224,7 @@ static Bool DRI2Authenticate(Display *dpy, XID window, uint32_t token)
     return rep.authenticated ? True : False;
 }
 
-BOOL DRI2FallbackOpen(Display *dpy, int screen, int *device_fd)
+static BOOL dri2_create(Display *dpy, int screen, int *device_fd)
 {
     char *device;
     int fd;
@@ -255,7 +256,7 @@ BOOL DRI2FallbackOpen(Display *dpy, int screen, int *device_fd)
     return TRUE;
 }
 
-BOOL DRI2FallbackInit(Display *dpy, struct dri_backend_priv **priv)
+static BOOL dri2_init(Display *dpy, struct dri_backend_priv **priv)
 {
     struct DRI2priv *p;
     PFNGLEGLIMAGETARGETTEXTURE2DOESPROC glEGLImageTargetTexture2DOES_func;
@@ -359,8 +360,7 @@ clean_egl_display:
     return FALSE;
 }
 
-
-BOOL DRI2PresentPixmap(struct dri_backend_priv *priv, struct buffer_priv *buffer_priv)
+static BOOL dri2_present_pixmap(struct dri_backend_priv *priv, struct buffer_priv *buffer_priv)
 {
     struct DRI2priv *p = (struct DRI2priv *)priv;
     struct DRI2PixmapPriv *pp = (struct DRI2PixmapPriv *)buffer_priv;
@@ -390,7 +390,7 @@ BOOL DRI2PresentPixmap(struct dri_backend_priv *priv, struct buffer_priv *buffer
 }
 
 
-BOOL DRI2FallbackPRESENTPixmap(struct dri_backend_priv *priv,
+static BOOL DRI2FallbackPRESENTPixmap(struct dri_backend_priv *priv,
         int fd, int width, int height, int stride, int depth,
         int bpp, struct buffer_priv **buffer_priv, Pixmap *pixmap)
 {
@@ -509,7 +509,55 @@ fail:
     return FALSE;
 }
 
-void DRI2DestroyPixmap(struct dri_backend_priv *priv, struct buffer_priv *buffer_priv)
+static BOOL dri2_window_buffer_from_dmabuf(struct dri_backend_priv *priv, Display *dpy, int screen,
+    PRESENTpriv *present_priv, int fd, int width, int height,
+    int stride, int depth, int bpp, struct D3DWindowBuffer **out)
+{
+    Pixmap pixmap;
+
+    WINE_TRACE("present_priv=%p dmaBufFd=%d\n", present_priv, fd);
+
+    if (!out)
+        return FALSE;
+
+    *out = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY,
+            sizeof(struct D3DWindowBuffer));
+    if (!*out)
+        return FALSE;
+
+    if (!PRESENTPixmapCreate(present_priv, screen, &pixmap,
+            width, height, stride, depth, bpp))
+    {
+        HeapFree(GetProcessHeap(), 0, *out);
+        WINE_ERR("Failed to create pixmap\n");
+        return FALSE;
+    }
+
+    if (!DRI2FallbackPRESENTPixmap(priv,
+            fd, width, height, stride, depth, bpp,
+            &(*out)->priv, &pixmap))
+    {
+        WINE_ERR("DRI2FallbackPRESENTPixmap failed\n");
+        HeapFree(GetProcessHeap(), 0, *out);
+        return FALSE;
+    }
+
+    if (!PRESENTPixmapInit(present_priv, pixmap, &((*out)->present_pixmap_priv)))
+    {
+        WINE_ERR("PRESENTPixmapInit failed\n");
+        HeapFree(GetProcessHeap(), 0, *out);
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+static BOOL dri2_copy_front(PRESENTPixmapPriv *present_pixmap_priv)
+{
+    return FALSE;
+}
+
+static void dri2_destroy_pixmap(struct dri_backend_priv *priv, struct buffer_priv *buffer_priv)
 {
     struct DRI2priv *p = (struct DRI2priv *)priv;
     struct DRI2PixmapPriv *pp = (struct DRI2PixmapPriv *)buffer_priv;
@@ -549,7 +597,7 @@ void DRI2DestroyPixmap(struct dri_backend_priv *priv, struct buffer_priv *buffer
 }
 
 /* hypothesis: at this step all textures, etc are destroyed */
-void DRI2FallbackDestroy(struct dri_backend_priv *priv)
+static void dri2_destroy(struct dri_backend_priv *priv)
 {
     struct DRI2priv *p = (struct DRI2priv *)priv;
     EGLenum current_api;
@@ -559,7 +607,7 @@ void DRI2FallbackDestroy(struct dri_backend_priv *priv)
     while (current)
     {
         struct DRI2PixmapPriv *next = current->next;
-        DRI2DestroyPixmap(priv, (struct buffer_priv *)current);
+        dri2_destroy_pixmap(priv, (struct buffer_priv *)current);
         current = next;
     }
 
@@ -582,20 +630,32 @@ void DRI2FallbackDestroy(struct dri_backend_priv *priv)
     HeapFree(GetProcessHeap(), 0, p);
 }
 
-BOOL DRI2FallbackCheckSupport(Display *dpy)
+static BOOL dri2_probe(Display *dpy)
 {
     struct dri_backend_priv *priv;
     int fd;
 
-    if (!DRI2FallbackInit(dpy, &priv))
+    if (!dri2_init(dpy, &priv))
         return FALSE;
 
-    DRI2FallbackDestroy(priv);
+    dri2_destroy(priv);
 
-    if (!DRI2FallbackOpen(dpy, DefaultScreen(dpy), &fd))
+    if (!dri2_create(dpy, DefaultScreen(dpy), &fd))
         return FALSE;
 
     close(fd);
     return TRUE;
 }
+
+const struct dri_backend_funcs dri2_funcs = {
+    .name = "dri2",
+    .probe = dri2_probe,
+    .create = dri2_create,
+    .destroy = dri2_destroy,
+    .init = dri2_init,
+    .window_buffer_from_dmabuf = dri2_window_buffer_from_dmabuf,
+    .copy_front = dri2_copy_front,
+    .present_pixmap = dri2_present_pixmap,
+    .destroy_pixmap = dri2_destroy_pixmap,
+};
 #endif
