@@ -25,6 +25,7 @@ struct D3DWindowBuffer
 };
 
 struct dri_backend *backend_create(Display *dpy, int screen);
+void backend_destroy(struct dri_backend *dri_backend);
 
 void DRIBackendClose(struct dri_backend *dri_backend);
 
@@ -40,8 +41,6 @@ BOOL DRIBackendD3DWindowBufferFromDmaBuf(struct dri_backend *dri_backend,
 BOOL DRIBackendHelperCopyFront(struct dri_backend *dri_backend, PRESENTPixmapPriv *present_pixmap_priv);
 
 BOOL DRIBackendInit(struct dri_backend *dri_backend);
-
-void DRIBackendDestroy(struct dri_backend *dri_backend);
 
 void DRIBackendPresentPixmap(struct dri_backend *dri_backend, struct buffer_priv *buffer_priv);
 

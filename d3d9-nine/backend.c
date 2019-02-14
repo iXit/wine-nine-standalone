@@ -69,21 +69,26 @@ struct dri_backend *backend_create(Display *dpy, int screen)
     return NULL;
 }
 
+void backend_destroy(struct dri_backend *dri_backend)
+{
+    WINE_TRACE("dri_backend=%p\n", dri_backend);
+
+    if (!dri_backend)
+        return;
+
+#ifdef D3D9NINE_DRI2
+    if (dri_backend->priv && dri_backend->type == TYPE_DRI2)
+        DRI2FallbackDestroy(dri_backend->priv);
+#endif
+
+    HeapFree(GetProcessHeap(), 0, dri_backend);
+}
+
 int DRIBackendFd(struct dri_backend *dri_backend)
 {
     WINE_TRACE("dri_backend=%p\n", dri_backend);
 
     return dri_backend ? dri_backend->fd : -1;
-}
-
-void DRIBackendClose(struct dri_backend *dri_backend)
-{
-    WINE_TRACE("dri_backend=%p\n", dri_backend);
-
-    if (dri_backend)
-    {
-        HeapFree(GetProcessHeap(), 0, dri_backend);
-    }
 }
 
 BOOL DRIBackendCheckExtension(Display *dpy)
@@ -194,16 +199,6 @@ BOOL DRIBackendInit(struct dri_backend *dri_backend)
         return FALSE;
 #endif
     return TRUE;
-}
-
-void DRIBackendDestroy(struct dri_backend *dri_backend)
-{
-    WINE_TRACE("dri_backend=%p\n", dri_backend);
-
-#ifdef D3D9NINE_DRI2
-    if (dri_backend->type == TYPE_DRI2)
-        DRI2FallbackDestroy(dri_backend->priv);
-#endif
 }
 
 void DRIBackendPresentPixmap(struct dri_backend *dri_backend, struct buffer_priv *buffer_priv)

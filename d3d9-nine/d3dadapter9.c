@@ -125,8 +125,8 @@ static ULONG WINAPI d3dadapter9_Release(struct d3dadapter9 *This)
 
                 if (This->groups[i].adapter)
                     ID3DAdapter9_Release(This->groups[i].adapter);
-                if (This->groups[i].dri_backend)
-                    DRIBackendClose(This->groups[i].dri_backend);
+
+                backend_destroy(This->groups[i].dri_backend);
             }
             HeapFree(GetProcessHeap(), 0, This->groups);
         }
@@ -563,7 +563,8 @@ static void remove_group(struct d3dadapter9 *This)
         HeapFree(GetProcessHeap(), 0, group->outputs[i].modes);
     }
     HeapFree(GetProcessHeap(), 0, group->outputs);
-    DRIBackendClose(group->dri_backend);
+
+    backend_destroy(group->dri_backend);
 
     ZeroMemory(group, sizeof(struct adapter_group));
     This->ngroups--;
