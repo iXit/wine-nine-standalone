@@ -50,11 +50,11 @@ struct dri_backend {
     struct dri_backend_priv *priv; /* backend private data */
 };
 
+BOOL backend_probe(Display *dpy);
+
 struct dri_backend *backend_create(Display *dpy, int screen);
 void backend_destroy(struct dri_backend *dri_backend);
 
 int backend_get_fd(const struct dri_backend *dri_backend);
-
-BOOL DRIBackendCheckExtension(Display *dpy);
 
 #endif /* __NINE_BACKEND_H */

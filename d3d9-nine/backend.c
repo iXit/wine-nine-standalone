@@ -22,6 +22,31 @@ extern const struct dri_backend_funcs dri3_funcs;
 extern const struct dri_backend_funcs dri2_funcs;
 #endif
 
+BOOL backend_probe(Display *dpy)
+{
+    WINE_TRACE("dpy=%p\n", dpy);
+
+    if (!dpy)
+        return FALSE;
+
+    if (!dri3_funcs.probe(dpy))
+    {
+#ifndef D3D9NINE_DRI2
+        WINE_ERR("Unable to query DRI3.\n");
+        return FALSE;
+#else
+        WINE_ERR("Unable to query DRI3. Trying DRI2 fallback (slower performance).\n");
+
+        if (!dri2_funcs.probe(dpy))
+        {
+            WINE_ERR("DRI2 fallback unsupported\n");
+            return FALSE;
+        }
+#endif
+    }
+    return TRUE;
+}
+
 struct dri_backend *backend_create(Display *dpy, int screen)
 {
     struct dri_backend *dri_backend;
@@ -77,29 +102,4 @@ int backend_get_fd(const struct dri_backend *dri_backend)
     WINE_TRACE("dri_backend=%p\n", dri_backend);
 
     return dri_backend ? dri_backend->fd : -1;
-}
-
-BOOL DRIBackendCheckExtension(Display *dpy)
-{
-    WINE_TRACE("dpy=%p\n", dpy);
-
-    if (!dpy)
-        return FALSE;
-
-    if (!dri3_funcs.probe(dpy))
-    {
-#ifndef D3D9NINE_DRI2
-        WINE_ERR("Unable to query DRI3.\n");
-        return FALSE;
-#else
-        WINE_ERR("Unable to query DRI3. Trying DRI2 fallback (slower performance).\n");
-
-        if (!dri2_funcs.probe(dpy))
-        {
-            WINE_ERR("DRI2 fallback unsupported\n");
-            return FALSE;
-        }
-#endif
-    }
-    return TRUE;
 }

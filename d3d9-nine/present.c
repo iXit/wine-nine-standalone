@@ -1700,7 +1700,7 @@ BOOL present_has_d3dadapter(Display *gdi_display)
         goto cleanup;
     }
 
-    if (!DRIBackendCheckExtension(gdi_display))
+    if (!backend_probe(gdi_display))
     {
         WINE_ERR("Required extensions for DRIBackend not available.\n");
         goto cleanup;
