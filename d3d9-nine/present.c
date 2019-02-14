@@ -1625,7 +1625,7 @@ HRESULT present_create_adapter9(Display *gdi_display, HDC hdc,
     if (!get_wine_drawable_from_dc(hdc, NULL))
         return D3DERR_DRIVERINTERNALERROR;
 
-    fd = DRIBackendFd(dri_backend);
+    fd = backend_get_fd(dri_backend);
     if (fd < 0) {
         WINE_ERR("Got invalid fd from DRIBackend (fd=%d)\n", fd);
         return D3DERR_DRIVERINTERNALERROR;

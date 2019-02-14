@@ -84,7 +84,7 @@ void backend_destroy(struct dri_backend *dri_backend)
     HeapFree(GetProcessHeap(), 0, dri_backend);
 }
 
-int DRIBackendFd(struct dri_backend *dri_backend)
+int backend_get_fd(const struct dri_backend *dri_backend)
 {
     WINE_TRACE("dri_backend=%p\n", dri_backend);
 

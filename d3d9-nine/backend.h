@@ -27,9 +27,9 @@ struct D3DWindowBuffer
 struct dri_backend *backend_create(Display *dpy, int screen);
 void backend_destroy(struct dri_backend *dri_backend);
 
-void DRIBackendClose(struct dri_backend *dri_backend);
+int backend_get_fd(const struct dri_backend *dri_backend);
 
-int DRIBackendFd(struct dri_backend *dri_backend);
+void DRIBackendClose(struct dri_backend *dri_backend);
 
 BOOL DRIBackendCheckExtension(Display *dpy);
 
