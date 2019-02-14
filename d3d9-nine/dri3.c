@@ -144,7 +144,7 @@ static BOOL dri3_probe(Display *dpy)
     if (!dri3_reply)
     {
         free(error);
-        WINE_ERR("Issue getting requested version of DRI3: %d,%d\n", major, minor);
+        WINE_ERR("Issue getting requested v%d.%d of DRI3\n", major, minor);
         return FALSE;
     }
 
@@ -155,7 +155,7 @@ static BOOL dri3_probe(Display *dpy)
     }
     close(fd);
 
-    WINE_TRACE("DRI3 version %d,%d found. %d %d requested\n", major, minor,
+    WINE_TRACE("DRI3 v%d.%d found, v%d.%d requested\n", major, minor,
             (int)dri3_reply->major_version, (int)dri3_reply->minor_version);
     free(dri3_reply);
 

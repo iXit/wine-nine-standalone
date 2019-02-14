@@ -90,11 +90,11 @@ BOOL PRESENTCheckExtension(Display *dpy, int major, int minor)
     if (!present_reply)
     {
         free(error);
-        WINE_ERR("Issue getting requested version of PRESENT: %d,%d\n", major, minor);
+        WINE_ERR("Issue getting requested v%d,%d of PRESENT\n", major, minor);
         return FALSE;
     }
 
-    WINE_TRACE("PRESENT version %d,%d found. %u %u requested\n", major, minor,
+    WINE_TRACE("PRESENT v%d.%d found, v%u.%u requested\n", major, minor,
             present_reply->major_version, present_reply->minor_version);
 
     free(present_reply);
