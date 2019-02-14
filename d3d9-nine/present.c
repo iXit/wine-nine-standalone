@@ -1739,7 +1739,7 @@ BOOL present_has_d3dadapter(Display *gdi_display)
     return TRUE;
 
 cleanup:
-    WINE_ERR("\033[1;31m\nNative Direct3D 9 will be unavailable."
+    wine_dbg_printf("\033[1;31mNative Direct3D 9 will be unavailable."
             "\nFor more information visit " NINE_URL "\033[0m\n");
 
     if (handle)
