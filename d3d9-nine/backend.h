@@ -10,7 +10,6 @@
 
 #include <X11/Xlib.h>
 
-struct dri_backend;
 struct dri_backend_priv;
 struct buffer_priv;
 struct PRESENTpriv;
@@ -22,6 +21,40 @@ struct D3DWindowBuffer
 {
     PRESENTPixmapPriv *present_pixmap_priv;
     struct buffer_priv *priv; /* backend private data */
+};
+
+enum DRI_TYPE {
+    TYPE_INVALID = 0,
+    TYPE_DRI3,
+    TYPE_DRI2,
+};
+
+struct dri_backend_funcs {
+    const char * const name;
+
+    BOOL (*probe)(Display *dpy);
+
+    BOOL (*create)(Display *dpy, int screen, int *device_fd);
+    void (*destroy)(struct dri_backend_priv *priv);
+
+    BOOL (*init)(Display *dpy, struct dri_backend_priv **priv);
+
+    BOOL (*window_buffer_from_dmabuf)(struct dri_backend_priv *priv, Display *dpy, int screen,
+        PRESENTpriv *present_priv, int fd, int width, int height,
+        int stride, int depth, int bpp, struct D3DWindowBuffer **out);
+    BOOL (*copy_front)(PRESENTPixmapPriv *present_pixmap_priv);
+
+    BOOL (*present_pixmap)(struct dri_backend_priv *priv, struct buffer_priv *buffer_priv);
+    void (*destroy_pixmap)(struct dri_backend_priv *priv, struct buffer_priv *buffer_priv);
+};
+
+struct dri_backend {
+    Display *dpy;
+    int fd;
+    int screen;
+    enum DRI_TYPE type;
+    const struct dri_backend_funcs *funcs;
+    struct dri_backend_priv *priv; /* backend private data */
 };
 
 struct dri_backend *backend_create(Display *dpy, int screen);

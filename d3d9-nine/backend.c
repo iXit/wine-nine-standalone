@@ -19,20 +19,6 @@
 
 WINE_DEFAULT_DEBUG_CHANNEL(d3d9nine);
 
-enum DRI_TYPE {
-    TYPE_INVALID = 0,
-    TYPE_DRI3,
-    TYPE_DRI2,
-};
-
-struct dri_backend {
-    Display *dpy;
-    int fd;
-    int screen;
-    enum DRI_TYPE type;
-    struct dri_backend_priv *priv; /* backend private data */
-};
-
 struct dri_backend *backend_create(Display *dpy, int screen)
 {
     struct dri_backend *dri_backend;
@@ -47,6 +33,7 @@ struct dri_backend *backend_create(Display *dpy, int screen)
     dri_backend->fd = -1;
     dri_backend->screen = screen;
     dri_backend->type = TYPE_INVALID;
+    dri_backend->funcs = NULL;
     dri_backend->priv = NULL;
 
     if (DRI3Open(dri_backend->dpy, dri_backend->screen, &dri_backend->fd))
