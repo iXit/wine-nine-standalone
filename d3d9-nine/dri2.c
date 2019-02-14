@@ -359,18 +359,6 @@ clean_egl_display:
     return FALSE;
 }
 
-BOOL DRI2FallbackCheckSupport(Display *dpy)
-{
-    struct dri_backend_priv *priv;
-    int fd;
-    if (!DRI2FallbackInit(dpy, &priv))
-        return FALSE;
-    DRI2FallbackDestroy(priv);
-    if (!DRI2FallbackOpen(dpy, DefaultScreen(dpy), &fd))
-        return FALSE;
-    close(fd);
-    return TRUE;
-}
 
 BOOL DRI2PresentPixmap(struct dri_backend_priv *priv, struct buffer_priv *buffer_priv)
 {
@@ -592,5 +580,22 @@ void DRI2FallbackDestroy(struct dri_backend_priv *priv)
     eglBindAPI(current_api);
 
     HeapFree(GetProcessHeap(), 0, p);
+}
+
+BOOL DRI2FallbackCheckSupport(Display *dpy)
+{
+    struct dri_backend_priv *priv;
+    int fd;
+
+    if (!DRI2FallbackInit(dpy, &priv))
+        return FALSE;
+
+    DRI2FallbackDestroy(priv);
+
+    if (!DRI2FallbackOpen(dpy, DefaultScreen(dpy), &fd))
+        return FALSE;
+
+    close(fd);
+    return TRUE;
 }
 #endif
