@@ -59,9 +59,18 @@ WINE_DEFAULT_DEBUG_CHANNEL(d3d9nine);
 static EGLDisplay display = NULL;
 static int display_ref = 0;
 
-struct DRI2PixmapPriv;
-struct DRI2priv {
-    struct DRI2PixmapPriv *first_dri2_priv;
+struct dri2_pixmap_priv {
+    GLuint fbo_read;
+    GLuint fbo_write;
+    GLuint texture_read;
+    GLuint texture_write;
+    unsigned int width;
+    unsigned int height;
+    struct dri2_pixmap_priv *next;
+};
+
+struct dri2_priv {
+    struct dri2_pixmap_priv *first_dri2_priv;
     Display *dpy;
     EGLDisplay display;
     EGLContext context;
@@ -69,16 +78,6 @@ struct DRI2priv {
     PFNEGLCREATEIMAGEKHRPROC eglCreateImageKHR_func;
     PFNEGLDESTROYIMAGEKHRPROC eglDestroyImageKHR_func;
 };
-struct DRI2PixmapPriv {
-    GLuint fbo_read;
-    GLuint fbo_write;
-    GLuint texture_read;
-    GLuint texture_write;
-    unsigned int width;
-    unsigned int height;
-    struct DRI2PixmapPriv *next;
-};
-
 
 static XExtensionInfo _dri2_info_data;
 static XExtensionInfo *dri2_info = &_dri2_info_data;
@@ -132,7 +131,7 @@ static int error(Display *dpy, xError *err, XExtCodes *codes, int *ret_code)
 
 #define XALIGN(x) (((x) + 3) & (~3))
 
-static BOOL DRI2Connect(Display *dpy, XID window, unsigned driver_type, char **device)
+static BOOL dri2_connect(Display *dpy, XID window, unsigned driver_type, char **device)
 {
     XExtDisplayInfo *info = find_display(dpy);
     xDRI2ConnectReply rep;
@@ -198,7 +197,7 @@ static BOOL DRI2Connect(Display *dpy, XID window, unsigned driver_type, char **d
     return True;
 }
 
-static Bool DRI2Authenticate(Display *dpy, XID window, uint32_t token)
+static Bool dri2_authenticate(Display *dpy, XID window, uint32_t token)
 {
     XExtDisplayInfo *info = find_display(dpy);
     xDRI2AuthenticateReply rep;
@@ -231,7 +230,7 @@ static BOOL dri2_create(Display *dpy, int screen, int *device_fd)
     Window root = RootWindow(dpy, screen);
     drm_auth_t auth;
 
-    if (!DRI2Connect(dpy, root, DRI2DriverDRI, &device))
+    if (!dri2_connect(dpy, root, DRI2DriverDRI, &device))
         return FALSE;
 
     fd = open(device, O_RDWR);
@@ -245,7 +244,7 @@ static BOOL dri2_create(Display *dpy, int screen, int *device_fd)
         return FALSE;
     }
 
-    if (!DRI2Authenticate(dpy, root, auth.magic))
+    if (!dri2_authenticate(dpy, root, auth.magic))
     {
         close(fd);
         return FALSE;
@@ -258,7 +257,7 @@ static BOOL dri2_create(Display *dpy, int screen, int *device_fd)
 
 static BOOL dri2_init(Display *dpy, struct dri_backend_priv **priv)
 {
-    struct DRI2priv *p;
+    struct dri2_priv *p;
     PFNGLEGLIMAGETARGETTEXTURE2DOESPROC glEGLImageTargetTexture2DOES_func;
     PFNEGLCREATEIMAGEKHRPROC eglCreateImageKHR_func;
     PFNEGLGETPLATFORMDISPLAYEXTPROC eglGetPlatformDisplayEXT_func;
@@ -335,7 +334,7 @@ static BOOL dri2_init(Display *dpy, struct dri_backend_priv **priv)
 
     eglMakeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
 
-    p = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(struct DRI2priv));
+    p = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(struct dri2_priv));
     if (!p)
         goto clean_egl;
 
@@ -362,8 +361,8 @@ clean_egl_display:
 
 static BOOL dri2_present_pixmap(struct dri_backend_priv *priv, struct buffer_priv *buffer_priv)
 {
-    struct DRI2priv *p = (struct DRI2priv *)priv;
-    struct DRI2PixmapPriv *pp = (struct DRI2PixmapPriv *)buffer_priv;
+    struct dri2_priv *p = (struct dri2_priv *)priv;
+    struct dri2_pixmap_priv *pp = (struct dri2_pixmap_priv *)buffer_priv;
     EGLenum current_api = 0;
 
     current_api = eglQueryAPI();
@@ -389,13 +388,11 @@ static BOOL dri2_present_pixmap(struct dri_backend_priv *priv, struct buffer_pri
     return TRUE;
 }
 
-
-static BOOL DRI2FallbackPRESENTPixmap(struct dri_backend_priv *priv,
-        int fd, int width, int height, int stride, int depth,
-        int bpp, struct buffer_priv **buffer_priv, Pixmap *pixmap)
+static BOOL dri2_present(struct dri_backend_priv *priv, int fd, int width, int height, int stride,
+        int depth, int bpp, struct buffer_priv **buffer_priv, Pixmap *pixmap)
 {
-    struct DRI2priv *p = (struct DRI2priv *)priv;
-    struct DRI2PixmapPriv *pp;
+    struct dri2_priv *p = (struct dri2_priv *)priv;
+    struct dri2_pixmap_priv *pp;
     EGLImageKHR image;
     GLuint texture_read, texture_write, fbo_read, fbo_write;
     EGLint attribs[] = {
@@ -483,8 +480,8 @@ static BOOL DRI2FallbackPRESENTPixmap(struct dri_backend_priv *priv,
 
     eglMakeCurrent(p->display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
 
-    pp = (struct DRI2PixmapPriv *) HeapAlloc(GetProcessHeap(),
-             HEAP_ZERO_MEMORY, sizeof(struct DRI2PixmapPriv));
+    pp = (struct dri2_pixmap_priv *) HeapAlloc(GetProcessHeap(),
+             HEAP_ZERO_MEMORY, sizeof(struct dri2_pixmap_priv));
 
     if (!pp)
         goto fail;
@@ -533,11 +530,10 @@ static BOOL dri2_window_buffer_from_dmabuf(struct dri_backend_priv *priv, Displa
         return FALSE;
     }
 
-    if (!DRI2FallbackPRESENTPixmap(priv,
-            fd, width, height, stride, depth, bpp,
+    if (!dri2_present(priv, fd, width, height, stride, depth, bpp,
             &(*out)->priv, &pixmap))
     {
-        WINE_ERR("DRI2FallbackPRESENTPixmap failed\n");
+        WINE_ERR("dri2_present failed\n");
         HeapFree(GetProcessHeap(), 0, *out);
         return FALSE;
     }
@@ -559,8 +555,8 @@ static BOOL dri2_copy_front(PRESENTPixmapPriv *present_pixmap_priv)
 
 static void dri2_destroy_pixmap(struct dri_backend_priv *priv, struct buffer_priv *buffer_priv)
 {
-    struct DRI2priv *p = (struct DRI2priv *)priv;
-    struct DRI2PixmapPriv *pp = (struct DRI2PixmapPriv *)buffer_priv;
+    struct dri2_priv *p = (struct dri2_priv *)priv;
+    struct dri2_pixmap_priv *pp = (struct dri2_pixmap_priv *)buffer_priv;
     EGLenum current_api;
 
     if (p->first_dri2_priv == pp)
@@ -569,7 +565,7 @@ static void dri2_destroy_pixmap(struct dri_backend_priv *priv, struct buffer_pri
     }
     else
     {
-        struct DRI2PixmapPriv *current;
+        struct dri2_pixmap_priv *current;
 
         current = p->first_dri2_priv;
         while (current->next != pp)
@@ -599,14 +595,14 @@ static void dri2_destroy_pixmap(struct dri_backend_priv *priv, struct buffer_pri
 /* hypothesis: at this step all textures, etc are destroyed */
 static void dri2_destroy(struct dri_backend_priv *priv)
 {
-    struct DRI2priv *p = (struct DRI2priv *)priv;
+    struct dri2_priv *p = (struct dri2_priv *)priv;
     EGLenum current_api;
-    struct DRI2PixmapPriv *current;
+    struct dri2_pixmap_priv *current;
 
     current = p->first_dri2_priv;
     while (current)
     {
-        struct DRI2PixmapPriv *next = current->next;
+        struct dri2_pixmap_priv *next = current->next;
         dri2_destroy_pixmap(priv, (struct buffer_priv *)current);
         current = next;
     }
