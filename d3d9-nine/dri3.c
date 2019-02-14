@@ -109,23 +109,3 @@ BOOL DRI3PixmapFromDmaBuf(Display *dpy, int screen, int fd, int width, int heigh
     }
     return TRUE;
 }
-
-BOOL DRI3DmaBufFromPixmap(Display *dpy, Pixmap pixmap, int *fd, int *width, int *height,
-        int *stride, int *depth, int *bpp)
-{
-    xcb_connection_t *xcb_connection = XGetXCBConnection(dpy);
-    xcb_dri3_buffer_from_pixmap_cookie_t bp_cookie;
-    xcb_dri3_buffer_from_pixmap_reply_t  *bp_reply;
-
-    bp_cookie = xcb_dri3_buffer_from_pixmap(xcb_connection, pixmap);
-    bp_reply = xcb_dri3_buffer_from_pixmap_reply(xcb_connection, bp_cookie, NULL);
-    if (!bp_reply)
-        return FALSE;
-    *fd = xcb_dri3_buffer_from_pixmap_reply_fds(xcb_connection, bp_reply)[0];
-    *width = bp_reply->width;
-    *height = bp_reply->height;
-    *stride = bp_reply->stride;
-    *depth = bp_reply->depth;
-    *bpp = bp_reply->depth;
-    return TRUE;
-}

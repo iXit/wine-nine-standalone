@@ -17,7 +17,4 @@ BOOL DRI3Open(Display *dpy, int screen, int *device_fd);
 BOOL DRI3PixmapFromDmaBuf(Display *dpy, int screen, int fd, int width, int height,
         int stride, int depth, int bpp, Pixmap *pixmap);
 
-BOOL DRI3DmaBufFromPixmap(Display *dpy, Pixmap pixmap, int *fd, int *width, int *height,
-        int *stride, int *depth, int *bpp);
-
 #endif /* __NINE_DRI3_H */
