@@ -359,40 +359,6 @@ clean_egl_display:
     return FALSE;
 }
 
-/* hypothesis: at this step all textures, etc are destroyed */
-void DRI2FallbackDestroy(struct dri_backend_priv *priv)
-{
-    struct DRI2priv *p = (struct DRI2priv *)priv;
-    EGLenum current_api;
-    struct DRI2PixmapPriv *current;
-
-    current = p->first_dri2_priv;
-    while (current)
-    {
-        struct DRI2PixmapPriv *next = current->next;
-        DRI2DestroyPixmap(priv, (struct buffer_priv *)current);
-        current = next;
-    }
-
-    current_api = eglQueryAPI();
-    eglBindAPI(EGL_OPENGL_API);
-    eglMakeCurrent(p->display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
-    eglDestroyContext(p->display, p->context);
-    if (display)
-    {
-        /* destroy display connection with last device */
-        display_ref--;
-        if (!display_ref)
-        {
-            eglTerminate(display);
-            display = NULL;
-        }
-    }
-    eglBindAPI(current_api);
-
-    HeapFree(GetProcessHeap(), 0, p);
-}
-
 BOOL DRI2FallbackCheckSupport(Display *dpy)
 {
     struct dri_backend_priv *priv;
@@ -592,5 +558,39 @@ void DRI2DestroyPixmap(struct dri_backend_priv *priv, struct buffer_priv *buffer
     eglBindAPI(current_api);
 
     HeapFree(GetProcessHeap(), 0, pp);
+}
+
+/* hypothesis: at this step all textures, etc are destroyed */
+void DRI2FallbackDestroy(struct dri_backend_priv *priv)
+{
+    struct DRI2priv *p = (struct DRI2priv *)priv;
+    EGLenum current_api;
+    struct DRI2PixmapPriv *current;
+
+    current = p->first_dri2_priv;
+    while (current)
+    {
+        struct DRI2PixmapPriv *next = current->next;
+        DRI2DestroyPixmap(priv, (struct buffer_priv *)current);
+        current = next;
+    }
+
+    current_api = eglQueryAPI();
+    eglBindAPI(EGL_OPENGL_API);
+    eglMakeCurrent(p->display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+    eglDestroyContext(p->display, p->context);
+    if (display)
+    {
+        /* destroy display connection with last device */
+        display_ref--;
+        if (!display_ref)
+        {
+            eglTerminate(display);
+            display = NULL;
+        }
+    }
+    eglBindAPI(current_api);
+
+    HeapFree(GetProcessHeap(), 0, p);
 }
 #endif
