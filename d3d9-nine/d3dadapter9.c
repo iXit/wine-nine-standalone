@@ -683,7 +683,7 @@ static HRESULT fill_groups(struct d3dadapter9 *This)
         group->dri_backend = backend_create(This->gdi_display, DefaultScreen(This->gdi_display));
         if (!group->dri_backend)
         {
-            WINE_ERR("Unable to open DRIBackend for display %d.\n", i);
+            WINE_ERR("Unable to open backend for display %d.\n", i);
             goto end_group;
         }
 

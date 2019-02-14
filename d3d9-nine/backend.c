@@ -22,34 +22,65 @@ extern const struct dri_backend_funcs dri3_funcs;
 extern const struct dri_backend_funcs dri2_funcs;
 #endif
 
+static const struct dri_backend_funcs *backends[] = {
+    &dri3_funcs,
+#ifdef D3D9NINE_DRI2
+    &dri2_funcs,
+#endif
+};
+
+static const int backends_count = sizeof(backends) / sizeof(*backends);
+
+static const char *backend_getenv()
+{
+    const char *env = getenv("D3D_BACKEND");
+    static BOOL first = TRUE;
+
+    if (env && first)
+    {
+        first = FALSE;
+        WINE_WARN("Backend overwritten by D3D_BACKEND: %s\n", env);
+    }
+
+    return env;
+}
+
 BOOL backend_probe(Display *dpy)
 {
+    int i;
+    const char *env;
+
     WINE_TRACE("dpy=%p\n", dpy);
 
     if (!dpy)
         return FALSE;
 
-    if (!dri3_funcs.probe(dpy))
-    {
-#ifndef D3D9NINE_DRI2
-        WINE_ERR("Unable to query DRI3.\n");
-        return FALSE;
-#else
-        WINE_ERR("Unable to query DRI3. Trying DRI2 fallback (slower performance).\n");
+    env = backend_getenv();
 
-        if (!dri2_funcs.probe(dpy))
+    for (i = 0; i < backends_count; ++i)
+    {
+        if (env && strcmp(env, backends[i]->name))
+            continue;
+
+        if (backends[i]->probe(dpy))
         {
-            WINE_ERR("DRI2 fallback unsupported\n");
-            return FALSE;
+            if (i != 0)
+                WINE_ERR("DRI3 backend not active (slower performance).\n");
+
+            return TRUE;
         }
-#endif
+
+        WINE_ERR("Error probing backend %s\n", backends[i]->name);
     }
-    return TRUE;
+
+    return FALSE;
 }
 
 struct dri_backend *backend_create(Display *dpy, int screen)
 {
     struct dri_backend *dri_backend;
+    int i;
+    const char *env;
 
     WINE_TRACE("dpy=%p screen=%d\n", dpy, screen);
 
@@ -63,22 +94,22 @@ struct dri_backend *backend_create(Display *dpy, int screen)
     dri_backend->funcs = NULL;
     dri_backend->priv = NULL;
 
-    if (dri3_funcs.create(dri_backend->dpy, dri_backend->screen, &dri_backend->fd))
-    {
-        dri_backend->funcs = &dri3_funcs;
-        return dri_backend;
-    }
+    env = backend_getenv();
 
-    WINE_ERR("DRI3Open failed (fd=%d)\n", dri_backend->fd);
-
-#ifdef D3D9NINE_DRI2
-    if (dri2_funcs.create(dri_backend->dpy, dri_backend->screen, &dri_backend->fd))
+    for (i = 0; i < backends_count; ++i)
     {
-        dri_backend->funcs = &dri2_funcs;
-        return dri_backend;
+        if (env && strcmp(env, backends[i]->name))
+            continue;
+
+        if (backends[i]->create(dri_backend->dpy, dri_backend->screen, &dri_backend->fd))
+        {
+            WINE_TRACE("Active backend: %s\n", backends[i]->name);
+            dri_backend->funcs = backends[i];
+            return dri_backend;
+        }
+
+        WINE_ERR("Error creating backend %s (fd=%d)\n", backends[i]->name, dri_backend->fd);
     }
-    WINE_ERR("DRI2Open failed (fd=%d)\n", dri_backend->fd);
-#endif
 
     HeapFree(GetProcessHeap(), 0, dri_backend);
     return NULL;

@@ -1634,7 +1634,7 @@ HRESULT present_create_adapter9(Display *gdi_display, HDC hdc,
 
     fd = backend_get_fd(dri_backend);
     if (fd < 0) {
-        WINE_ERR("Got invalid fd from DRIBackend (fd=%d)\n", fd);
+        WINE_ERR("Got invalid fd from backend (fd=%d)\n", fd);
         return D3DERR_DRIVERINTERNALERROR;
     }
 
@@ -1702,7 +1702,7 @@ BOOL present_has_d3dadapter(Display *gdi_display)
 
     if (!backend_probe(gdi_display))
     {
-        WINE_ERR("Required extensions for DRIBackend not available.\n");
+        WINE_ERR("No available backends.\n");
         goto cleanup;
     }
 
