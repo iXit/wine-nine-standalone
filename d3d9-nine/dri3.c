@@ -18,50 +18,6 @@
 
 WINE_DEFAULT_DEBUG_CHANNEL(d3d9nine);
 
-BOOL DRI3CheckExtension(Display *dpy)
-{
-    xcb_connection_t *xcb_connection = XGetXCBConnection(dpy);
-    xcb_dri3_query_version_cookie_t dri3_cookie;
-    xcb_dri3_query_version_reply_t *dri3_reply;
-    xcb_generic_error_t *error;
-    const xcb_query_extension_reply_t *extension;
-    int fd;
-    const int major = 1;
-    const int minor = 0;
-
-    xcb_prefetch_extension_data(xcb_connection, &xcb_dri3_id);
-
-    extension = xcb_get_extension_data(xcb_connection, &xcb_dri3_id);
-    if (!(extension && extension->present))
-    {
-        WINE_ERR("DRI3 extension is not present\n");
-        return FALSE;
-    }
-
-    dri3_cookie = xcb_dri3_query_version(xcb_connection, major, minor);
-
-    dri3_reply = xcb_dri3_query_version_reply(xcb_connection, dri3_cookie, &error);
-    if (!dri3_reply)
-    {
-        free(error);
-        WINE_ERR("Issue getting requested version of DRI3: %d,%d\n", major, minor);
-        return FALSE;
-    }
-
-    if (!DRI3Open(dpy, DefaultScreen(dpy), &fd))
-    {
-        WINE_ERR("DRI3 advertised, but not working\n");
-        return FALSE;
-    }
-    close(fd);
-
-    WINE_TRACE("DRI3 version %d,%d found. %d %d requested\n", major, minor,
-            (int)dri3_reply->major_version, (int)dri3_reply->minor_version);
-    free(dri3_reply);
-
-    return TRUE;
-}
-
 BOOL DRI3Open(Display *dpy, int screen, int *device_fd)
 {
     xcb_dri3_open_cookie_t cookie;
@@ -109,5 +65,49 @@ BOOL DRI3PixmapFromDmaBuf(Display *dpy, int screen, int fd, int width, int heigh
         WINE_ERR("Error using DRI3 to convert a DmaBufFd to pixmap\n");
         return FALSE;
     }
+    return TRUE;
+}
+
+BOOL DRI3CheckExtension(Display *dpy)
+{
+    xcb_connection_t *xcb_connection = XGetXCBConnection(dpy);
+    xcb_dri3_query_version_cookie_t dri3_cookie;
+    xcb_dri3_query_version_reply_t *dri3_reply;
+    xcb_generic_error_t *error;
+    const xcb_query_extension_reply_t *extension;
+    int fd;
+    const int major = 1;
+    const int minor = 0;
+
+    xcb_prefetch_extension_data(xcb_connection, &xcb_dri3_id);
+
+    extension = xcb_get_extension_data(xcb_connection, &xcb_dri3_id);
+    if (!(extension && extension->present))
+    {
+        WINE_ERR("DRI3 extension is not present\n");
+        return FALSE;
+    }
+
+    dri3_cookie = xcb_dri3_query_version(xcb_connection, major, minor);
+
+    dri3_reply = xcb_dri3_query_version_reply(xcb_connection, dri3_cookie, &error);
+    if (!dri3_reply)
+    {
+        free(error);
+        WINE_ERR("Issue getting requested version of DRI3: %d,%d\n", major, minor);
+        return FALSE;
+    }
+
+    if (!DRI3Open(dpy, DefaultScreen(dpy), &fd))
+    {
+        WINE_ERR("DRI3 advertised, but not working\n");
+        return FALSE;
+    }
+    close(fd);
+
+    WINE_TRACE("DRI3 version %d,%d found. %d %d requested\n", major, minor,
+            (int)dri3_reply->major_version, (int)dri3_reply->minor_version);
+    free(dri3_reply);
+
     return TRUE;
 }
