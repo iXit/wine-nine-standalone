@@ -10,7 +10,7 @@
 
 #include <X11/Xlib.h>
 
-BOOL DRI3CheckExtension(Display *dpy, int major, int minor);
+BOOL DRI3CheckExtension(Display *dpy);
 
 BOOL DRI3Open(Display *dpy, int screen, int *device_fd);
 

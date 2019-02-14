@@ -98,7 +98,7 @@ BOOL DRIBackendCheckExtension(Display *dpy)
     if (!dpy)
         return FALSE;
 
-    if (!DRI3CheckExtension(dpy, 1, 0))
+    if (!DRI3CheckExtension(dpy))
     {
 #ifndef D3D9NINE_DRI2
         WINE_ERR("Unable to query DRI3.\n");

@@ -18,7 +18,7 @@
 
 WINE_DEFAULT_DEBUG_CHANNEL(d3d9nine);
 
-BOOL DRI3CheckExtension(Display *dpy, int major, int minor)
+BOOL DRI3CheckExtension(Display *dpy)
 {
     xcb_connection_t *xcb_connection = XGetXCBConnection(dpy);
     xcb_dri3_query_version_cookie_t dri3_cookie;
@@ -26,6 +26,8 @@ BOOL DRI3CheckExtension(Display *dpy, int major, int minor)
     xcb_generic_error_t *error;
     const xcb_query_extension_reply_t *extension;
     int fd;
+    const int major = 1;
+    const int minor = 0;
 
     xcb_prefetch_extension_data(xcb_connection, &xcb_dri3_id);
 
