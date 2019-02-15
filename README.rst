@@ -1,5 +1,8 @@
-Gallium Nine Standalone
-=======================
+Gallium Nine Standalone |buildstate|
+====================================
+
+.. |buildstate| image:: https://travis-ci.com/iXit/wine-nine-standalone.svg?branch=master
+    :target: https://travis-ci.com/iXit/wine-nine-standalone
 
 .. image:: https://wiki.ixit.cz/_media/gallium-nine.png
     :target: https://wiki.ixit.cz/d3d9
