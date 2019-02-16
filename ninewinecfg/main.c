@@ -709,6 +709,10 @@ doPropertySheet (HINSTANCE hInstance, HWND hOwner)
 {
     PROPSHEETPAGEW psp[2];
     PROPSHEETHEADERW psh;
+    INT_PTR res;
+    WCHAR *tab_main = load_string(IDS_TAB_MAIN);
+    WCHAR *tab_about = load_string(IDS_TAB_ABOUT);
+    WCHAR *title = load_string(IDS_NINECFG_TITLE);
 
     psp[0].dwSize = sizeof (PROPSHEETPAGEW);
     psp[0].dwFlags = PSP_USETITLE;
@@ -716,7 +720,7 @@ doPropertySheet (HINSTANCE hInstance, HWND hOwner)
     psp[0].pszTemplate = MAKEINTRESOURCEW (IDD_NINE);
     psp[0].pszIcon = NULL;
     psp[0].pfnDlgProc = AppDlgProc;
-    psp[0].pszTitle = load_string (IDS_TAB_MAIN);
+    psp[0].pszTitle = tab_main;
     psp[0].lParam = 0;
 
     psp[1].dwSize = sizeof (PROPSHEETPAGEW);
@@ -725,7 +729,7 @@ doPropertySheet (HINSTANCE hInstance, HWND hOwner)
     psp[1].pszTemplate = MAKEINTRESOURCEW (IDD_ABOUT);
     psp[1].pszIcon = NULL;
     psp[1].pfnDlgProc = AboutDlgProc;
-    psp[1].pszTitle = load_string (IDS_TAB_ABOUT);
+    psp[1].pszTitle = tab_about;
     psp[1].lParam = 0;
 
     /*
@@ -736,7 +740,7 @@ doPropertySheet (HINSTANCE hInstance, HWND hOwner)
     psh.hwndParent = hOwner;
     psh.hInstance = hInstance;
     psh.pszIcon = NULL;
-    psh.pszCaption =  load_string (IDS_NINECFG_TITLE);
+    psh.pszCaption = title;
     psh.nPages = sizeof(psp) / sizeof(psp[0]);
     psh.ppsp = psp;
     psh.pfnCallback = NULL;
@@ -745,7 +749,13 @@ doPropertySheet (HINSTANCE hInstance, HWND hOwner)
     /*
      * Display the modal property sheet
      */
-    return PropertySheetW (&psh);
+    res = PropertySheetW (&psh);
+
+    HeapFree(GetProcessHeap(), 0, title);
+    HeapFree(GetProcessHeap(), 0, tab_about);
+    HeapFree(GetProcessHeap(), 0, tab_main);
+
+    return res;
 }
 
 /*****************************************************************************
