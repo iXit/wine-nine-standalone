@@ -21,6 +21,8 @@ BEGIN
     IDS_GB_NINE_SETTINGS                     "Gallium Nine settings"
     IDS_GB_INSTALL_STATE                     "Install state"
 
+    IDS_NINECFG_TITLE                        "Nine configuration"
+
     IDS_ERR_UNKNOWN                          "Unknown error"
     IDS_ERR_OUTOFMEMORY                      "Out of memory"
     IDS_ERR_D3D_NOTAVAILABLE                 "No compatible GPU found. On a hybrid graphics setup, you might need to set DRI_PRIME=1 first"
