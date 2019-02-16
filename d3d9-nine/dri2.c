@@ -480,8 +480,7 @@ static BOOL dri2_present(struct dri_backend_priv *priv, int fd, int width, int h
 
     eglMakeCurrent(p->display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
 
-    pp = (struct dri2_pixmap_priv *) HeapAlloc(GetProcessHeap(),
-             HEAP_ZERO_MEMORY, sizeof(struct dri2_pixmap_priv));
+    pp = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(struct dri2_pixmap_priv));
 
     if (!pp)
         goto fail;

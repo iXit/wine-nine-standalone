@@ -229,8 +229,7 @@ static struct xcb_connection_t *create_xcb_connection(Display *dpy)
 
 BOOL PRESENTInit(Display *dpy, PRESENTpriv **present_priv)
 {
-    *present_priv = (PRESENTpriv *) HeapAlloc(GetProcessHeap(),
-            HEAP_ZERO_MEMORY, sizeof(PRESENTpriv));
+    *present_priv = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(PRESENTpriv));
 
     if (!*present_priv)
         return FALSE;
@@ -459,8 +458,7 @@ BOOL PRESENTPixmapInit(PRESENTpriv *present_priv, Pixmap pixmap, PRESENTPixmapPr
     if (!reply)
         return FALSE;
 
-    *present_pixmap_priv = (PRESENTPixmapPriv *) HeapAlloc(GetProcessHeap(),
-            HEAP_ZERO_MEMORY, sizeof(PRESENTPixmapPriv));
+    *present_pixmap_priv = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(PRESENTPixmapPriv));
 
     if (!*present_pixmap_priv)
     {
@@ -649,7 +647,7 @@ BOOL PRESENTPixmap(XID window, PRESENTPixmapPriv *present_pixmap_priv,
         xcb_xfixes_create_region(present_priv->xcb_connection_bis, valid, 1, &rect_update);
         if (pDirtyRegion && pDirtyRegion->rdh.nCount)
         {
-            rect_updates = (void *) HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY,
+            rect_updates = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY,
                     sizeof(xcb_rectangle_t) * pDirtyRegion->rdh.nCount);
 
             for (i = 0; i < pDirtyRegion->rdh.nCount; i++)
