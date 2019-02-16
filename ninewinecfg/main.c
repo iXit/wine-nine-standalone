@@ -499,15 +499,13 @@ static void load_settings(HWND dialog)
     SetDlgItemTextA(dialog, IDC_NINE_STATE_TIP_DLL, NULL);
     SetDlgItemTextA(dialog, IDC_NINE_STATE_TIP_CREATE, NULL);
 
-    SetWindowTextW(GetDlgItem(dialog, IDC_GB_NINE_SETTINGS),
-                   load_string (IDS_GB_NINE_SETTINGS));
-    SetWindowTextW(GetDlgItem(dialog, IDC_GB_INSTALL_STATE),
-                   load_string (IDS_GB_INSTALL_STATE));
-    SetDlgItemTextW(dialog, IDC_TEXT_MESA_DEP, load_string(IDS_TEXT_MESA_DEP));
-    SetDlgItemTextW(dialog, IDC_TEXT_LOAD_D3DADAPTER, load_string(IDS_TEXT_LOAD_D3DADAPTER));
-    SetDlgItemTextW(dialog, IDC_TEXT_D3D9_NINE_LOAD, load_string(IDS_TEXT_D3D9_NINE_LOAD));
-    SetDlgItemTextW(dialog, IDC_TEXT_CREATE_D3D9_DEV, load_string(IDS_TEXT_CREATE_D3D9_DEV));
-    SetDlgItemTextW(dialog, IDC_ENABLE_NATIVE_D3D9, load_string(IDS_BTN_ENABLE_NINE));
+    set_dlg_string(dialog, IDC_GB_NINE_SETTINGS, IDS_GB_NINE_SETTINGS);
+    set_dlg_string(dialog, IDC_GB_INSTALL_STATE, IDS_GB_INSTALL_STATE);
+    set_dlg_string(dialog, IDC_TEXT_MESA_DEP, IDS_TEXT_MESA_DEP);
+    set_dlg_string(dialog, IDC_TEXT_LOAD_D3DADAPTER, IDS_TEXT_LOAD_D3DADAPTER);
+    set_dlg_string(dialog, IDC_TEXT_D3D9_NINE_LOAD, IDS_TEXT_D3D9_NINE_LOAD);
+    set_dlg_string(dialog, IDC_TEXT_CREATE_D3D9_DEV, IDS_TEXT_CREATE_D3D9_DEV);
+    set_dlg_string(dialog, IDC_ENABLE_NATIVE_D3D9, IDS_BTN_ENABLE_NINE);
 
     CheckDlgButton(dialog, IDC_NINE_STATE_SO, BST_UNCHECKED);
     CheckDlgButton(dialog, IDC_NINE_STATE_DLL, BST_UNCHECKED);
@@ -683,10 +681,8 @@ static INT_PTR CALLBACK AboutDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM
     switch (uMsg)
     {
     case WM_INITDIALOG:
-        SetWindowTextW(GetDlgItem(hDlg, IDC_GB_LICENSE),
-                   load_string (IDS_GB_LICENSE));
-        SetWindowTextW(GetDlgItem(hDlg, IDC_GB_AUTHORS),
-                   load_string (IDS_GB_AUTHORS));
+        set_dlg_string(hDlg, IDC_GB_LICENSE, IDS_GB_LICENSE);
+        set_dlg_string(hDlg, IDC_GB_AUTHORS, IDS_GB_AUTHORS);
 
         SetDlgItemTextA(hDlg, IDC_NINE_URL, "<a href=\"" NINE_URL "\">" NINE_URL "</a>");
         break;
