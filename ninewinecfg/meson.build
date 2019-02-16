@@ -7,6 +7,7 @@ ninewinecfg_res = custom_target(
   depend_files : [
                    'resource.h',
                    'ninewinecfg.manifest',
+                   'nls/',
                  ],
   command      : wrc,
 )
