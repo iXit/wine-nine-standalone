@@ -13,7 +13,6 @@
 #define IDS_TAB_ABOUT                            2
 
 #define IDS_NINECFG_TITLE                        4
-#define IDS_NINECFG_TITLE_APP                    5
 #define IDS_NINECFG_NINE_SUPPORT_NOT_COMPILED    6
 
 #define IDS_GB_LICENSE                           7

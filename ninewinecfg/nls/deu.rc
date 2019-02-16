@@ -24,7 +24,6 @@ BEGIN
     IDS_GB_INSTALL_STATE                     "Installationsstatus"
 
     IDS_NINECFG_TITLE                        "Nine Konfigurator"
-    IDS_NINECFG_TITLE_APP                    "ninecfg"
 
     IDS_ERR_UNKNOWN                          "Unbekannter Fehler"
     IDS_ERR_OUTOFMEMORY                      "Kein Speicher mehr frei"
