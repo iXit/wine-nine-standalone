@@ -95,7 +95,10 @@ jobs:
         - mkdir -p $HOME/rpmbuild/BUILDROOT
         - chmod -R 0777 $HOME/rpmbuild
         # create a copy of the sources for RPMBUILD
-        - tar -czf $HOME/rpmbuild/SOURCES/$(git rev-parse HEAD).tar.gz .
+        - mkdir -p $HOME/rpmbuild/SOURCES/tmp/wine-nine-standalone-$(git rev-parse HEAD)/
+        - cp -r * $HOME/rpmbuild/SOURCES/tmp/wine-nine-standalone-$(git rev-parse HEAD)/
+        - tar -czf $HOME/rpmbuild/SOURCES/$(git rev-parse HEAD).tar.gz -C $HOME/rpmbuild/SOURCES/tmp/ .
+        - rm -rf $HOME/rpmbuild/SOURCES/tmp/wine-nine-standalone-$(git rev-parse HEAD)/
         # generate metadata for the SPEC file
         - export PATCHLEVEL=$(git rev-list --count master)
         - export COMMITHASH=$(git rev-parse HEAD)
