@@ -225,7 +225,7 @@ static Bool dri2_authenticate(Display *dpy, XID window, uint32_t token)
     return rep.authenticated ? True : False;
 }
 
-static BOOL dri2_create(Display *dpy, int screen, int *device_fd, struct dri_backend_priv **priv)
+static BOOL dri2_create(Display *dpy, int screen, struct dri_backend_priv **priv)
 {
     struct dri2_priv *p;
     char *device;
@@ -265,7 +265,7 @@ static BOOL dri2_create(Display *dpy, int screen, int *device_fd, struct dri_bac
     p->fd = fd;
 
     *priv = (struct dri_backend_priv *)p;
-    *device_fd = fd;
+
     return TRUE;
 }
 
@@ -519,7 +519,7 @@ fail:
     return FALSE;
 }
 
-static BOOL dri2_window_buffer_from_dmabuf(struct dri_backend_priv *priv, Display *dpy, int screen,
+static BOOL dri2_window_buffer_from_dmabuf(struct dri_backend_priv *priv,
     PRESENTpriv *present_priv, int fd, int width, int height,
     int stride, int depth, int bpp, struct D3DWindowBuffer **out)
 {
@@ -637,23 +637,23 @@ static void dri2_destroy(struct dri_backend_priv *priv)
     }
     eglBindAPI(current_api);
 
+    close(p->fd);
+
     HeapFree(GetProcessHeap(), 0, p);
 }
 
 static BOOL dri2_probe(Display *dpy)
 {
     struct dri_backend_priv *priv;
-    int fd;
     BOOL res;
 
-    if (!dri2_create(dpy, DefaultScreen(dpy), &fd, &priv))
+    if (!dri2_create(dpy, DefaultScreen(dpy), &priv))
         return FALSE;
 
     res = dri2_init(priv);
 
     dri2_destroy(priv);
 
-    close(fd);
     return res;
 }
 

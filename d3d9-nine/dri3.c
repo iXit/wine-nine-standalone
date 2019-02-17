@@ -25,7 +25,7 @@ struct dri3_priv {
     int fd;
 };
 
-static BOOL dri3_create(Display *dpy, int screen, int *device_fd, struct dri_backend_priv **priv)
+static BOOL dri3_create(Display *dpy, int screen, struct dri_backend_priv **priv)
 {
     struct dri3_priv *p;
     xcb_dri3_open_cookie_t cookie;
@@ -63,7 +63,6 @@ static BOOL dri3_create(Display *dpy, int screen, int *device_fd, struct dri_bac
     p->fd = fd;
 
     *priv = (struct dri_backend_priv *)p;
-    *device_fd = fd;
 
     return TRUE;
 }
@@ -71,6 +70,8 @@ static BOOL dri3_create(Display *dpy, int screen, int *device_fd, struct dri_bac
 static void dri3_destroy(struct dri_backend_priv *priv)
 {
     struct dri3_priv *p = (struct dri3_priv *)priv;
+
+    close(p->fd);
 
     HeapFree(GetProcessHeap(), 0, p);
 }
@@ -87,7 +88,7 @@ static int dri3_get_fd(struct dri_backend_priv *priv)
     return p->fd;
 }
 
-static BOOL dri3_window_buffer_from_dmabuf(struct dri_backend_priv *priv, Display *dpy, int screen,
+static BOOL dri3_window_buffer_from_dmabuf(struct dri_backend_priv *priv,
     PRESENTpriv *present_priv, int fd, int width, int height,
     int stride, int depth, int bpp, struct D3DWindowBuffer **out)
 {
@@ -157,7 +158,6 @@ static BOOL dri3_probe(Display *dpy)
     xcb_dri3_query_version_reply_t *dri3_reply;
     xcb_generic_error_t *error;
     const xcb_query_extension_reply_t *extension;
-    int fd;
     BOOL res;
     const int major = 1;
     const int minor = 0;
@@ -185,13 +185,11 @@ static BOOL dri3_probe(Display *dpy)
             (int)dri3_reply->major_version, (int)dri3_reply->minor_version);
     free(dri3_reply);
 
-    if (!dri3_create(dpy, DefaultScreen(dpy), &fd, &p))
+    if (!dri3_create(dpy, DefaultScreen(dpy), &p))
     {
         WINE_ERR("DRI3 advertised, but not working\n");
-        close(fd);
         return FALSE;
     }
-    close(fd);
 
     res = dri3_init(p);
 

@@ -88,9 +88,6 @@ struct dri_backend *backend_create(Display *dpy, int screen)
     if (!dri_backend)
         return NULL;
 
-    dri_backend->dpy = dpy;
-    dri_backend->fd = -1;
-    dri_backend->screen = screen;
     dri_backend->funcs = NULL;
     dri_backend->priv = NULL;
 
@@ -101,14 +98,14 @@ struct dri_backend *backend_create(Display *dpy, int screen)
         if (env && strcmp(env, backends[i]->name))
             continue;
 
-        if (backends[i]->create(dri_backend->dpy, dri_backend->screen, &dri_backend->fd, &dri_backend->priv))
+        if (backends[i]->create(dpy, screen, &dri_backend->priv))
         {
             WINE_TRACE("Active backend: %s\n", backends[i]->name);
             dri_backend->funcs = backends[i];
             return dri_backend;
         }
 
-        WINE_ERR("Error creating backend %s (fd=%d)\n", backends[i]->name, dri_backend->fd);
+        WINE_ERR("Error creating backend %s\n", backends[i]->name);
     }
 
     HeapFree(GetProcessHeap(), 0, dri_backend);

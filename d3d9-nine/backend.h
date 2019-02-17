@@ -28,13 +28,13 @@ struct dri_backend_funcs {
 
     BOOL (*probe)(Display *dpy);
 
-    BOOL (*create)(Display *dpy, int screen, int *device_fd, struct dri_backend_priv **priv);
+    BOOL (*create)(Display *dpy, int screen, struct dri_backend_priv **priv);
     void (*destroy)(struct dri_backend_priv *priv);
 
     BOOL (*init)(struct dri_backend_priv *priv);
     int (*get_fd)(struct dri_backend_priv *priv);
 
-    BOOL (*window_buffer_from_dmabuf)(struct dri_backend_priv *priv, Display *dpy, int screen,
+    BOOL (*window_buffer_from_dmabuf)(struct dri_backend_priv *priv,
         PRESENTpriv *present_priv, int fd, int width, int height,
         int stride, int depth, int bpp, struct D3DWindowBuffer **out);
     BOOL (*copy_front)(PRESENTPixmapPriv *present_pixmap_priv);
@@ -44,9 +44,6 @@ struct dri_backend_funcs {
 };
 
 struct dri_backend {
-    Display *dpy;
-    int fd;
-    int screen;
     const struct dri_backend_funcs *funcs;
     struct dri_backend_priv *priv; /* backend private data */
 };

@@ -426,8 +426,7 @@ static HRESULT WINAPI DRIPresent_D3DWindowBufferFromDmaBuf(struct DRIPresent *Th
     const struct dri_backend *dri_backend = This->dri_backend;
 
     if (!dri_backend->funcs->window_buffer_from_dmabuf(dri_backend->priv,
-            dri_backend->dpy, dri_backend->screen, This->present_priv, dmaBufFd,
-            width, height, stride, depth, bpp, out))
+            This->present_priv, dmaBufFd, width, height, stride, depth, bpp, out))
     {
         WINE_ERR("window_buffer_from_dmabuf failed\n");
         return D3DERR_DRIVERINTERNALERROR;
