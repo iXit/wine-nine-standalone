@@ -22,6 +22,7 @@ WINE_DEFAULT_DEBUG_CHANNEL(d3d9nine);
 struct dri3_priv {
     Display *dpy;
     int screen;
+    int fd;
 };
 
 static BOOL dri3_create(Display *dpy, int screen, int *device_fd, struct dri_backend_priv **priv)
@@ -59,6 +60,7 @@ static BOOL dri3_create(Display *dpy, int screen, int *device_fd, struct dri_bac
 
     p->dpy = dpy;
     p->screen = screen;
+    p->fd = fd;
 
     *priv = (struct dri_backend_priv *)p;
     *device_fd = fd;
@@ -76,6 +78,13 @@ static void dri3_destroy(struct dri_backend_priv *priv)
 static BOOL dri3_init(struct dri_backend_priv *priv)
 {
     return TRUE;
+}
+
+static int dri3_get_fd(struct dri_backend_priv *priv)
+{
+    struct dri3_priv *p = (struct dri3_priv *)priv;
+
+    return p->fd;
 }
 
 static BOOL dri3_window_buffer_from_dmabuf(struct dri_backend_priv *priv, Display *dpy, int screen,
@@ -197,6 +206,7 @@ const struct dri_backend_funcs dri3_funcs = {
     .create = dri3_create,
     .destroy = dri3_destroy,
     .init = dri3_init,
+    .get_fd = dri3_get_fd,
     .window_buffer_from_dmabuf = dri3_window_buffer_from_dmabuf,
     .copy_front = dri3_copy_front,
     .present_pixmap = dri3_present_pixmap,

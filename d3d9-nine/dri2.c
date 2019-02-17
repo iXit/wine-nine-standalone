@@ -73,6 +73,7 @@ struct dri2_priv {
     struct dri2_pixmap_priv *first_dri2_priv;
     Display *dpy;
     int screen;
+    int fd;
     EGLDisplay display;
     EGLContext context;
     PFNGLEGLIMAGETARGETTEXTURE2DOESPROC glEGLImageTargetTexture2DOES_func;
@@ -261,6 +262,7 @@ static BOOL dri2_create(Display *dpy, int screen, int *device_fd, struct dri_bac
 
     p->dpy = dpy;
     p->screen = screen;
+    p->fd = fd;
 
     *priv = (struct dri_backend_priv *)p;
     *device_fd = fd;
@@ -362,6 +364,13 @@ clean_egl_display:
     eglTerminate(display);
     eglBindAPI(current_api);
     return FALSE;
+}
+
+static int dri2_get_fd(struct dri_backend_priv *priv)
+{
+    struct dri2_priv *p = (struct dri2_priv *)priv;
+
+    return p->fd;
 }
 
 static BOOL dri2_present_pixmap(struct dri_backend_priv *priv, struct buffer_priv *buffer_priv)
@@ -654,6 +663,7 @@ const struct dri_backend_funcs dri2_funcs = {
     .create = dri2_create,
     .destroy = dri2_destroy,
     .init = dri2_init,
+    .get_fd = dri2_get_fd,
     .window_buffer_from_dmabuf = dri2_window_buffer_from_dmabuf,
     .copy_front = dri2_copy_front,
     .present_pixmap = dri2_present_pixmap,
