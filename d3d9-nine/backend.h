@@ -28,10 +28,10 @@ struct dri_backend_funcs {
 
     BOOL (*probe)(Display *dpy);
 
-    BOOL (*create)(Display *dpy, int screen, int *device_fd);
+    BOOL (*create)(Display *dpy, int screen, int *device_fd, struct dri_backend_priv **priv);
     void (*destroy)(struct dri_backend_priv *priv);
 
-    BOOL (*init)(Display *dpy, struct dri_backend_priv **priv);
+    BOOL (*init)(struct dri_backend_priv *priv);
 
     BOOL (*window_buffer_from_dmabuf)(struct dri_backend_priv *priv, Display *dpy, int screen,
         PRESENTpriv *present_priv, int fd, int width, int height,

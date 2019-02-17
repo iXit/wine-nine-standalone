@@ -223,8 +223,9 @@ static Bool dri2_authenticate(Display *dpy, XID window, uint32_t token)
     return rep.authenticated ? True : False;
 }
 
-static BOOL dri2_create(Display *dpy, int screen, int *device_fd)
+static BOOL dri2_create(Display *dpy, int screen, int *device_fd, struct dri_backend_priv **priv)
 {
+    struct dri2_priv *p;
     char *device;
     int fd;
     Window root = RootWindow(dpy, screen);
@@ -250,14 +251,23 @@ static BOOL dri2_create(Display *dpy, int screen, int *device_fd)
         return FALSE;
     }
 
-    *device_fd = fd;
+    p = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(struct dri2_priv));
+    if (!p)
+    {
+        close(fd);
+        return FALSE;
+    }
 
+    p->dpy = dpy;
+
+    *priv = (struct dri_backend_priv *)p;
+    *device_fd = fd;
     return TRUE;
 }
 
-static BOOL dri2_init(Display *dpy, struct dri_backend_priv **priv)
+static BOOL dri2_init(struct dri_backend_priv *priv)
 {
-    struct dri2_priv *p;
+    struct dri2_priv *p = (struct dri2_priv *)priv;
     PFNGLEGLIMAGETARGETTEXTURE2DOESPROC glEGLImageTargetTexture2DOES_func;
     PFNEGLCREATEIMAGEKHRPROC eglCreateImageKHR_func;
     PFNEGLGETPLATFORMDISPLAYEXTPROC eglGetPlatformDisplayEXT_func;
@@ -285,7 +295,7 @@ static BOOL dri2_init(Display *dpy, struct dri_backend_priv **priv)
     if (!eglGetPlatformDisplayEXT_func)
         return FALSE;
     if (!display)
-        display = eglGetPlatformDisplayEXT_func(EGL_PLATFORM_X11_EXT, dpy, NULL);
+        display = eglGetPlatformDisplayEXT_func(EGL_PLATFORM_X11_EXT, p->dpy, NULL);
     if (!display)
         return FALSE;
     /* count references on display for multi device setups */
@@ -334,18 +344,11 @@ static BOOL dri2_init(Display *dpy, struct dri_backend_priv **priv)
 
     eglMakeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
 
-    p = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(struct dri2_priv));
-    if (!p)
-        goto clean_egl;
-
-    p->dpy = dpy;
     p->display = display;
     p->context = context;
     p->glEGLImageTargetTexture2DOES_func = glEGLImageTargetTexture2DOES_func;
     p->eglCreateImageKHR_func = eglCreateImageKHR_func;
     p->eglDestroyImageKHR_func = eglDestroyImageKHR_func;
-
-    *priv = (struct dri_backend_priv *)p;
 
     eglBindAPI(current_api);
     return TRUE;
@@ -629,17 +632,17 @@ static BOOL dri2_probe(Display *dpy)
 {
     struct dri_backend_priv *priv;
     int fd;
+    BOOL res;
 
-    if (!dri2_init(dpy, &priv))
+    if (!dri2_create(dpy, DefaultScreen(dpy), &fd, &priv))
         return FALSE;
+
+    res = dri2_init(priv);
 
     dri2_destroy(priv);
 
-    if (!dri2_create(dpy, DefaultScreen(dpy), &fd))
-        return FALSE;
-
     close(fd);
-    return TRUE;
+    return res;
 }
 
 const struct dri_backend_funcs dri2_funcs = {

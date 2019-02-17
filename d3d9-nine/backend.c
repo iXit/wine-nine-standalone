@@ -101,7 +101,7 @@ struct dri_backend *backend_create(Display *dpy, int screen)
         if (env && strcmp(env, backends[i]->name))
             continue;
 
-        if (backends[i]->create(dri_backend->dpy, dri_backend->screen, &dri_backend->fd))
+        if (backends[i]->create(dri_backend->dpy, dri_backend->screen, &dri_backend->fd, &dri_backend->priv))
         {
             WINE_TRACE("Active backend: %s\n", backends[i]->name);
             dri_backend->funcs = backends[i];

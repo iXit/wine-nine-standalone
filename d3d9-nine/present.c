@@ -1431,7 +1431,7 @@ static HRESULT DRIPresent_new(Display *gdi_display, const WCHAR *devname,
         return D3DERR_DRIVERINTERNALERROR;
     }
 
-    if (!dri_backend->funcs->init(dri_backend->dpy, &dri_backend->priv))
+    if (!dri_backend->funcs->init(dri_backend->priv))
     {
         HeapFree(GetProcessHeap(), 0, This);
         return D3DERR_DRIVERINTERNALERROR;

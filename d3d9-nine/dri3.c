@@ -19,7 +19,7 @@
 
 WINE_DEFAULT_DEBUG_CHANNEL(d3d9nine);
 
-static BOOL dri3_create(Display *dpy, int screen, int *device_fd)
+static BOOL dri3_create(Display *dpy, int screen, int *device_fd, struct dri_backend_priv **priv)
 {
     xcb_dri3_open_cookie_t cookie;
     xcb_dri3_open_reply_t *reply;
@@ -52,7 +52,7 @@ static void dri3_destroy(struct dri_backend_priv *priv)
 {
 }
 
-static BOOL dri3_init(Display *dpy, struct dri_backend_priv **priv)
+static BOOL dri3_init(struct dri_backend_priv *priv)
 {
     return TRUE;
 }
@@ -148,7 +148,7 @@ static BOOL dri3_probe(Display *dpy)
         return FALSE;
     }
 
-    if (!dri3_create(dpy, DefaultScreen(dpy), &fd))
+    if (!dri3_create(dpy, DefaultScreen(dpy), &fd, NULL))
     {
         WINE_ERR("DRI3 advertised, but not working\n");
         return FALSE;
