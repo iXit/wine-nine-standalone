@@ -19,8 +19,14 @@
 
 WINE_DEFAULT_DEBUG_CHANNEL(d3d9nine);
 
+struct dri3_priv {
+    Display *dpy;
+    int screen;
+};
+
 static BOOL dri3_create(Display *dpy, int screen, int *device_fd, struct dri_backend_priv **priv)
 {
+    struct dri3_priv *p;
     xcb_dri3_open_cookie_t cookie;
     xcb_dri3_open_reply_t *reply;
     xcb_connection_t *xcb_connection = XGetXCBConnection(dpy);
@@ -42,14 +48,29 @@ static BOOL dri3_create(Display *dpy, int screen, int *device_fd, struct dri_bac
     fd = xcb_dri3_open_reply_fds(xcb_connection, reply)[0];
     fcntl(fd, F_SETFD, FD_CLOEXEC);
 
-    *device_fd = fd;
     free(reply);
+
+    p = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(struct dri3_priv));
+    if (!p)
+    {
+        close(fd);
+        return FALSE;
+    }
+
+    p->dpy = dpy;
+    p->screen = screen;
+
+    *priv = (struct dri_backend_priv *)p;
+    *device_fd = fd;
 
     return TRUE;
 }
 
 static void dri3_destroy(struct dri_backend_priv *priv)
 {
+    struct dri3_priv *p = (struct dri3_priv *)priv;
+
+    HeapFree(GetProcessHeap(), 0, p);
 }
 
 static BOOL dri3_init(struct dri_backend_priv *priv)
@@ -61,9 +82,10 @@ static BOOL dri3_window_buffer_from_dmabuf(struct dri_backend_priv *priv, Displa
     PRESENTpriv *present_priv, int fd, int width, int height,
     int stride, int depth, int bpp, struct D3DWindowBuffer **out)
 {
+    struct dri3_priv *p = (struct dri3_priv *)priv;
     Pixmap pixmap;
-    xcb_connection_t *xcb_connection = XGetXCBConnection(dpy);
-    Window root = RootWindow(dpy, screen);
+    xcb_connection_t *xcb_connection = XGetXCBConnection(p->dpy);
+    Window root = RootWindow(p->dpy, p->screen);
     xcb_void_cookie_t cookie;
     xcb_generic_error_t *error;
 
@@ -120,12 +142,14 @@ static void dri3_destroy_pixmap(struct dri_backend_priv *priv, struct buffer_pri
 
 static BOOL dri3_probe(Display *dpy)
 {
+    struct dri_backend_priv *p;
     xcb_connection_t *xcb_connection = XGetXCBConnection(dpy);
     xcb_dri3_query_version_cookie_t dri3_cookie;
     xcb_dri3_query_version_reply_t *dri3_reply;
     xcb_generic_error_t *error;
     const xcb_query_extension_reply_t *extension;
     int fd;
+    BOOL res;
     const int major = 1;
     const int minor = 0;
 
@@ -148,18 +172,23 @@ static BOOL dri3_probe(Display *dpy)
         return FALSE;
     }
 
-    if (!dri3_create(dpy, DefaultScreen(dpy), &fd, NULL))
-    {
-        WINE_ERR("DRI3 advertised, but not working\n");
-        return FALSE;
-    }
-    close(fd);
-
     WINE_TRACE("DRI3 v%d.%d found, v%d.%d requested\n", major, minor,
             (int)dri3_reply->major_version, (int)dri3_reply->minor_version);
     free(dri3_reply);
 
-    return TRUE;
+    if (!dri3_create(dpy, DefaultScreen(dpy), &fd, &p))
+    {
+        WINE_ERR("DRI3 advertised, but not working\n");
+        close(fd);
+        return FALSE;
+    }
+    close(fd);
+
+    res = dri3_init(p);
+
+    dri3_destroy(p);
+
+    return res;
 }
 
 const struct dri_backend_funcs dri3_funcs = {
