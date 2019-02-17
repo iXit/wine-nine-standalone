@@ -72,6 +72,7 @@ struct dri2_pixmap_priv {
 struct dri2_priv {
     struct dri2_pixmap_priv *first_dri2_priv;
     Display *dpy;
+    int screen;
     EGLDisplay display;
     EGLContext context;
     PFNGLEGLIMAGETARGETTEXTURE2DOESPROC glEGLImageTargetTexture2DOES_func;
@@ -259,6 +260,7 @@ static BOOL dri2_create(Display *dpy, int screen, int *device_fd, struct dri_bac
     }
 
     p->dpy = dpy;
+    p->screen = screen;
 
     *priv = (struct dri_backend_priv *)p;
     *device_fd = fd;
@@ -512,6 +514,7 @@ static BOOL dri2_window_buffer_from_dmabuf(struct dri_backend_priv *priv, Displa
     PRESENTpriv *present_priv, int fd, int width, int height,
     int stride, int depth, int bpp, struct D3DWindowBuffer **out)
 {
+    struct dri2_priv *p = (struct dri2_priv *)priv;
     Pixmap pixmap;
 
     WINE_TRACE("present_priv=%p dmaBufFd=%d\n", present_priv, fd);
@@ -524,7 +527,7 @@ static BOOL dri2_window_buffer_from_dmabuf(struct dri_backend_priv *priv, Displa
     if (!*out)
         return FALSE;
 
-    if (!PRESENTPixmapCreate(present_priv, screen, &pixmap,
+    if (!PRESENTPixmapCreate(present_priv, p->screen, &pixmap,
             width, height, stride, depth, bpp))
     {
         HeapFree(GetProcessHeap(), 0, *out);
