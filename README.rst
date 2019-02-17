@@ -41,6 +41,7 @@ Your distribution may provide a package, avoiding the need to compile the code y
 
 * Arch Linux - releases: `gallium-nine (AUR) <https://aur.archlinux.org/packages/gallium-nine>`_, snapshots: `gallium-nine-git (AUR) <https://aur.archlinux.org/packages/gallium-nine-git>`_
 * Gentoo Linux - `app-emulation/gallium-nine-standalone <https://packages.gentoo.org/packages/app-emulation/gallium-nine-standalone>`_
+* Fedora - releases: `wine-nine (Copr) <https://copr.fedorainfracloud.org/coprs/siro/wine-nine/>`_, snapshots: `wine-nine-unstable (Copr) <https://copr.fedorainfracloud.org/coprs/siro/wine-nine-unstable/>`_
 
 Usage
 -----
