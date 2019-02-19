@@ -32,6 +32,7 @@ struct dri_backend_funcs {
     void (*destroy)(struct dri_backend_priv *priv);
 
     BOOL (*init)(struct dri_backend_priv *priv);
+    void (*deinit)(struct dri_backend_priv *priv);
     int (*get_fd)(struct dri_backend_priv *priv);
 
     BOOL (*window_buffer_from_dmabuf)(struct dri_backend_priv *priv,

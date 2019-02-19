@@ -81,6 +81,10 @@ static BOOL dri3_init(struct dri_backend_priv *priv)
     return TRUE;
 }
 
+static void dri3_deinit(struct dri_backend_priv *priv)
+{
+}
+
 static int dri3_get_fd(struct dri_backend_priv *priv)
 {
     struct dri3_priv *p = (struct dri3_priv *)priv;
@@ -204,6 +208,7 @@ const struct dri_backend_funcs dri3_funcs = {
     .create = dri3_create,
     .destroy = dri3_destroy,
     .init = dri3_init,
+    .deinit = dri3_deinit,
     .get_fd = dri3_get_fd,
     .window_buffer_from_dmabuf = dri3_window_buffer_from_dmabuf,
     .copy_front = dri3_copy_front,

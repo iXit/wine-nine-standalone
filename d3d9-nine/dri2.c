@@ -607,7 +607,7 @@ static void dri2_destroy_pixmap(struct dri_backend_priv *priv, struct buffer_pri
 }
 
 /* hypothesis: at this step all textures, etc are destroyed */
-static void dri2_destroy(struct dri_backend_priv *priv)
+static void dri2_deinit(struct dri_backend_priv *priv)
 {
     struct dri2_priv *p = (struct dri2_priv *)priv;
     EGLenum current_api;
@@ -636,6 +636,11 @@ static void dri2_destroy(struct dri_backend_priv *priv)
         }
     }
     eglBindAPI(current_api);
+}
+
+static void dri2_destroy(struct dri_backend_priv *priv)
+{
+    struct dri2_priv *p = (struct dri2_priv *)priv;
 
     close(p->fd);
 
@@ -663,6 +668,7 @@ const struct dri_backend_funcs dri2_funcs = {
     .create = dri2_create,
     .destroy = dri2_destroy,
     .init = dri2_init,
+    .deinit = dri2_deinit,
     .get_fd = dri2_get_fd,
     .window_buffer_from_dmabuf = dri2_window_buffer_from_dmabuf,
     .copy_front = dri2_copy_front,
