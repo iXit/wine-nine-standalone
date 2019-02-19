@@ -90,17 +90,16 @@ jobs:
         - mkdir -p $HOME/rpmbuild/SOURCES $HOME/rpmbuild/SPECS $HOME/rpmbuild/SRPMS $HOME/rpmbuild/BUILD $HOME/rpmbuild/RPMS $HOME/rpmbuild/BUILDROOT
         - chmod -R 0777 $HOME/rpmbuild
         # create a copy of the sources for RPMBUILD
-        - mkdir -p $HOME/rpmbuild/SOURCES/tmp/wine-nine-standalone-$(git rev-parse HEAD)/
-        - cp -r * $HOME/rpmbuild/SOURCES/tmp/wine-nine-standalone-$(git rev-parse HEAD)/
-        - tar -czf $HOME/rpmbuild/SOURCES/$(git rev-parse HEAD).tar.gz -C $HOME/rpmbuild/SOURCES/tmp/ .
-        - rm -rf $HOME/rpmbuild/SOURCES/tmp/wine-nine-standalone-$(git rev-parse HEAD)/
+        - mkdir -p $HOME/rpmbuild/SOURCES/tmp/wine-nine-standalone-$TRAVIS_COMMIT/
+        - cp -r * $HOME/rpmbuild/SOURCES/tmp/wine-nine-standalone-$TRAVIS_COMMIT/
+        - tar -czf $HOME/rpmbuild/SOURCES/$TRAVIS_COMMIT.tar.gz -C $HOME/rpmbuild/SOURCES/tmp/ .
+        - rm -rf $HOME/rpmbuild/SOURCES/tmp/wine-nine-standalone-$TRAVIS_COMMIT/
         # generate metadata for the SPEC file
         - export PATCHLEVEL=$(git rev-list --count master)
-        - export COMMITHASH=$(git rev-parse HEAD)
         - export MYCHANGELOG=$(LANG=en git log --pretty=format:"* %cd %an <%ae>%n- %s%n" --date=format:"%a %b %d %Y" -n 10| sed 's/$/ \\/')
         # should use rpmbuild --define '', but whitespace and newline make it difficult...
         - echo "%define patchlevel $PATCHLEVEL" > $HOME/rpmbuild/SPECS/wine-nine-unstable.spec
-        - echo "%define commithash $COMMITHASH" >> $HOME/rpmbuild/SPECS/wine-nine-unstable.spec
+        - echo "%define commithash $TRAVIS_COMMIT" >> $HOME/rpmbuild/SPECS/wine-nine-unstable.spec
         - echo "%define mychangelog $MYCHANGELOG" >> $HOME/rpmbuild/SPECS/wine-nine-unstable.spec
         - cat ./packaging/SPECS/wine-nine-unstable.spec >> $HOME/rpmbuild/SPECS/wine-nine-unstable.spec
         # create the SRPMs
