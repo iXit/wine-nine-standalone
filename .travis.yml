@@ -87,12 +87,7 @@ jobs:
         - pip3 install --user copr-cli
       script:
         # create the folder structure for RPMBUILD
-        - mkdir -p $HOME/rpmbuild/SOURCES
-        - mkdir -p $HOME/rpmbuild/SPECS
-        - mkdir -p $HOME/rpmbuild/SRPMS
-        - mkdir -p $HOME/rpmbuild/BUILD
-        - mkdir -p $HOME/rpmbuild/RPMS
-        - mkdir -p $HOME/rpmbuild/BUILDROOT
+        - mkdir -p $HOME/rpmbuild/SOURCES $HOME/rpmbuild/SPECS $HOME/rpmbuild/SRPMS $HOME/rpmbuild/BUILD $HOME/rpmbuild/RPMS $HOME/rpmbuild/BUILDROOT
         - chmod -R 0777 $HOME/rpmbuild
         # create a copy of the sources for RPMBUILD
         - mkdir -p $HOME/rpmbuild/SOURCES/tmp/wine-nine-standalone-$(git rev-parse HEAD)/
