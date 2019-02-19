@@ -37,10 +37,6 @@
 #include <X11/extensions/dri2proto.h>
 #include <X11/extensions/extutil.h>
 
-#define GL_GLEXT_PROTOTYPES 1
-/* workaround for broken ABI on x86_64 due to windef.h */
-#undef APIENTRY
-#undef APIENTRYP
 #include <GL/gl.h>
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
@@ -51,6 +47,7 @@
 WINE_DEFAULT_DEBUG_CHANNEL(d3d9nine);
 
 const char * const lib_egl = "libEGL.so.1";
+const char * const lib_gl = "libGL.so.1";
 
 static EGLDisplay display = NULL;
 static int display_ref = 0;
@@ -92,7 +89,21 @@ struct dri2_priv {
     EGLBoolean (*eglDestroyImageKHR)(EGLDisplay dpy, EGLImageKHR image);
     EGLDisplay (*eglGetPlatformDisplayEXT)(EGLenum platform, void *native_display, const EGLint *attrib_list);
 
+    /* gl */
+    void (*glFlush)(void);
+    void (*glTexParameteri)(GLenum target, GLenum pname, GLint param);
+    void (*glGenTextures)(GLsizei n, GLuint *textures);
+    void (*glDeleteTextures)(GLsizei n, const GLuint *textures);
+    void (*glBindTexture)(GLenum target, GLuint texture);
     void (*glEGLImageTargetTexture2DOES)(GLenum target, GLeglImageOES image);
+
+    /* glext */
+    void (*glBindFramebuffer)(GLenum target, GLuint framebuffer);
+    void (*glDeleteFramebuffers)(GLsizei n, const GLuint *framebuffers);
+    void (*glGenFramebuffers)(GLsizei n, GLuint *framebuffers);
+    GLenum (*glCheckFramebufferStatus)(GLenum target);
+    void (*glFramebufferTexture2D)(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level);
+    void (*glBlitFramebuffer)(GLint srcX0, GLint srcY0, GLint srcX1, GLint srcY1, GLint dstX0, GLint dstY0, GLint dstX1, GLint dstY1, GLbitfield mask, GLenum filter);
 };
 
 static XExtensionInfo _dri2_info_data;
@@ -321,7 +332,19 @@ static BOOL dri2_create(Display *dpy, int screen, struct dri_backend_priv **priv
     DRI2_EGLGETPROCADDRESS(eglCreateImageKHR);
     DRI2_EGLGETPROCADDRESS(eglDestroyImageKHR);
     DRI2_EGLGETPROCADDRESS(eglGetPlatformDisplayEXT);
+
+    DRI2_EGLGETPROCADDRESS(glFlush);
+    DRI2_EGLGETPROCADDRESS(glTexParameteri);
+    DRI2_EGLGETPROCADDRESS(glGenTextures);
+    DRI2_EGLGETPROCADDRESS(glDeleteTextures);
+    DRI2_EGLGETPROCADDRESS(glBindTexture);
     DRI2_EGLGETPROCADDRESS(glEGLImageTargetTexture2DOES);
+    DRI2_EGLGETPROCADDRESS(glBindFramebuffer);
+    DRI2_EGLGETPROCADDRESS(glDeleteFramebuffers);
+    DRI2_EGLGETPROCADDRESS(glGenFramebuffers);
+    DRI2_EGLGETPROCADDRESS(glCheckFramebufferStatus);
+    DRI2_EGLGETPROCADDRESS(glFramebufferTexture2D);
+    DRI2_EGLGETPROCADDRESS(glBlitFramebuffer);
 
 #undef DRI2_EGLGETPROCADDRESS
 
@@ -418,12 +441,12 @@ static BOOL dri2_present_pixmap(struct dri_backend_priv *priv, struct buffer_pri
     p->eglBindAPI(EGL_OPENGL_API);
     if (p->eglMakeCurrent(p->display, EGL_NO_SURFACE, EGL_NO_SURFACE, p->context))
     {
-        glBindFramebuffer(GL_READ_FRAMEBUFFER, pp->fbo_read);
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, pp->fbo_write);
+        p->glBindFramebuffer(GL_READ_FRAMEBUFFER, pp->fbo_read);
+        p->glBindFramebuffer(GL_DRAW_FRAMEBUFFER, pp->fbo_write);
 
-        glBlitFramebuffer(0, 0, pp->width, pp->height, 0, 0, pp->width, pp->height,
+        p->glBlitFramebuffer(0, 0, pp->width, pp->height, 0, 0, pp->width, pp->height,
                 GL_COLOR_BUFFER_BIT, GL_NEAREST);
-        glFlush(); /* Perhaps useless */
+        p->glFlush(); /* Perhaps useless */
     }
     else
     {
@@ -482,21 +505,21 @@ static BOOL dri2_present(struct dri_backend_priv *priv, int fd, int width, int h
 
     if (p->eglMakeCurrent(p->display, EGL_NO_SURFACE, EGL_NO_SURFACE, p->context))
     {
-        glGenTextures(1, &texture_read);
-        glBindTexture(GL_TEXTURE_2D, texture_read);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        p->glGenTextures(1, &texture_read);
+        p->glBindTexture(GL_TEXTURE_2D, texture_read);
+        p->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        p->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         p->glEGLImageTargetTexture2DOES(GL_TEXTURE_2D, image);
-        glGenFramebuffers(1, &fbo_read);
-        glBindFramebuffer(GL_FRAMEBUFFER, fbo_read);
-        glFramebufferTexture2D(GL_FRAMEBUFFER,
-                               GL_COLOR_ATTACHMENT0,
-                               GL_TEXTURE_2D, texture_read,
-                               0);
-        status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+        p->glGenFramebuffers(1, &fbo_read);
+        p->glBindFramebuffer(GL_FRAMEBUFFER, fbo_read);
+        p->glFramebufferTexture2D(GL_FRAMEBUFFER,
+                                  GL_COLOR_ATTACHMENT0,
+                                  GL_TEXTURE_2D, texture_read,
+                                  0);
+        status = p->glCheckFramebufferStatus(GL_FRAMEBUFFER);
         if (status != GL_FRAMEBUFFER_COMPLETE)
             goto fail;
-        glBindTexture(GL_TEXTURE_2D, 0);
+        p->glBindTexture(GL_TEXTURE_2D, 0);
         p->eglDestroyImageKHR(p->display, image);
 
         /* We bind a newly created pixmap (to which we want to copy the content)
@@ -506,21 +529,21 @@ static BOOL dri2_present(struct dri_backend_priv *priv, int fd, int width, int h
         if (image == EGL_NO_IMAGE_KHR)
             goto fail;
 
-        glGenTextures(1, &texture_write);
-        glBindTexture(GL_TEXTURE_2D, texture_write);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        p->glGenTextures(1, &texture_write);
+        p->glBindTexture(GL_TEXTURE_2D, texture_write);
+        p->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        p->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         p->glEGLImageTargetTexture2DOES(GL_TEXTURE_2D, image);
-        glGenFramebuffers(1, &fbo_write);
-        glBindFramebuffer(GL_FRAMEBUFFER, fbo_write);
-        glFramebufferTexture2D(GL_FRAMEBUFFER,
-                               GL_COLOR_ATTACHMENT0,
-                               GL_TEXTURE_2D, texture_write,
-                               0);
-        status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+        p->glGenFramebuffers(1, &fbo_write);
+        p->glBindFramebuffer(GL_FRAMEBUFFER, fbo_write);
+        p->glFramebufferTexture2D(GL_FRAMEBUFFER,
+                                  GL_COLOR_ATTACHMENT0,
+                                  GL_TEXTURE_2D, texture_write,
+                                  0);
+        status = p->glCheckFramebufferStatus(GL_FRAMEBUFFER);
         if (status != GL_FRAMEBUFFER_COMPLETE)
             goto fail;
-        glBindTexture(GL_TEXTURE_2D, 0);
+        p->glBindTexture(GL_TEXTURE_2D, 0);
         p->eglDestroyImageKHR(p->display, image);
     }
     else
@@ -626,10 +649,10 @@ static void dri2_destroy_pixmap(struct dri_backend_priv *priv, struct buffer_pri
     p->eglBindAPI(EGL_OPENGL_API);
     if (p->eglMakeCurrent(p->display, EGL_NO_SURFACE, EGL_NO_SURFACE, p->context))
     {
-        glDeleteFramebuffers(1, &pp->fbo_read);
-        glDeleteFramebuffers(1, &pp->fbo_write);
-        glDeleteTextures(1, &pp->texture_read);
-        glDeleteTextures(1, &pp->texture_write);
+        p->glDeleteFramebuffers(1, &pp->fbo_read);
+        p->glDeleteFramebuffers(1, &pp->fbo_write);
+        p->glDeleteTextures(1, &pp->texture_read);
+        p->glDeleteTextures(1, &pp->texture_write);
     }
     else
         WINE_ERR("eglMakeCurrent failed with 0x%0X\n", p->eglGetError());
