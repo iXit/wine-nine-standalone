@@ -37,7 +37,7 @@ d3d9_dll = shared_library(
                      dep_xcb_present,
                      dep_xcb_xfixes,
                      dep_gl,
-                     dep_egl,
+                     dep_egl.partial_dependency(includes : true),
                      dep_dxguid,
                      dep_uuid,
                      dep_advapi32,

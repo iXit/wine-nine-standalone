@@ -7,7 +7,7 @@ project(
               find_program('tools/get_version.sh', native : true)
             ).stdout(),
   license : 'LGPL2.1+',
-  meson_version : '>= 0.45',
+  meson_version : '>= 0.46',
   default_options : [
     'buildtype=debugoptimized',
   ],

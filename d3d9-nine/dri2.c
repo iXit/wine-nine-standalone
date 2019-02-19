@@ -15,6 +15,7 @@
 #include <libdrm/drm.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <dlfcn.h>
 
 #define BOOL X_BOOL
 #define BYTE X_BYTE
@@ -37,7 +38,6 @@
 #include <X11/extensions/extutil.h>
 
 #define GL_GLEXT_PROTOTYPES 1
-#define EGL_EGLEXT_PROTOTYPES 1
 /* workaround for broken ABI on x86_64 due to windef.h */
 #undef APIENTRY
 #undef APIENTRYP
@@ -49,6 +49,8 @@
 #include "xcb_present.h"
 
 WINE_DEFAULT_DEBUG_CHANNEL(d3d9nine);
+
+const char * const lib_egl = "libEGL.so.1";
 
 static EGLDisplay display = NULL;
 static int display_ref = 0;
@@ -70,9 +72,26 @@ struct dri2_priv {
     int fd;
     EGLDisplay display;
     EGLContext context;
+    void *h_egl;
+
+    /* egl */
+    void *(*eglGetProcAddress)(const char *procname);
+    EGLContext (*eglCreateContext)(EGLDisplay dpy, EGLConfig config, EGLContext share_context, const EGLint *attrib_list);
+    EGLBoolean (*eglDestroyContext)(EGLDisplay dpy, EGLContext ctx);
+    EGLint (*eglGetError)(void);
+    EGLBoolean (*eglInitialize)(EGLDisplay dpy, EGLint *major, EGLint *minor);
+    EGLBoolean (*eglMakeCurrent)(EGLDisplay dpy, EGLSurface draw, EGLSurface read, EGLContext ctx);
+    const char *(*eglQueryString)(EGLDisplay dpy, EGLint name);
+    EGLBoolean (*eglTerminate)(EGLDisplay dpy);
+    EGLBoolean (*eglChooseConfig)(EGLDisplay dpy, const EGLint *attrib_list, EGLConfig *configs, EGLint config_size, EGLint *num_config);
+    EGLBoolean (*eglBindAPI)(EGLenum api);
+    EGLenum (*eglQueryAPI)(void);
+
+    /* eglext */
     EGLImageKHR (*eglCreateImageKHR)(EGLDisplay dpy, EGLContext ctx, EGLenum target, EGLClientBuffer buffer, const EGLint *attrib_list);
     EGLBoolean (*eglDestroyImageKHR)(EGLDisplay dpy, EGLImageKHR image);
     EGLDisplay (*eglGetPlatformDisplayEXT)(EGLenum platform, void *native_display, const EGLint *attrib_list);
+
     void (*glEGLImageTargetTexture2DOES)(GLenum target, GLeglImageOES image);
 };
 
@@ -220,11 +239,16 @@ static Bool dri2_authenticate(Display *dpy, XID window, uint32_t token)
     return rep.authenticated ? True : False;
 }
 
-static void *dri2_eglGetProcAddress(const char *procname)
+static void *dri2_eglGetProcAddress(struct dri2_priv *priv, const char *procname)
 {
     void *p;
 
-    p = eglGetProcAddress(procname);
+    p = dlsym(priv->h_egl, procname);
+    if (p)
+        return p;
+
+    if (priv->eglGetProcAddress)
+        p = priv->eglGetProcAddress(procname);
 
     if (!p)
         WINE_ERR("%s is missing but required\n", procname);
@@ -271,11 +295,29 @@ static BOOL dri2_create(Display *dpy, int screen, struct dri_backend_priv **priv
     p->screen = screen;
     p->fd = fd;
 
+    p->h_egl = dlopen(lib_egl, RTLD_LAZY);
+    if (!p->h_egl)
+    {
+        WINE_ERR("failed to open %s: %s\n", lib_egl, dlerror());
+        goto err_egl;
+    }
+
 #define DRI2_EGLGETPROCADDRESS(procname) \
-    p->procname = dri2_eglGetProcAddress(#procname); \
+    p->procname = dri2_eglGetProcAddress(p, #procname); \
     if (!p->procname) \
         goto err_egl;
 
+    DRI2_EGLGETPROCADDRESS(eglGetProcAddress);
+    DRI2_EGLGETPROCADDRESS(eglCreateContext);
+    DRI2_EGLGETPROCADDRESS(eglDestroyContext);
+    DRI2_EGLGETPROCADDRESS(eglGetError);
+    DRI2_EGLGETPROCADDRESS(eglInitialize);
+    DRI2_EGLGETPROCADDRESS(eglMakeCurrent);
+    DRI2_EGLGETPROCADDRESS(eglQueryString);
+    DRI2_EGLGETPROCADDRESS(eglTerminate);
+    DRI2_EGLGETPROCADDRESS(eglChooseConfig);
+    DRI2_EGLGETPROCADDRESS(eglBindAPI);
+    DRI2_EGLGETPROCADDRESS(eglQueryAPI);
     DRI2_EGLGETPROCADDRESS(eglCreateImageKHR);
     DRI2_EGLGETPROCADDRESS(eglDestroyImageKHR);
     DRI2_EGLGETPROCADDRESS(eglGetPlatformDisplayEXT);
@@ -312,7 +354,7 @@ static BOOL dri2_init(struct dri_backend_priv *priv)
         EGL_NONE
     };
 
-    current_api = eglQueryAPI();
+    current_api = p->eglQueryAPI();
 
     if (!display)
         display = p->eglGetPlatformDisplayEXT(EGL_PLATFORM_X11_EXT, p->dpy, NULL);
@@ -321,41 +363,41 @@ static BOOL dri2_init(struct dri_backend_priv *priv)
     /* count references on display for multi device setups */
     display_ref++;
 
-    if (eglInitialize(display, &major, &minor) != EGL_TRUE)
+    if (p->eglInitialize(display, &major, &minor) != EGL_TRUE)
         goto clean_egl_display;
 
-    extensions = eglQueryString(display, EGL_CLIENT_APIS);
+    extensions = p->eglQueryString(display, EGL_CLIENT_APIS);
     if (!extensions || !strstr(extensions, "OpenGL"))
         goto clean_egl_display;
 
-    extensions = eglQueryString(display, EGL_EXTENSIONS);
+    extensions = p->eglQueryString(display, EGL_EXTENSIONS);
     if (!extensions || !strstr(extensions, "EGL_EXT_image_dma_buf_import") ||
             !strstr(extensions, "EGL_KHR_create_context") ||
             !strstr(extensions, "EGL_KHR_surfaceless_context") ||
             !strstr(extensions, "EGL_KHR_image_base"))
         goto clean_egl_display;
 
-    if (!eglChooseConfig(display, config_attribs, &config, 1, &i))
+    if (!p->eglChooseConfig(display, config_attribs, &config, 1, &i))
         goto clean_egl_display;
 
-    b = eglBindAPI(EGL_OPENGL_API);
+    b = p->eglBindAPI(EGL_OPENGL_API);
     if (b == EGL_FALSE)
         goto clean_egl_display;
-    context = eglCreateContext(display, config, EGL_NO_CONTEXT, context_compatibility_attribs);
+    context = p->eglCreateContext(display, config, EGL_NO_CONTEXT, context_compatibility_attribs);
     if (context == EGL_NO_CONTEXT)
         goto clean_egl_display;
 
-    eglMakeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+    p->eglMakeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
 
     p->display = display;
     p->context = context;
 
-    eglBindAPI(current_api);
+    p->eglBindAPI(current_api);
     return TRUE;
 
 clean_egl_display:
-    eglTerminate(display);
-    eglBindAPI(current_api);
+    p->eglTerminate(display);
+    p->eglBindAPI(current_api);
     return FALSE;
 }
 
@@ -372,9 +414,9 @@ static BOOL dri2_present_pixmap(struct dri_backend_priv *priv, struct buffer_pri
     struct dri2_pixmap_priv *pp = (struct dri2_pixmap_priv *)buffer_priv;
     EGLenum current_api = 0;
 
-    current_api = eglQueryAPI();
-    eglBindAPI(EGL_OPENGL_API);
-    if (eglMakeCurrent(p->display, EGL_NO_SURFACE, EGL_NO_SURFACE, p->context))
+    current_api = p->eglQueryAPI();
+    p->eglBindAPI(EGL_OPENGL_API);
+    if (p->eglMakeCurrent(p->display, EGL_NO_SURFACE, EGL_NO_SURFACE, p->context))
     {
         glBindFramebuffer(GL_READ_FRAMEBUFFER, pp->fbo_read);
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, pp->fbo_write);
@@ -385,12 +427,12 @@ static BOOL dri2_present_pixmap(struct dri_backend_priv *priv, struct buffer_pri
     }
     else
     {
-        WINE_ERR("eglMakeCurrent failed with 0x%0X\n", eglGetError());
+        WINE_ERR("eglMakeCurrent failed with 0x%0X\n", p->eglGetError());
         return FALSE;
     }
 
-    eglMakeCurrent(p->display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
-    eglBindAPI(current_api);
+    p->eglMakeCurrent(p->display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+    p->eglBindAPI(current_api);
 
     return TRUE;
 }
@@ -422,8 +464,8 @@ static BOOL dri2_present(struct dri_backend_priv *priv, int fd, int width, int h
     attribs[7] = fd;
     attribs[11] = stride;
 
-    current_api = eglQueryAPI();
-    eglBindAPI(EGL_OPENGL_API);
+    current_api = p->eglQueryAPI();
+    p->eglBindAPI(EGL_OPENGL_API);
 
     /* We bind the dma-buf to a EGLImage, then to a texture, and then to a fbo.
      * Note that we can delete the EGLImage, but we shouldn't delete the texture,
@@ -433,12 +475,12 @@ static BOOL dri2_present(struct dri_backend_priv *priv, int fd, int width, int h
                                  NULL, attribs);
 
     if (image == EGL_NO_IMAGE_KHR) {
-        WINE_ERR("eglCreateImageKHR failed with 0x%0X\n", eglGetError());
+        WINE_ERR("eglCreateImageKHR failed with 0x%0X\n", p->eglGetError());
         goto fail;
     }
     close(fd);
 
-    if (eglMakeCurrent(p->display, EGL_NO_SURFACE, EGL_NO_SURFACE, p->context))
+    if (p->eglMakeCurrent(p->display, EGL_NO_SURFACE, EGL_NO_SURFACE, p->context))
     {
         glGenTextures(1, &texture_read);
         glBindTexture(GL_TEXTURE_2D, texture_read);
@@ -482,9 +524,9 @@ static BOOL dri2_present(struct dri_backend_priv *priv, int fd, int width, int h
         p->eglDestroyImageKHR(p->display, image);
     }
     else
-        WINE_ERR("eglMakeCurrent failed with 0x%0X\n", eglGetError());
+        WINE_ERR("eglMakeCurrent failed with 0x%0X\n", p->eglGetError());
 
-    eglMakeCurrent(p->display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+    p->eglMakeCurrent(p->display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
 
     pp = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(struct dri2_pixmap_priv));
 
@@ -502,12 +544,12 @@ static BOOL dri2_present(struct dri_backend_priv *priv, int fd, int width, int h
 
     *buffer_priv = (struct buffer_priv *)pp;
 
-    eglBindAPI(current_api);
+    p->eglBindAPI(current_api);
 
     return TRUE;
 fail:
-    eglMakeCurrent(p->display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
-    eglBindAPI(current_api);
+    p->eglMakeCurrent(p->display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+    p->eglBindAPI(current_api);
     return FALSE;
 }
 
@@ -579,10 +621,10 @@ static void dri2_destroy_pixmap(struct dri_backend_priv *priv, struct buffer_pri
         current->next = pp->next;
     }
 
-    current_api = eglQueryAPI();
+    current_api = p->eglQueryAPI();
 
-    eglBindAPI(EGL_OPENGL_API);
-    if (eglMakeCurrent(p->display, EGL_NO_SURFACE, EGL_NO_SURFACE, p->context))
+    p->eglBindAPI(EGL_OPENGL_API);
+    if (p->eglMakeCurrent(p->display, EGL_NO_SURFACE, EGL_NO_SURFACE, p->context))
     {
         glDeleteFramebuffers(1, &pp->fbo_read);
         glDeleteFramebuffers(1, &pp->fbo_write);
@@ -590,10 +632,10 @@ static void dri2_destroy_pixmap(struct dri_backend_priv *priv, struct buffer_pri
         glDeleteTextures(1, &pp->texture_write);
     }
     else
-        WINE_ERR("eglMakeCurrent failed with 0x%0X\n", eglGetError());
+        WINE_ERR("eglMakeCurrent failed with 0x%0X\n", p->eglGetError());
 
-    eglMakeCurrent(p->display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
-    eglBindAPI(current_api);
+    p->eglMakeCurrent(p->display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+    p->eglBindAPI(current_api);
 
     HeapFree(GetProcessHeap(), 0, pp);
 }
@@ -613,26 +655,29 @@ static void dri2_deinit(struct dri_backend_priv *priv)
         current = next;
     }
 
-    current_api = eglQueryAPI();
-    eglBindAPI(EGL_OPENGL_API);
-    eglMakeCurrent(p->display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
-    eglDestroyContext(p->display, p->context);
+    current_api = p->eglQueryAPI();
+    p->eglBindAPI(EGL_OPENGL_API);
+    p->eglMakeCurrent(p->display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+    p->eglDestroyContext(p->display, p->context);
     if (display)
     {
         /* destroy display connection with last device */
         display_ref--;
         if (!display_ref)
         {
-            eglTerminate(display);
+            p->eglTerminate(display);
             display = NULL;
         }
     }
-    eglBindAPI(current_api);
+    p->eglBindAPI(current_api);
 }
 
 static void dri2_destroy(struct dri_backend_priv *priv)
 {
     struct dri2_priv *p = (struct dri2_priv *)priv;
+
+    if (!display_ref)
+        dlclose(p->h_egl);
 
     close(p->fd);
 
