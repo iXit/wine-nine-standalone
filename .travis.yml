@@ -60,6 +60,7 @@ jobs:
         - ./release.sh -o "$RELEASE_TARBALL" -- -Ddri2=true -Ddistro-independent=true
       deploy:
         provider: releases
+        condition: -n "$GITHUB_OAUTH_TOKEN"
         api_key: "$GITHUB_OAUTH_TOKEN"
         file: "$RELEASE_TARBALL"
         skip_cleanup: true
@@ -70,6 +71,7 @@ jobs:
 
     - stage: deploy
       name: "Packaging"
+      if: env(SIRO_COPR_KEY) IS present
       services:
         - docker
       addons:
