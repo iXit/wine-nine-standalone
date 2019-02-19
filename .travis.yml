@@ -7,7 +7,7 @@ git:
 
 jobs:
   include:
-    - stage: test
+    - stage: build
       name: "Build test"
       addons:
         apt:
