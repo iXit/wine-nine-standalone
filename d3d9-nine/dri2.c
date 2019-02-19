@@ -38,16 +38,10 @@
 
 #define GL_GLEXT_PROTOTYPES 1
 #define EGL_EGLEXT_PROTOTYPES 1
-#define GL_GLEXT_LEGACY 1
 /* workaround for broken ABI on x86_64 due to windef.h */
 #undef APIENTRY
 #undef APIENTRYP
 #include <GL/gl.h>
-
-/* workaround gl header bug */
-#define glBlendColor glBlendColorLEV
-#define glBlendEquation glBlendEquationLEV
-#include <GL/glext.h>
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
 
