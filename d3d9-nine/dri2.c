@@ -76,9 +76,10 @@ struct dri2_priv {
     int fd;
     EGLDisplay display;
     EGLContext context;
-    PFNGLEGLIMAGETARGETTEXTURE2DOESPROC glEGLImageTargetTexture2DOES_func;
-    PFNEGLCREATEIMAGEKHRPROC eglCreateImageKHR_func;
-    PFNEGLDESTROYIMAGEKHRPROC eglDestroyImageKHR_func;
+    EGLImageKHR (*eglCreateImageKHR)(EGLDisplay dpy, EGLContext ctx, EGLenum target, EGLClientBuffer buffer, const EGLint *attrib_list);
+    EGLBoolean (*eglDestroyImageKHR)(EGLDisplay dpy, EGLImageKHR image);
+    EGLDisplay (*eglGetPlatformDisplayEXT)(EGLenum platform, void *native_display, const EGLint *attrib_list);
+    void (*glEGLImageTargetTexture2DOES)(GLenum target, GLeglImageOES image);
 };
 
 static XExtensionInfo _dri2_info_data;
@@ -225,6 +226,18 @@ static Bool dri2_authenticate(Display *dpy, XID window, uint32_t token)
     return rep.authenticated ? True : False;
 }
 
+static void *dri2_eglGetProcAddress(const char *procname)
+{
+    void *p;
+
+    p = eglGetProcAddress(procname);
+
+    if (!p)
+        WINE_ERR("%s is missing but required\n", procname);
+
+    return p;
+}
+
 static BOOL dri2_create(Display *dpy, int screen, struct dri_backend_priv **priv)
 {
     struct dri2_priv *p;
@@ -264,18 +277,31 @@ static BOOL dri2_create(Display *dpy, int screen, struct dri_backend_priv **priv
     p->screen = screen;
     p->fd = fd;
 
+#define DRI2_EGLGETPROCADDRESS(procname) \
+    p->procname = dri2_eglGetProcAddress(#procname); \
+    if (!p->procname) \
+        goto err_egl;
+
+    DRI2_EGLGETPROCADDRESS(eglCreateImageKHR);
+    DRI2_EGLGETPROCADDRESS(eglDestroyImageKHR);
+    DRI2_EGLGETPROCADDRESS(eglGetPlatformDisplayEXT);
+    DRI2_EGLGETPROCADDRESS(glEGLImageTargetTexture2DOES);
+
+#undef DRI2_EGLGETPROCADDRESS
+
     *priv = (struct dri_backend_priv *)p;
 
     return TRUE;
+
+err_egl:
+    close(fd);
+    HeapFree(GetProcessHeap(), 0, p);
+    return FALSE;
 }
 
 static BOOL dri2_init(struct dri_backend_priv *priv)
 {
     struct dri2_priv *p = (struct dri2_priv *)priv;
-    PFNGLEGLIMAGETARGETTEXTURE2DOESPROC glEGLImageTargetTexture2DOES_func;
-    PFNEGLCREATEIMAGEKHRPROC eglCreateImageKHR_func;
-    PFNEGLGETPLATFORMDISPLAYEXTPROC eglGetPlatformDisplayEXT_func;
-    PFNEGLDESTROYIMAGEKHRPROC eglDestroyImageKHR_func;
     EGLint major, minor;
     EGLConfig config;
     EGLContext context;
@@ -293,13 +319,9 @@ static BOOL dri2_init(struct dri_backend_priv *priv)
     };
 
     current_api = eglQueryAPI();
-    eglGetPlatformDisplayEXT_func = (PFNEGLGETPLATFORMDISPLAYEXTPROC)
-            eglGetProcAddress("eglGetPlatformDisplayEXT");
 
-    if (!eglGetPlatformDisplayEXT_func)
-        return FALSE;
     if (!display)
-        display = eglGetPlatformDisplayEXT_func(EGL_PLATFORM_X11_EXT, p->dpy, NULL);
+        display = p->eglGetPlatformDisplayEXT(EGL_PLATFORM_X11_EXT, p->dpy, NULL);
     if (!display)
         return FALSE;
     /* count references on display for multi device setups */
@@ -329,36 +351,13 @@ static BOOL dri2_init(struct dri_backend_priv *priv)
     if (context == EGL_NO_CONTEXT)
         goto clean_egl_display;
 
-    glEGLImageTargetTexture2DOES_func = (PFNGLEGLIMAGETARGETTEXTURE2DOESPROC)
-            eglGetProcAddress("glEGLImageTargetTexture2DOES");
-
-    eglCreateImageKHR_func = (PFNEGLCREATEIMAGEKHRPROC)
-            eglGetProcAddress("eglCreateImageKHR");
-
-    eglDestroyImageKHR_func = (PFNEGLDESTROYIMAGEKHRPROC)
-            eglGetProcAddress("eglDestroyImageKHR");
-
-    if (!eglCreateImageKHR_func ||
-            !glEGLImageTargetTexture2DOES_func ||
-            !eglDestroyImageKHR_func)
-    {
-        WINE_ERR("eglGetProcAddress failed !");
-        goto clean_egl;
-    }
-
     eglMakeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
 
     p->display = display;
     p->context = context;
-    p->glEGLImageTargetTexture2DOES_func = glEGLImageTargetTexture2DOES_func;
-    p->eglCreateImageKHR_func = eglCreateImageKHR_func;
-    p->eglDestroyImageKHR_func = eglDestroyImageKHR_func;
 
     eglBindAPI(current_api);
     return TRUE;
-
-clean_egl:
-    eglDestroyContext(display, context);
 
 clean_egl_display:
     eglTerminate(display);
@@ -436,8 +435,8 @@ static BOOL dri2_present(struct dri_backend_priv *priv, int fd, int width, int h
      * Note that we can delete the EGLImage, but we shouldn't delete the texture,
      * else the fbo is invalid */
 
-    image = p->eglCreateImageKHR_func(p->display,
-            EGL_NO_CONTEXT, EGL_LINUX_DMA_BUF_EXT, NULL, attribs);
+    image = p->eglCreateImageKHR(p->display, EGL_NO_CONTEXT, EGL_LINUX_DMA_BUF_EXT,
+                                 NULL, attribs);
 
     if (image == EGL_NO_IMAGE_KHR) {
         WINE_ERR("eglCreateImageKHR failed with 0x%0X\n", eglGetError());
@@ -451,7 +450,7 @@ static BOOL dri2_present(struct dri_backend_priv *priv, int fd, int width, int h
         glBindTexture(GL_TEXTURE_2D, texture_read);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        p->glEGLImageTargetTexture2DOES_func(GL_TEXTURE_2D, image);
+        p->glEGLImageTargetTexture2DOES(GL_TEXTURE_2D, image);
         glGenFramebuffers(1, &fbo_read);
         glBindFramebuffer(GL_FRAMEBUFFER, fbo_read);
         glFramebufferTexture2D(GL_FRAMEBUFFER,
@@ -462,13 +461,12 @@ static BOOL dri2_present(struct dri_backend_priv *priv, int fd, int width, int h
         if (status != GL_FRAMEBUFFER_COMPLETE)
             goto fail;
         glBindTexture(GL_TEXTURE_2D, 0);
-        p->eglDestroyImageKHR_func(p->display, image);
+        p->eglDestroyImageKHR(p->display, image);
 
         /* We bind a newly created pixmap (to which we want to copy the content)
          * to an EGLImage, then to a texture, then to a fbo. */
-        image = p->eglCreateImageKHR_func(p->display, p->context,
-                                          EGL_NATIVE_PIXMAP_KHR,
-                                          (void *)*pixmap, NULL);
+        image = p->eglCreateImageKHR(p->display, p->context, EGL_NATIVE_PIXMAP_KHR,
+                                     (void *)*pixmap, NULL);
         if (image == EGL_NO_IMAGE_KHR)
             goto fail;
 
@@ -476,7 +474,7 @@ static BOOL dri2_present(struct dri_backend_priv *priv, int fd, int width, int h
         glBindTexture(GL_TEXTURE_2D, texture_write);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        p->glEGLImageTargetTexture2DOES_func(GL_TEXTURE_2D, image);
+        p->glEGLImageTargetTexture2DOES(GL_TEXTURE_2D, image);
         glGenFramebuffers(1, &fbo_write);
         glBindFramebuffer(GL_FRAMEBUFFER, fbo_write);
         glFramebufferTexture2D(GL_FRAMEBUFFER,
@@ -487,7 +485,7 @@ static BOOL dri2_present(struct dri_backend_priv *priv, int fd, int width, int h
         if (status != GL_FRAMEBUFFER_COMPLETE)
             goto fail;
         glBindTexture(GL_TEXTURE_2D, 0);
-        p->eglDestroyImageKHR_func(p->display, image);
+        p->eglDestroyImageKHR(p->display, image);
     }
     else
         WINE_ERR("eglMakeCurrent failed with 0x%0X\n", eglGetError());
