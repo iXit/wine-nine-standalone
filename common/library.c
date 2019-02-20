@@ -1,11 +1,11 @@
 /* SPDX-License-Identifier: LGPL-2.1-or-later */
 
-#include <d3dadapter/drm.h>
 #include <wine/debug.h>
 
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <dlfcn.h>
 #include <unistd.h>
 
