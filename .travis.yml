@@ -59,10 +59,11 @@ jobs:
         - "printf 'prefix=/tmp/build\nlibdir=${prefix}/lib/i386-linux-gnu\nincludedir=${prefix}/include\n\nName: d3d\nDescription: Native D3D driver modules\nVersion: 1.0.0\nRequires.private: libdrm\nCflags: -I${includedir}\n' | tee /tmp/build/lib/i386-linux-gnu/pkgconfig/d3d.pc"
         - export PKG_CONFIG_PATH="/tmp/build/lib/x86_64-linux-gnu/pkgconfig:/tmp/build/lib/i386-linux-gnu/pkgconfig"
         # update ninja for meson
-        - wget "https://github.com/ninja-build/ninja/releases/download/v1.9.0/ninja-linux.zip"
-        - unzip -o -d build ninja-linux.zip
-        - chmod 755 build/ninja
-        - export PATH="$PWD/build:$PATH"
+        - mkdir -p /tmp/build/bin
+        - wget -q -O /tmp/build/ninja-linux.zip "https://github.com/ninja-build/ninja/releases/download/v1.9.0/ninja-linux.zip"
+        - unzip -o -d /tmp/build/bin /tmp/build/ninja-linux.zip
+        - chmod 755 /tmp/build/bin/ninja
+        - export PATH="/tmp/build/bin:$PATH"
         # update meson via python3-pip
         - pip3 install --user setuptools
         - pip3 install --user --upgrade pip
