@@ -13,8 +13,6 @@ jobs:
         apt:
           update: true
           sources:
-            # xenial doesn't have libd3dadapter9-mesa-dev, oibaf has it in mesa-common-dev
-            - sourceline: 'ppa:oibaf/graphics-drivers'
             # xenial doesn't have relevant winegcc fixes
             - sourceline: 'deb https://dl.winehq.org/wine-builds/ubuntu/ xenial main'
               key_url: 'https://dl.winehq.org/wine-builds/winehq.key'
@@ -42,11 +40,24 @@ jobs:
             - libxcb-present-dev:i386
             - libxcb-xfixes0-dev:i386
             - libgl1-mesa-dev:i386
-            - libegl1-mesa-dev:i386
-
+            # the -dev packages introduces a conflict, see below
+            - libegl1-mesa:i386
       env:
         - RELEASE_TARBALL="$HOME/gallium-nine-standalone-${TRAVIS_TAG:-$TRAVIS_COMMIT}.tar.gz"
+      before_install:
+        # conflict between libxkbcommon-dev and libxkbcommon-dev:i386, use a hammer to apply force
+        - sudo apt-get -y download libegl1-mesa-dev:i386
+        - sudo dpkg -i --force-depends *.deb
       install:
+        # xenial doesn't have libd3dadapter9-mesa-dev, assemble headers/.pc by hand
+        - mkdir -p /tmp/build/include/d3dadapter
+        - wget -q -O /tmp/build/include/d3dadapter/d3dadapter9.h "https://raw.githubusercontent.com/mesa3d/mesa/master/include/d3dadapter/d3dadapter9.h"
+        - wget -q -O /tmp/build/include/d3dadapter/drm.h "https://raw.githubusercontent.com/mesa3d/mesa/master/include/d3dadapter/drm.h"
+        - wget -q -O /tmp/build/include/d3dadapter/present.h "https://raw.githubusercontent.com/mesa3d/mesa/master/include/d3dadapter/present.h"
+        - mkdir -p /tmp/build/lib/x86_64-linux-gnu/pkgconfig /tmp/build/lib/i386-linux-gnu/pkgconfig
+        - "printf 'prefix=/tmp/build\nlibdir=${prefix}/lib/x86_64-linux-gnu\nincludedir=${prefix}/include\n\nName: d3d\nDescription: Native D3D driver modules\nVersion: 1.0.0\nRequires.private: libdrm\nCflags: -I${includedir}\n' | tee /tmp/build/lib/x86_64-linux-gnu/pkgconfig/d3d.pc"
+        - "printf 'prefix=/tmp/build\nlibdir=${prefix}/lib/i386-linux-gnu\nincludedir=${prefix}/include\n\nName: d3d\nDescription: Native D3D driver modules\nVersion: 1.0.0\nRequires.private: libdrm\nCflags: -I${includedir}\n' | tee /tmp/build/lib/i386-linux-gnu/pkgconfig/d3d.pc"
+        - export PKG_CONFIG_PATH="/tmp/build/lib/x86_64-linux-gnu/pkgconfig:/tmp/build/lib/i386-linux-gnu/pkgconfig"
         # update ninja for meson
         - wget "https://github.com/ninja-build/ninja/releases/download/v1.9.0/ninja-linux.zip"
         - unzip -o -d build ninja-linux.zip
