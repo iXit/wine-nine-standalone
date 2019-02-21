@@ -12,7 +12,7 @@ BEGIN
 
     IDS_GB_LICENSE                           "Licence"
     IDS_GB_AUTHORS                           "Auteurs"
-    IDS_TEXT_MESA_DEP                        "Gallium Nine nécessite un driver graphic Mesa avec l'interface gallium"
+    IDS_TEXT_MESA_DEP                        "Gallium Nine nécessite un pilote graphique Mesa avec l'interface gallium"
 
     IDS_TEXT_LOAD_D3DADAPTER                 "Succès du chargement de d3d9adapter9"
     IDS_TEXT_D3D9_NINE_LOAD                  "d3d9-nine.dll peut être chargé"
