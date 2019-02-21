@@ -1,0 +1,32 @@
+/* SPDX-License-Identifier: LGPL-2.1-or-later */
+/*
+ * Copyright 2019 Axel Davy
+ */
+
+#pragma code_page(65001) /* UTF-8 */
+
+STRINGTABLE LANGUAGE LANG_FRENCH, SUBLANG_FRENCH
+BEGIN
+    IDS_TAB_MAIN                             "Options globales"
+    IDS_TAB_ABOUT                            "À propos"
+
+    IDS_GB_LICENSE                           "Licence"
+    IDS_GB_AUTHORS                           "Auteurs"
+    IDS_TEXT_MESA_DEP                        "Gallium Nine nécessite un driver graphic Mesa avec l'interface gallium"
+
+    IDS_TEXT_LOAD_D3DADAPTER                 "Succès du chargement de d3d9adapter9"
+    IDS_TEXT_D3D9_NINE_LOAD                  "d3d9-nine.dll peut être chargé"
+    IDS_TEXT_CREATE_D3D9_DEV                 "Succès de la création de l'interface Direct3D 9"
+
+    IDS_BTN_ENABLE_NINE                      "Activer &Gallium Nine pour de meilleures performances Direct3D 9"
+
+    IDS_GB_NINE_SETTINGS                     "Paramètres de Gallium Nine"
+    IDS_GB_INSTALL_STATE                     "Status d'installation"
+
+    IDS_NINECFG_TITLE                        "Configuration de Gallium Nine"
+
+    IDS_ERR_UNKNOWN                          "Erreur inconnue"
+    IDS_ERR_OUTOFMEMORY                      "Allocation de mémoire échouée"
+    IDS_ERR_D3D_NOTAVAILABLE                 "Aucun GPU compatible trouvé. Sur un système multi-gpu, essayez DRI_PRIME=1"
+END
+
