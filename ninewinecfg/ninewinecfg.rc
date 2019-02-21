@@ -13,8 +13,10 @@
 
 #include "resource.h"
 
+/* filenames are in ISO 639-2 */
 #include "nls/eng.rc"
 #include "nls/deu.rc"
+#include "nls/hun.rc"
 
 IDD_ABOUT DIALOG  0, 0, 260, 196
 STYLE WS_CHILD | WS_DISABLED
