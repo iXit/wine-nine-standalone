@@ -40,7 +40,7 @@ jobs:
             - libxcb-present-dev:i386
             - libxcb-xfixes0-dev:i386
             - libgl1-mesa-dev:i386
-            # the -dev packages introduces a conflict, see below
+            # the -dev package introduces a conflict, see below
             - libegl1-mesa:i386
       env:
         - RELEASE_TARBALL="$HOME/gallium-nine-standalone-${TRAVIS_TAG:-$TRAVIS_COMMIT}.tar.gz"
@@ -83,7 +83,7 @@ jobs:
 
     - stage: deploy
       name: "Packaging"
-      if: env(SIRO_COPR_KEY) IS present
+      if: env(SIRO_COPR_KEY) IS present AND type = push
       services:
         - docker
       addons:
