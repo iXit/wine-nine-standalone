@@ -1,0 +1,32 @@
+/* SPDX-License-Identifier: LGPL-2.1-or-later */
+/*
+ * Copyright 2019 Patrick Rudolph
+ */
+
+#pragma code_page(65001) /* UTF-8 */
+
+STRINGTABLE LANGUAGE LANG_HUNGARIAN, SUBLANG_HUNGARIAN
+BEGIN
+    IDS_TAB_MAIN                             "Globális beállítások"
+    IDS_TAB_ABOUT                            "Rólunk"
+
+    IDS_GB_LICENSE                           "Licensz"
+    IDS_GB_AUTHORS                           "Szerzők"
+    IDS_TEXT_MESA_DEP                        "A Gallium Nine futtatásához egy MESA gallium graphics driverre van szükség"
+
+    IDS_TEXT_LOAD_D3DADAPTER                 "A d3d9adapter9 betöltése sikeres"
+    IDS_TEXT_D3D9_NINE_LOAD                  "d3d9-nine.dll betölthető"
+    IDS_TEXT_CREATE_D3D9_DEV                 "Direct3D 9 eszköz létrehozása sikeres"
+
+    IDS_BTN_ENABLE_NINE                      "Engedélyezi a &Gallium Nine-t a jobb D3D9 grafikus teljesítményhez"
+
+    IDS_GB_NINE_SETTINGS                     "Gallium Nine beállítások"
+    IDS_GB_INSTALL_STATE                     "Telepítés állapota"
+
+    IDS_NINECFG_TITLE                        "Nine konfiguráció"
+
+    IDS_ERR_UNKNOWN                          "Ismeretlen hiba"
+    IDS_ERR_OUTOFMEMORY                      "Elfogyott a memória"
+    IDS_ERR_D3D_NOTAVAILABLE                 "Nem található kompatibilits GPU. Hibrid grafika esetén érdemes megpróbálni a DRI_PRIME=1 környezeti változó beállítását."
+END
+
