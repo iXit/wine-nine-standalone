@@ -9,7 +9,7 @@ BEGIN
 
     IDS_GB_LICENSE                           "Licensz"
     IDS_GB_AUTHORS                           "Szerzők"
-    IDS_TEXT_MESA_DEP                        "A Gallium Nine-hoz egy MESA gallium driver szükséges"
+    IDS_TEXT_MESA_DEP                        "A Gallium Nine futtatásához egy MESA gallium graphics driverre van szükség"
     IDS_TEXT_LOAD_D3DADAPTER                 "A d3d9adapter9 betöltése sikeres"
     IDS_TEXT_D3D9_NINE_LOAD                  "d3d9-nine.dll betölthető"
     IDS_TEXT_CREATE_D3D9_DEV                 "Direct3D 9 eszköz létrehozása sikeres"
