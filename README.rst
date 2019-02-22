@@ -35,13 +35,15 @@ Requirements
 * A Gallium based graphics driver (`Mesa 3D <https://www.mesa3d.org/>`_)
 * Mesa's Gallium Nine state tracker (d3dadapter9.so)
 
-Distro packages
----------------
+Packages
+--------
 Your distribution may provide a package, avoiding the need to compile the code yourself. The exact usage instructions may vary in this case so check your distribution for the details. The currently known packages are:
 
 * Arch Linux - releases: `gallium-nine (AUR) <https://aur.archlinux.org/packages/gallium-nine>`_, snapshots: `gallium-nine-git (AUR) <https://aur.archlinux.org/packages/gallium-nine-git>`_
 * Fedora - releases: `wine-nine (Copr) <https://copr.fedorainfracloud.org/coprs/siro/wine-nine/>`_, snapshots: `wine-nine-unstable (Copr) <https://copr.fedorainfracloud.org/coprs/siro/wine-nine-unstable/>`_
 * Gentoo Linux - `app-emulation/gallium-nine-standalone <https://packages.gentoo.org/packages/app-emulation/gallium-nine-standalone>`_
+
+We also provide distro independent release binaries, available as `GitHub releases <https://github.com/iXit/wine-nine-standalone/releases>`_. You can either download these yourself (see Usage_ below), or install them via `Winetricks <https://github.com/Winetricks/winetricks>`_.
 
 Usage
 -----
