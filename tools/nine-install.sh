@@ -15,7 +15,7 @@ ln -sf "$BASE/lib32/d3d9-nine.dll.so" "$DST/d3d9-nine.dll"
 ln -sf "$BASE/bin32/ninewinecfg.exe.so" "$DST/ninewinecfg.exe"
 
 unset HAVE_WINE64
-wine64 --version >/dev/null 2>&1 && HAVE_WINE64=1
+wine64 winepath >/dev/null 2>&1 && HAVE_WINE64=1
 
 if test -z "$HAVE_WINE64"; then
 	echo "wine64 not found, skipping 64bit"
