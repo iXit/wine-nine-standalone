@@ -47,7 +47,6 @@
 WINE_DEFAULT_DEBUG_CHANNEL(d3d9nine);
 
 const char * const lib_egl = "libEGL.so.1";
-const char * const lib_gl = "libGL.so.1";
 
 static EGLDisplay display = NULL;
 static int display_ref = 0;
