@@ -61,3 +61,20 @@ For the 32bit version run ``wine ninewinecfg`` and for 64bit ``wine64 ninewinecf
 Compiling
 ---------
 Please see `our wiki <https://github.com/iXit/wine-nine-standalone/wiki/Compiling>`_,  which also includes distro specific help.
+
+Backends
+--------
+The DRI3 backend is the preferred one and has the lowest CPU and memory overhead.
+
+As fallback for legacy platforms the DRI2 backend can be used, which has more CPU overhead and a bigger memory footprint.
+The DRI2 fallback relies on mesa's EGL which provides EGLImages.
+
+Debugging
+---------
+You can use the environment variable ``D3D_BACKEND`` to force one of the supported backends:
+
+* dri3
+* dri2
+
+If not specified it prefers DRI3 over DRI2 if available.
+
