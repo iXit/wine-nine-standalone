@@ -26,6 +26,10 @@ for i in $ID $ID_LIKE; do
 			PKG_CONFIG_32=i686-redhat-linux-gnu-pkg-config
 			PKG_CONFIG_64=x86_64-redhat-linux-gnu-pkg-config
 			;;
+		slackware)
+			PKG_CONFIG_32=i586-slackware-linux-gnu-pkg-config
+			PKG_CONFIG_64=x86_64-slackware-linux-gnu-pkg-config
+			;;
 	esac
 
 	if test -n "$PKG_CONFIG_32" -a -n "$PKG_CONFIG_64"; then
