@@ -3,8 +3,8 @@
 
 SRC=`dirname $(readlink -f $0)`
 
-unset PKG_CONFIG_32
-unset PKG_CONFIG_64
+PKG_CONFIG_32=
+PKG_CONFIG_64=
 
 . /etc/os-release
 
@@ -30,19 +30,21 @@ for i in $ID $ID_LIKE; do
 			PKG_CONFIG_32=i586-slackware-linux-gnu-pkg-config
 			PKG_CONFIG_64=x86_64-slackware-linux-gnu-pkg-config
 			;;
+		*)
+			continue
+			;;
 	esac
 
-	if test -n "$PKG_CONFIG_32" -a -n "$PKG_CONFIG_64"; then
-		echo "found $i compatible distro"
-		break
-	fi
+	break
 done
 
 if test -z "$PKG_CONFIG_32" -o -z "$PKG_CONFIG_64"; then
-	echo "unknown distro (\"$ID\", like \"$ID_LIKE\")"
-	echo "please add support to this script and open a pull request!"
+	printf '%s\n' "unknown distro (\"$ID\", like \"$ID_LIKE\")" \
+		"please add support to this script and open a pull request!"
 	exit 1
 fi
+
+printf '%s\n' "found $i compatible distro"
 
 sed "s/@PKG_CONFIG@/$PKG_CONFIG_32/" \
 	< $SRC/tools/cross-wine32.in \
