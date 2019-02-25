@@ -652,6 +652,50 @@ static BOOL ProcessCmdLine(WCHAR *cmdline, BOOL *result)
     return FALSE;
 }
 
+static void load_debug_settings(HWND dialog)
+{
+    HMODULE hmod = NULL;
+    HRESULT hr;
+
+    /* Set defaults */
+    set_dlg_string(dialog, IDC_GB_NINE_DEBUG, IDS_GB_NINE_DEBUG);
+    set_dlg_string(dialog, IDC_TEXT_BACKEND, IDS_TEXT_BACKEND);
+    set_dlg_string(dialog, IDC_TEXT_BACKEND_NAME, IDS_TEXT_BACKEND_UNKNOWN);
+    set_dlg_string(dialog, IDC_TEXT_BACKEND_TIP, 0);
+
+    hmod = LoadLibraryA(fn_nine_dll);
+
+    if (hmod)
+    {
+        IDirect3D9Ex *iface;
+        LPDIRECT3DCREATE9EX Direct3DCreate9ExPtr;
+        CHAR *value = NULL;
+
+        Direct3DCreate9ExPtr = (LPDIRECT3DCREATE9EX)
+                GetProcAddress(hmod, "Direct3DCreate9Ex");
+
+        /* Create a device to update the stats */
+        hr = Direct3DCreate9ExPtr(0, &iface);
+        if (SUCCEEDED(hr))
+        {
+            IDirect3DDevice9_Release(iface);
+        }
+
+        if (common_get_registry_string(reg_path_nine,
+                reg_key_debug_active_backend, &value))
+        {
+            SetDlgItemTextA(dialog, IDC_TEXT_BACKEND_NAME, value);
+            if (!strcmp("dri2", value))
+                set_dlg_string(dialog, IDC_TEXT_BACKEND_TIP,
+                        IDS_TEXT_BACKEND_TIP_DRI2);
+
+            HeapFree(GetProcessHeap(), 0, value);
+        }
+
+    }
+
+}
+
 static INT_PTR CALLBACK AppDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
     switch (uMsg)
@@ -704,14 +748,27 @@ static INT_PTR CALLBACK AboutDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM
     return FALSE;
 }
 
+static INT_PTR CALLBACK DebugDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+    switch (uMsg)
+    {
+    case WM_INITDIALOG:
+        load_debug_settings(hDlg);
+        break;
+    }
+
+    return FALSE;
+}
+
 static INT_PTR
 doPropertySheet (HINSTANCE hInstance, HWND hOwner)
 {
-    PROPSHEETPAGEW psp[2];
+    PROPSHEETPAGEW psp[3];
     PROPSHEETHEADERW psh;
     INT_PTR res;
     WCHAR *tab_main = load_string(IDS_TAB_MAIN);
     WCHAR *tab_about = load_string(IDS_TAB_ABOUT);
+    WCHAR *tab_debug = load_string(IDS_TAB_DEBUG);
     WCHAR *title = load_string(IDS_NINECFG_TITLE);
 
     psp[0].dwSize = sizeof (PROPSHEETPAGEW);
@@ -731,6 +788,15 @@ doPropertySheet (HINSTANCE hInstance, HWND hOwner)
     psp[1].pfnDlgProc = AboutDlgProc;
     psp[1].pszTitle = tab_about;
     psp[1].lParam = 0;
+
+    psp[2].dwSize = sizeof (PROPSHEETPAGEW);
+    psp[2].dwFlags = PSP_USETITLE;
+    psp[2].hInstance = hInstance;
+    psp[2].pszTemplate = MAKEINTRESOURCEW (IDD_DEBUG);
+    psp[2].pszIcon = NULL;
+    psp[2].pfnDlgProc = DebugDlgProc;
+    psp[2].pszTitle = tab_debug;
+    psp[2].lParam = 0;
 
     /*
      * Fill out the PROPSHEETHEADER
@@ -754,6 +820,7 @@ doPropertySheet (HINSTANCE hInstance, HWND hOwner)
     HeapFree(GetProcessHeap(), 0, title);
     HeapFree(GetProcessHeap(), 0, tab_about);
     HeapFree(GetProcessHeap(), 0, tab_main);
+    HeapFree(GetProcessHeap(), 0, tab_debug);
 
     return res;
 }

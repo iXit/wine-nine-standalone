@@ -13,6 +13,7 @@ const char * const reg_key_d3d9 = "d3d9";
 const char * const reg_path_nine = "Software\\Wine\\Direct3DNine";
 const char * const reg_key_module_path = "ModulePath";
 const char * const reg_value_override = "native";
+const char * const reg_key_debug_active_backend = "ActiveBackend";
 
 BOOL common_get_registry_string(LPCSTR path, LPCSTR name, LPSTR *value)
 {

@@ -11,6 +11,7 @@ extern const char * const reg_key_d3d9;
 extern const char * const reg_path_nine;
 extern const char * const reg_key_module_path;
 extern const char * const reg_value_override;
+extern const char * const reg_key_debug_active_backend;
 
 BOOL common_get_registry_string(LPCSTR path, LPCSTR name, LPSTR *value);
 BOOL common_set_registry_string(LPCSTR path, LPCSTR name, LPCSTR value);

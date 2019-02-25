@@ -14,6 +14,7 @@
 
 #include "backend.h"
 #include "xcb_present.h"
+#include "../common/registry.h"
 
 WINE_DEFAULT_DEBUG_CHANNEL(d3d9nine);
 
@@ -101,6 +102,13 @@ struct dri_backend *backend_create(Display *dpy, int screen)
         if (backends[i]->create(dpy, screen, &dri_backend->priv))
         {
             WINE_TRACE("Active backend: %s\n", backends[i]->name);
+
+            if (!common_set_registry_string(reg_path_nine,
+                    reg_key_debug_active_backend, backends[i]->name))
+            {
+                WINE_ERR("Failed to set registry key %s\n",
+                        reg_key_debug_active_backend);
+            }
             dri_backend->funcs = backends[i];
             return dri_backend;
         }

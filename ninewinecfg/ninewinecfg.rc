@@ -35,6 +35,16 @@ BEGIN
     CTEXT       "Joakim Sindholt\nChristoph Bumiller\nTiziano Bacocco\nDavid Heidelberg\nAxel Davy\nNick Sarnie\nPatrick Rudolph\nAndre Heider",IDC_STATIC,16,112,228,64
 END
 
+IDD_DEBUG DIALOG  0, 0, 260, 196
+STYLE WS_CHILD | WS_DISABLED
+FONT 8, "MS Shell Dlg"
+BEGIN
+    GROUPBOX    "",IDC_GB_NINE_DEBUG,8,8,244,188
+    LTEXT       "",IDC_TEXT_BACKEND,16,16,100,16, SS_LEFT | WS_GROUP | BS_VCENTER
+    LTEXT       "",IDC_TEXT_BACKEND_NAME,108,16,132,16, SS_LEFT | WS_GROUP | BS_VCENTER
+    LTEXT       "Tip",IDC_TEXT_BACKEND_TIP,32,28,210,16
+END
+
 IDD_NINE DIALOG  0, 0, 260, 196
 STYLE WS_CHILD | WS_DISABLED
 FONT 8, "MS Shell Dlg"
