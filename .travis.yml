@@ -111,9 +111,9 @@ jobs:
         - export PATCHLEVEL=$(git rev-list --count master)
         - export MYCHANGELOG=$(LANG=en git log --pretty=format:"* %cd %an <%ae>%n- %s%n" --date=format:"%a %b %d %Y" -n 10| sed 's/$/ \\/')
         # should use rpmbuild --define '', but whitespace and newline make it difficult...
-        - echo "%define patchlevel $PATCHLEVEL" > $HOME/rpmbuild/SPECS/wine-nine-unstable.spec
-        - echo "%define commithash $TRAVIS_COMMIT" >> $HOME/rpmbuild/SPECS/wine-nine-unstable.spec
-        - echo "%define mychangelog $MYCHANGELOG" >> $HOME/rpmbuild/SPECS/wine-nine-unstable.spec
+        - echo "%define patchlevel $PATCHLEVEL\n" > $HOME/rpmbuild/SPECS/wine-nine-unstable.spec
+        - echo "%define commithash $TRAVIS_COMMIT\n" >> $HOME/rpmbuild/SPECS/wine-nine-unstable.spec
+        - echo "%define mychangelog $MYCHANGELOG\n" >> $HOME/rpmbuild/SPECS/wine-nine-unstable.spec
         - cat ./packaging/SPECS/wine-nine-unstable.spec >> $HOME/rpmbuild/SPECS/wine-nine-unstable.spec
         # create the SRPMs
         - sudo docker run -it --rm -v $HOME/rpmbuild/:/home/rpmbuild/rpmbuild:z mgruener/rpmbuild rpmbuild -bs --define 'dist .fc28' rpmbuild/SPECS/wine-nine-unstable.spec
@@ -151,12 +151,13 @@ jobs:
         - tar -czf $HOME/rpmbuild/SOURCES/$TRAVIS_COMMIT.tar.gz -C $HOME/rpmbuild/SOURCES/tmp/ .
         - rm -rf $HOME/rpmbuild/SOURCES/tmp/wine-nine-standalone-$TRAVIS_COMMIT/
         # generate metadata for the SPEC file
-        - export PATCHLEVEL=$(echo "$TRAVIS_TAG"|cut -d'v' -f2)
+        - export PATCHLEVEL=$(git rev-list --count master)
         - export MYCHANGELOG=$(LANG=en git log --pretty=format:"* %cd %an <%ae>%n- %s%n" --date=format:"%a %b %d %Y" $TRAVIS_COMMIT -n 1| sed 's/$/ \\/' && LANG=en git show  --pretty=format:"" $TRAVIS_TAG -q|cut -d$'\n' -f4-)
         # should use rpmbuild --define '', but whitespace and newline make it difficult...
-        - echo "%define patchlevel $PATCHLEVEL" > $HOME/rpmbuild/SPECS/wine-nine.spec
-        - echo "%define commithash $TRAVIS_COMMIT" >> $HOME/rpmbuild/SPECS/wine-nine.spec
-        - echo "%define mychangelog $MYCHANGELOG" >> $HOME/rpmbuild/SPECS/wine-nine.spec
+        - echo "%define patchlevel $PATCHLEVEL\n" > $HOME/rpmbuild/SPECS/wine-nine.spec
+        - echo "%define commithash $TRAVIS_COMMIT\n" >> $HOME/rpmbuild/SPECS/wine-nine.spec
+        - echo "%define mytag $TRAVIS_TAG\n" >> $HOME/rpmbuild/SPECS/wine-nine.spec
+        - echo "%define mychangelog $MYCHANGELOG\n" >> $HOME/rpmbuild/SPECS/wine-nine.spec
         - cat ./packaging/SPECS/wine-nine.spec >> $HOME/rpmbuild/SPECS/wine-nine.spec
         # create the SRPMs
         - sudo docker run -it --rm -v $HOME/rpmbuild/:/home/rpmbuild/rpmbuild:z mgruener/rpmbuild rpmbuild -bs --define 'dist .fc28' rpmbuild/SPECS/wine-nine.spec

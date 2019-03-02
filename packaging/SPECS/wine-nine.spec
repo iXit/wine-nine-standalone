@@ -19,13 +19,14 @@
 # patchlevel
 # commithash
 # mychangelog
+# mytag
 
 %define pkgname wine-nine
 
 Name:             %{pkgname}
 Version:          4.0
 Release:          %{?patchlevel}%{?dist}
-Summary:          Wine D3D9 interface library for Mesa's Gallium Nine statetracker. Tag stable releases.
+Summary:          Wine D3D9 interface library %{mytag} stable release for Mesa's Gallium Nine statetracker
 License:          LGPL-2.0
 URL:              https://github.com/iXit/wine-nine-standalone/
 Source0:          https://github.com/iXit/wine-nine-standalone/archive/%{commithash}.tar.gz
@@ -49,7 +50,7 @@ BuildRequires:  libdrm-devel
 BuildRequires:  llvm-devel
 BuildRequires:  wine-devel
 
-Conflicts:      wine-nine
+Conflicts:      wine-nine-unstable
 Requires:       wine-common >= %{version}
 Enhances:       wine
 
@@ -84,7 +85,7 @@ Provides: d3d9-nine.dll.so(x86-64) = %{version}
 Installs d3d9-nine.dll that interfaces Mesa's gallium nine statetracker. \
 Installs ninewinecfg.exe that allows to configure nine and to provide debugging information. \
 Offical bugtracker is at: https://github.com/iXit/Mesa-3D/issues \
-Build from master branch, commit %{commithash}.
+Build from master branch, commit %{commithash}, tag %{mytag}
 
 %description
 %desc
