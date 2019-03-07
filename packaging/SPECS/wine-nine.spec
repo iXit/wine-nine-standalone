@@ -41,7 +41,6 @@ BuildRequires:  meson
 BuildRequires:  libX11-devel
 BuildRequires:  mesa-libGL-devel
 BuildRequires:  mesa-libd3d-devel
-BuildRequires:  libXext-devel
 BuildRequires:  libxcb-devel
 BuildRequires:  xorg-x11-proto-devel
 BuildRequires:  mesa-libGL-devel
@@ -59,7 +58,6 @@ Requires:       mesa-dri-drivers(x86-32)
 Requires:       mesa-libd3d(x86-32)
 Requires:       libxcb(x86-32)
 Requires:       libX11(x86-32)
-Requires:       libXext(x86-32)
 Provides:       wine-nine(x86-32) = %{version}-%{release}
 Obsoletes:      wine-nine(x86-32) < %{version}-%{release}
 
@@ -72,7 +70,6 @@ Requires:       mesa-dri-drivers(x86-64)
 Requires:       mesa-libd3d(x86-64)
 Requires:       libxcb(x86-64)
 Requires:       libX11(x86-64)
-Requires:       libXext(x86-64)
 Provides:       wine-nine(x86-64) = %{version}-%{release}
 Obsoletes:      wine-nine(x86-64) < %{version}-%{release}
 Requires:       wine-nine(x86-32) = %{version}-%{release}

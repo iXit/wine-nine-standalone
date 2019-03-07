@@ -18,26 +18,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <dlfcn.h>
-
-#define BOOL X_BOOL
-#define BYTE X_BYTE
-#define INT8 X_INT8
-#define INT16 X_INT16
-#define INT32 X_INT32
-#define INT64 X_INT64
-#include <X11/Xmd.h>
-#undef BOOL
-#undef BYTE
-#undef INT8
-#undef INT16
-#undef INT32
-#undef INT64
-#undef LONG64
-
-#include <X11/Xlibint.h>
-#include <X11/extensions/dri2tokens.h>
-#include <X11/extensions/dri2proto.h>
-#include <X11/extensions/extutil.h>
+#include <stdlib.h>
 
 #include <GL/gl.h>
 #include <EGL/egl.h>
@@ -106,58 +87,6 @@ struct dri2_priv {
     void (*glFramebufferTexture2D)(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level);
     void (*glBlitFramebuffer)(GLint srcX0, GLint srcY0, GLint srcX1, GLint srcY1, GLint dstX0, GLint dstY0, GLint dstX1, GLint dstY1, GLbitfield mask, GLenum filter);
 };
-
-static XExtensionInfo _dri2_info_data;
-static XExtensionInfo *dri2_info = &_dri2_info_data;
-static char dri2_name[] = DRI2_NAME;
-
-#define DRI2CheckExtension(dpy, i, val) \
-  XextCheckExtension(dpy, i, dri2_name, val)
-
-static int close_display(Display *dpy, XExtCodes *codes);
-static Bool wire_to_event(Display *dpy, XEvent *re, xEvent *event);
-static Status event_to_wire(Display *dpy, XEvent *re, xEvent *event);
-static int error( Display *dpy, xError *err, XExtCodes *codes, int *ret_code );
-
-static XExtensionHooks dri2_hooks = {
-    NULL, /* create_gc */
-    NULL, /* copy_gc */
-    NULL, /* flush_gc */
-    NULL, /* free_gc */
-    NULL, /* create_font */
-    NULL, /* free_font */
-    close_display, /* close_display */
-    wire_to_event, /* wire_to_event */
-    event_to_wire, /* event_to_wire */
-    error, /* error */
-    NULL, /* error_string */
-};
-static XEXT_GENERATE_CLOSE_DISPLAY(close_display, dri2_info);
-static XEXT_GENERATE_FIND_DISPLAY(find_display, dri2_info,
-                                  dri2_name, &dri2_hooks, 0, NULL);
-static Bool wire_to_event(Display *dpy, XEvent *re, xEvent *event)
-{
-    XExtDisplayInfo *info = find_display(dpy);
-    DRI2CheckExtension(dpy, info, False);
-    WINE_TRACE("dri2 wire_to_event\n");
-    return False;
-}
-
-static Status event_to_wire(Display *dpy, XEvent *re, xEvent *event)
-{
-    XExtDisplayInfo *info = find_display(dpy);
-    DRI2CheckExtension(dpy, info, False);
-    WINE_TRACE("dri2 event_to_wire\n");
-    return False;
-}
-
-static int error(Display *dpy, xError *err, XExtCodes *codes, int *ret_code)
-{
-    WINE_TRACE("dri2 error\n");
-    return False;
-}
-
-#define XALIGN(x) (((x) + 3) & (~3))
 
 static BOOL dri2_connect(Display *dpy, XID window, unsigned driver_type, char **device)
 {
@@ -244,7 +173,7 @@ static BOOL dri2_create(Display *dpy, int screen, struct dri_backend_priv **priv
     Window root = RootWindow(dpy, screen);
     drm_auth_t auth;
 
-    if (!dri2_connect(dpy, root, DRI2DriverDRI, &device))
+    if (!dri2_connect(dpy, root, XCB_DRI2_DRIVER_TYPE_DRI, &device))
         return FALSE;
 
     fd = open(device, O_RDWR);
