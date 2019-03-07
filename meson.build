@@ -78,7 +78,6 @@ if not dep_d3dadapter9.found()
 endif
 
 dep_x11 = dependency('x11')
-dep_x11_ext = dependency('xext')
 dep_x11_xcb = dependency('x11-xcb')
 dep_xcb = dependency('xcb')
 dep_xcb_dri3 = dependency('xcb-dri3')
