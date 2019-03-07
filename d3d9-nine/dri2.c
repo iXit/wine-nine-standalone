@@ -11,6 +11,8 @@
 #include <windows.h>
 #include <wine/debug.h>
 #include <sys/ioctl.h>
+#include <X11/Xlib-xcb.h>
+#include <xcb/dri2.h>
 #include <libdrm/drm_fourcc.h>
 #include <libdrm/drm.h>
 #include <fcntl.h>
@@ -710,6 +712,38 @@ static BOOL dri2_probe(Display *dpy)
 {
     struct dri_backend_priv *priv;
     BOOL res;
+
+    xcb_connection_t *conn = XGetXCBConnection(dpy);
+    xcb_dri2_query_version_cookie_t dri2_cookie;
+    xcb_dri2_query_version_reply_t *dri2_reply;
+    xcb_generic_error_t *error;
+    const xcb_query_extension_reply_t *extension;
+    /* Request API version 1.4 */
+    const int major = 1;
+    const int minor = 4;
+
+    xcb_prefetch_extension_data(conn, &xcb_dri2_id);
+
+    extension = xcb_get_extension_data(conn, &xcb_dri2_id);
+    if (!(extension && extension->present))
+    {
+        WINE_ERR("DRI2 extension is not present\n");
+        return FALSE;
+    }
+
+    dri2_cookie = xcb_dri2_query_version(conn, major, minor);
+
+    dri2_reply = xcb_dri2_query_version_reply(conn, dri2_cookie, &error);
+    if (!dri2_reply)
+    {
+        free(error);
+        WINE_ERR("Issue getting requested v%d.%d of DRI2\n", major, minor);
+        return FALSE;
+    }
+
+    WINE_TRACE("DRI2 v%d.%d requested, v%d.%d found\n", major, minor,
+            (int)dri2_reply->major_version, (int)dri2_reply->minor_version);
+    free(dri2_reply);
 
     if (!dri2_create(dpy, DefaultScreen(dpy), &priv))
         return FALSE;
