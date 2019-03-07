@@ -33,6 +33,7 @@ d3d9_dll = shared_library(
                      dep_x11_ext,
                      dep_x11_xcb,
                      dep_xcb,
+                     dep_xcb_dri2,
                      dep_xcb_dri3,
                      dep_xcb_present,
                      dep_xcb_xfixes,

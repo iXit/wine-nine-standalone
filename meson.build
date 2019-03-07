@@ -91,7 +91,8 @@ _dri2 = get_option('dri2')
 if _dri2 != 'false'
   dep_gl = dependency('gl', required : _dri2 == 'true')
   dep_egl = dependency('egl', required : _dri2 == 'true')
-  if dep_gl.found() and dep_egl.found()
+  dep_xcb_dri2 = dependency('xcb-dri2', required: _dri2 == 'true')
+  if dep_gl.found() and dep_egl.found() and dep_xcb_dri2.found()
     dep_gl = dep_gl.partial_dependency(includes : true)
     dep_egl = dep_egl.partial_dependency(includes : true)
     pp_args += '-DD3D9NINE_DRI2=1'

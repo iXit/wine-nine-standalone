@@ -29,6 +29,7 @@ jobs:
             - libx11-xcb-dev
             - libxcb1-dev
             - libxcb-dri3-dev
+            - libxcb-dri2-0-dev
             - libxcb-present-dev
             - libxcb-xfixes0-dev
             - libgl1-mesa-dev
@@ -37,6 +38,7 @@ jobs:
             - libx11-xcb-dev:i386
             - libxcb1-dev:i386
             - libxcb-dri3-dev:i386
+            - libxcb-dri2-0-dev:i386
             - libxcb-present-dev:i386
             - libxcb-xfixes0-dev:i386
             - libgl1-mesa-dev:i386
