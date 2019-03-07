@@ -161,66 +161,35 @@ static int error(Display *dpy, xError *err, XExtCodes *codes, int *ret_code)
 
 static BOOL dri2_connect(Display *dpy, XID window, unsigned driver_type, char **device)
 {
-    XExtDisplayInfo *info = find_display(dpy);
-    xDRI2ConnectReply rep;
-    xDRI2ConnectReq *req;
-    int dev_len, driv_len;
-    char *driver;
-
-    DRI2CheckExtension(dpy, info, False);
+    xcb_connection_t *conn = XGetXCBConnection(dpy);
+    xcb_dri2_connect_cookie_t cookie;
+    xcb_dri2_connect_reply_t *reply;
+    xcb_generic_error_t *conn_error = NULL;
 
     *device = NULL;
 
-    LockDisplay(dpy);
-    GetReq(DRI2Connect, req);
-    req->reqType = info->codes->major_opcode;
-    req->dri2ReqType = X_DRI2Connect;
-    req->window = window;
-    req->driverType = driver_type;
-    if (!_XReply(dpy, (xReply *)&rep, 0, xFalse))
-    {
-        UnlockDisplay(dpy);
-        SyncHandle();
+    cookie = xcb_dri2_connect(conn, window, driver_type);
+    reply = xcb_dri2_connect_reply(conn, cookie, &conn_error);
+
+    if (conn_error) {
+        free(conn_error);
         return False;
     }
 
-    /* check string lengths */
-    dev_len = rep.deviceNameLength;
-    driv_len = rep.driverNameLength;
-    if (dev_len == 0 || driv_len == 0)
-    {
-        _XEatData(dpy, XALIGN(dev_len) + XALIGN(driv_len));
-        UnlockDisplay(dpy);
-        SyncHandle();
+    if (!reply) {
         return False;
     }
-
-    /* read out driver */
-    driver = HeapAlloc(GetProcessHeap(), 0, driv_len + 1);
-    if (!driver)
-    {
-        _XEatData(dpy, XALIGN(dev_len) + XALIGN(driv_len));
-        UnlockDisplay(dpy);
-        SyncHandle();
-        return False;
-    }
-    _XReadPad(dpy, driver, driv_len);
-    HeapFree(GetProcessHeap(), 0, driver); /* we don't need the driver */
 
     /* read out device */
-    *device = HeapAlloc(GetProcessHeap(), 0, dev_len + 1);
-    if (!*device)
-    {
-        _XEatData(dpy, XALIGN(dev_len));
-        UnlockDisplay(dpy);
-        SyncHandle();
+    *device = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY,
+        xcb_dri2_connect_device_name_length(reply) + 1);
+    if (!*device) {
+        free(reply);
         return False;
     }
-    _XReadPad(dpy, *device, dev_len);
-    (*device)[dev_len] = '\0';
+    strcpy(*device, xcb_dri2_connect_device_name(reply));
 
-    UnlockDisplay(dpy);
-    SyncHandle();
+    free(reply);
 
     return True;
 }
