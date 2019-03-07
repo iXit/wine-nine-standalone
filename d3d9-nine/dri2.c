@@ -227,28 +227,27 @@ static BOOL dri2_connect(Display *dpy, XID window, unsigned driver_type, char **
 
 static Bool dri2_authenticate(Display *dpy, XID window, uint32_t token)
 {
-    XExtDisplayInfo *info = find_display(dpy);
-    xDRI2AuthenticateReply rep;
-    xDRI2AuthenticateReq *req;
+    xcb_generic_error_t *auth_error = NULL;
+    xcb_dri2_authenticate_cookie_t cookie;
+    xcb_connection_t *conn = XGetXCBConnection(dpy);
 
-    DRI2CheckExtension(dpy, info, False);
+    cookie = xcb_dri2_authenticate(conn, window, token);
+    Bool authenticated;
 
-    LockDisplay(dpy);
-    GetReq(DRI2Authenticate, req);
-    req->reqType = info->codes->major_opcode;
-    req->dri2ReqType = X_DRI2Authenticate;
-    req->window = window;
-    req->magic = token;
-    if (!_XReply(dpy, (xReply *)&rep, 0, xFalse))
-    {
-        UnlockDisplay(dpy);
-        SyncHandle();
-        return False;
+    xcb_dri2_authenticate_reply_t *reply =
+        xcb_dri2_authenticate_reply(conn, cookie, &auth_error);
+    if (auth_error) {
+        free(auth_error);
+        return FALSE;
     }
-    UnlockDisplay(dpy);
-    SyncHandle();
+    if (!reply) {
+        return FALSE;
+    }
 
-    return rep.authenticated ? True : False;
+    authenticated = reply->authenticated;
+    free(reply);
+
+    return authenticated;
 }
 
 static void *dri2_eglGetProcAddress(struct dri2_priv *priv, const char *procname)
