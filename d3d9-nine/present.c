@@ -1317,13 +1317,25 @@ static HRESULT DRIPresent_ChangePresentParameters(struct DRIPresent *This,
         Atom _NET_WM_BYPASS_COMPOSITOR = XInternAtom(This->gdi_display,
                                                      "_NET_WM_BYPASS_COMPOSITOR",
                                                      False);
-        /* Disable compositing for fullscreen windows */
-        int value = 1;
+
+        Atom _VARIABLE_REFRESH = XInternAtom(This->gdi_display,
+                                             "_VARIABLE_REFRESH",
+                                             False);
         if (!d3d)
             return D3D_OK;
+
+        /* Disable compositing for fullscreen windows */
+        int bypass_value = 1;
         XChangeProperty(This->gdi_display, d3d->drawable,
                         _NET_WM_BYPASS_COMPOSITOR, XA_CARDINAL, 32,
-                        PropModeReplace, (unsigned char *)&value, 1);
+                        PropModeReplace, (unsigned char *)&bypass_value, 1);
+
+        /* Enable variable sync */
+        int vrr_value = 1;
+        XChangeProperty(This->gdi_display, d3d->drawable,
+                        _VARIABLE_REFRESH, XA_CARDINAL, 32,
+                        PropModeReplace, (unsigned char *)&vrr_value, 1);
+
         release_d3d_drawable(d3d);
     }
 
