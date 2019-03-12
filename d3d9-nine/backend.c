@@ -66,7 +66,7 @@ BOOL backend_probe(Display *dpy)
         if (backends[i]->probe(dpy))
         {
             if (i != 0)
-                WINE_ERR("DRI3 backend not active (slower performance).\n");
+                wine_dbg_printf("\033[1;31mDRI3 backend not active (slower performance)\033[0m\n");
 
             return TRUE;
         }
