@@ -15,8 +15,8 @@ project(
 
 project_url = 'https://github.com/iXit/wine-nine-standalone'
 
-cc = meson.get_compiler('c')
-find_program(cc.cmd_array()[0], native : true)
+cc = meson.get_compiler('c', native : false)
+find_program(cc.cmd_array()[0], native : false)
 
 null_dep = dependency('', required : false)
 
