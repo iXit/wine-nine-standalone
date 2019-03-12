@@ -67,7 +67,7 @@ jobs:
         # update meson via python3-pip
         - pip3 install --user setuptools
         - pip3 install --user --upgrade pip
-        - pip3 install --user meson
+        - pip3 install --user "meson==0.46"
       script:
         - ./release.sh -o "$RELEASE_TARBALL" -- -Ddri2=true -Ddistro-independent=true
       deploy:
