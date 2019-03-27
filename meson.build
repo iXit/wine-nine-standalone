@@ -10,6 +10,7 @@ project(
   meson_version : '>= 0.46',
   default_options : [
     'buildtype=debugoptimized',
+    'b_ndebug=if-release',
   ],
 )
 

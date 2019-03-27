@@ -652,6 +652,7 @@ static BOOL ProcessCmdLine(WCHAR *cmdline, BOOL *result)
     return FALSE;
 }
 
+#ifndef NDEBUG
 static void load_debug_settings(HWND dialog)
 {
     HMODULE hmod = NULL;
@@ -695,6 +696,7 @@ static void load_debug_settings(HWND dialog)
     }
 
 }
+#endif
 
 static INT_PTR CALLBACK AppDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
@@ -748,6 +750,7 @@ static INT_PTR CALLBACK AboutDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM
     return FALSE;
 }
 
+#ifndef NDEBUG
 static INT_PTR CALLBACK DebugDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
     switch (uMsg)
@@ -759,11 +762,16 @@ static INT_PTR CALLBACK DebugDlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM
 
     return FALSE;
 }
+#endif
 
 static INT_PTR
 doPropertySheet (HINSTANCE hInstance, HWND hOwner)
 {
+#ifndef NDEBUG
     PROPSHEETPAGEW psp[3];
+#else
+    PROPSHEETPAGEW psp[2];
+#endif
     PROPSHEETHEADERW psh;
     INT_PTR res;
     WCHAR *tab_main = load_string(IDS_TAB_MAIN);
@@ -789,6 +797,7 @@ doPropertySheet (HINSTANCE hInstance, HWND hOwner)
     psp[1].pszTitle = tab_about;
     psp[1].lParam = 0;
 
+#ifndef NDEBUG
     psp[2].dwSize = sizeof (PROPSHEETPAGEW);
     psp[2].dwFlags = PSP_USETITLE;
     psp[2].hInstance = hInstance;
@@ -797,6 +806,7 @@ doPropertySheet (HINSTANCE hInstance, HWND hOwner)
     psp[2].pfnDlgProc = DebugDlgProc;
     psp[2].pszTitle = tab_debug;
     psp[2].lParam = 0;
+#endif
 
     /*
      * Fill out the PROPSHEETHEADER
