@@ -607,9 +607,6 @@ static void dri2_destroy(struct dri_backend_priv *priv)
 
 static BOOL dri2_probe(Display *dpy)
 {
-    struct dri_backend_priv *priv;
-    BOOL res;
-
     xcb_connection_t *conn = XGetXCBConnection(dpy);
     xcb_dri2_query_version_cookie_t dri2_cookie;
     xcb_dri2_query_version_reply_t *dri2_reply;
@@ -624,7 +621,7 @@ static BOOL dri2_probe(Display *dpy)
     extension = xcb_get_extension_data(conn, &xcb_dri2_id);
     if (!(extension && extension->present))
     {
-        WINE_ERR("DRI2 extension is not present\n");
+        WINE_WARN("DRI2 extension is not present\n");
         return FALSE;
     }
 
@@ -634,7 +631,7 @@ static BOOL dri2_probe(Display *dpy)
     if (!dri2_reply)
     {
         free(error);
-        WINE_ERR("Issue getting requested v%d.%d of DRI2\n", major, minor);
+        WINE_WARN("Issue getting requested v%d.%d of DRI2\n", major, minor);
         return FALSE;
     }
 
@@ -642,14 +639,7 @@ static BOOL dri2_probe(Display *dpy)
             (int)dri2_reply->major_version, (int)dri2_reply->minor_version);
     free(dri2_reply);
 
-    if (!dri2_create(dpy, DefaultScreen(dpy), &priv))
-        return FALSE;
-
-    res = dri2_init(priv);
-
-    dri2_destroy(priv);
-
-    return res;
+    return TRUE;
 }
 
 const struct dri_backend_funcs dri2_funcs = {

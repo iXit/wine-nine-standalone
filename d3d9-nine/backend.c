@@ -50,6 +50,7 @@ BOOL backend_probe(Display *dpy)
 {
     int i;
     const char *env;
+    struct dri_backend_priv *p;
 
     WINE_TRACE("dpy=%p\n", dpy);
 
@@ -63,15 +64,31 @@ BOOL backend_probe(Display *dpy)
         if (env && strcmp(env, backends[i]->name))
             continue;
 
-        if (backends[i]->probe(dpy))
+        if (!backends[i]->probe(dpy))
         {
-            if (i != 0)
-                wine_dbg_printf("\033[1;31mDRI3 backend not active (slower performance)\033[0m\n");
-
-            return TRUE;
+            WINE_TRACE("Error probing backend %s\n", backends[i]->name);
+            continue;
         }
 
-        WINE_ERR("Error probing backend %s\n", backends[i]->name);
+        if (!backends[i]->create(dpy, DefaultScreen(dpy), &p))
+        {
+            WINE_TRACE("Error creating backend %s\n", backends[i]->name);
+            continue;
+        }
+
+        if (!backends[i]->init(p))
+        {
+            WINE_TRACE("Error initializing backend %s\n", backends[i]->name);
+            backends[i]->destroy(p);
+            continue;
+        }
+
+        backends[i]->destroy(p);
+
+        if (i != 0)
+            wine_dbg_printf("\033[1;31mDRI3 backend not active (slower performance)\033[0m\n");
+
+        return TRUE;
     }
 
     return FALSE;
@@ -97,6 +114,9 @@ struct dri_backend *backend_create(Display *dpy, int screen)
     for (i = 0; i < backends_count; ++i)
     {
         if (env && strcmp(env, backends[i]->name))
+            continue;
+
+        if (!backends[i]->probe(dpy))
             continue;
 
         if (backends[i]->create(dpy, screen, &dri_backend->priv))

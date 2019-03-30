@@ -156,13 +156,11 @@ static void dri3_destroy_pixmap(struct dri_backend_priv *priv, struct buffer_pri
 
 static BOOL dri3_probe(Display *dpy)
 {
-    struct dri_backend_priv *p;
     xcb_connection_t *xcb_connection = XGetXCBConnection(dpy);
     xcb_dri3_query_version_cookie_t dri3_cookie;
     xcb_dri3_query_version_reply_t *dri3_reply;
     xcb_generic_error_t *error;
     const xcb_query_extension_reply_t *extension;
-    BOOL res;
     const int major = 1;
     const int minor = 0;
 
@@ -171,7 +169,7 @@ static BOOL dri3_probe(Display *dpy)
     extension = xcb_get_extension_data(xcb_connection, &xcb_dri3_id);
     if (!(extension && extension->present))
     {
-        WINE_ERR("DRI3 extension is not present\n");
+        WINE_WARN("DRI3 extension is not present\n");
         return FALSE;
     }
 
@@ -181,7 +179,7 @@ static BOOL dri3_probe(Display *dpy)
     if (!dri3_reply)
     {
         free(error);
-        WINE_ERR("Issue getting requested v%d.%d of DRI3\n", major, minor);
+        WINE_WARN("Issue getting requested v%d.%d of DRI3\n", major, minor);
         return FALSE;
     }
 
@@ -189,17 +187,7 @@ static BOOL dri3_probe(Display *dpy)
             (int)dri3_reply->major_version, (int)dri3_reply->minor_version);
     free(dri3_reply);
 
-    if (!dri3_create(dpy, DefaultScreen(dpy), &p))
-    {
-        WINE_ERR("DRI3 advertised, but not working\n");
-        return FALSE;
-    }
-
-    res = dri3_init(p);
-
-    dri3_destroy(p);
-
-    return res;
+    return TRUE;
 }
 
 const struct dri_backend_funcs dri3_funcs = {
