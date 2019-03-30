@@ -946,13 +946,13 @@ LRESULT device_process_message(struct DRIPresent *present, HWND window, BOOL uni
     DEVMODEW current_mode;
     DEVMODEW new_mode;
 
-    WINE_TRACE("Got message: window %p, message %#x, wparam %#lx, lparam %#lx.\n",
-                    window, message, wparam, lparam);
+    //WINE_TRACE("Got message: window %p, message %#x, wparam %#lx, lparam %#lx.\n",
+    //                window, message, wparam, lparam);
 
     if (present->drop_wnd_messages && message != WM_DISPLAYCHANGE)
     {
-        WINE_TRACE("Filtering message: window %p, message %#x, wparam %#lx, lparam %#lx.\n",
-                window, message, wparam, lparam);
+        //WINE_TRACE("Filtering message: window %p, message %#x, wparam %#lx, lparam %#lx.\n",
+        //        window, message, wparam, lparam);
         if (unicode)
             return DefWindowProcW(window, message, wparam, lparam);
         else
