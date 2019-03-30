@@ -943,7 +943,7 @@ LRESULT device_process_message(struct DRIPresent *present, HWND window, BOOL uni
         UINT message, WPARAM wparam, LPARAM lparam, WNDPROC proc)
 {
     boolean drop_wnd_messages;
-    DEVMODEW current_mode;
+    WORD width, height;
     DEVMODEW new_mode;
 
     //WINE_TRACE("Got message: window %p, message %#x, wparam %#lx, lparam %#lx.\n",
@@ -966,21 +966,24 @@ LRESULT device_process_message(struct DRIPresent *present, HWND window, BOOL uni
     }
     else if (message == WM_DISPLAYCHANGE)
     {
+        width = LOWORD(lparam);
+        height = HIWORD(lparam);
+
+        WINE_TRACE("WM_DISPLAYCHANGE %ux%u -> %ux%u\n",
+                   present->params.BackBufferWidth, present->params.BackBufferHeight,
+                   width, height);
+
         /* Ex restores display mode, while non Ex requires the
          * user to call Device::Reset() */
-        ZeroMemory(&current_mode, sizeof(DEVMODEW));
-        current_mode.dmSize = sizeof(current_mode);
         if (!present->ex &&
             !present->params.Windowed &&
             present->params.hDeviceWindow &&
-            EnumDisplaySettingsW(present->devname, ENUM_CURRENT_SETTINGS, &current_mode) &&
-            (current_mode.dmPelsWidth != present->params.BackBufferWidth ||
-             current_mode.dmPelsHeight != present->params.BackBufferHeight))
+            (width != present->params.BackBufferWidth ||
+             height != present->params.BackBufferHeight))
         {
+            WINE_TRACE("setting resolution_mismatch for non-extended\n");
             present->resolution_mismatch = TRUE;
-        }
-        else
-        {
+        } else {
             present->resolution_mismatch = FALSE;
         }
     }
