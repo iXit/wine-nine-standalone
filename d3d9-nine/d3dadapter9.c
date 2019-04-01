@@ -26,7 +26,6 @@ struct output
     D3DDISPLAYMODEEX *modes;
     unsigned nmodes;
     unsigned nmodesalloc;
-    unsigned current; /* current mode num */
 
     HMONITOR monitor;
 };
@@ -81,6 +80,63 @@ struct d3dadapter9
 
 #define ADAPTER_OUTPUT \
     ADAPTER_GROUP.outputs[Adapter-This->map[Adapter].master]
+
+static int get_current_mode(struct d3dadapter9 *This, UINT Adapter)
+{
+    DEVMODEW m;
+    D3DSCANLINEORDERING slo;
+    D3DFORMAT f;
+    int i;
+
+    memset(&m, 0, sizeof(m));
+    m.dmSize = sizeof(m);
+    EnumDisplaySettingsExW(ADAPTER_GROUP.devname, ENUM_CURRENT_SETTINGS, &m, 0);
+
+    switch (m.dmBitsPerPel)
+    {
+        case 32:
+            f = D3DFMT_X8R8G8B8;
+            break;
+        case 24:
+            f = D3DFMT_R8G8B8;
+            break;
+        case 16:
+            f = D3DFMT_R5G6B5;
+            break;
+        default:
+            return -1;
+    }
+
+    if (m.dmDisplayFlags & DM_INTERLACED)
+        slo = D3DSCANLINEORDERING_INTERLACED;
+    else
+        slo = D3DSCANLINEORDERING_PROGRESSIVE;
+
+    for (i = 0; i < ADAPTER_OUTPUT.nmodes; i++)
+    {
+        if (ADAPTER_OUTPUT.modes[i].Width != m.dmPelsWidth)
+            continue;
+
+        if (ADAPTER_OUTPUT.modes[i].Height != m.dmPelsHeight)
+            continue;
+
+        if (ADAPTER_OUTPUT.modes[i].RefreshRate != m.dmDisplayFrequency)
+            continue;
+
+        if (ADAPTER_OUTPUT.modes[i].Format != f)
+            continue;
+
+        if (ADAPTER_OUTPUT.modes[i].ScanLineOrdering != slo)
+            continue;
+
+        WINE_TRACE("current mode %d (%ux%ux%u)\n", i,
+                   m.dmPelsWidth, m.dmPelsHeight, m.dmBitsPerPel);
+
+        return i;
+    }
+
+    return -1;
+}
 
 static HRESULT WINAPI d3dadapter9_CheckDeviceFormat(struct d3dadapter9 *This,
         UINT Adapter, D3DDEVTYPE DeviceType, D3DFORMAT AdapterFormat,
@@ -267,12 +323,15 @@ static HRESULT WINAPI d3dadapter9_EnumAdapterModes(struct d3dadapter9 *This,
 static HRESULT WINAPI d3dadapter9_GetAdapterDisplayMode(struct d3dadapter9 *This,
         UINT Adapter, D3DDISPLAYMODE *pMode)
 {
-    UINT Mode;
+    int Mode;
 
     if (Adapter >= d3dadapter9_GetAdapterCount(This))
         return D3DERR_INVALIDCALL;
 
-    Mode = ADAPTER_OUTPUT.current;
+    Mode = get_current_mode(This, Adapter);
+    if (Mode < 0)
+        return D3DERR_INVALIDCALL;
+
     pMode->Width = ADAPTER_OUTPUT.modes[Mode].Width;
     pMode->Height = ADAPTER_OUTPUT.modes[Mode].Height;
     pMode->RefreshRate = ADAPTER_OUTPUT.modes[Mode].RefreshRate;
@@ -430,14 +489,17 @@ static HRESULT WINAPI d3dadapter9_EnumAdapterModesEx(struct d3dadapter9 *This,
 static HRESULT WINAPI d3dadapter9_GetAdapterDisplayModeEx(struct d3dadapter9 *This,
         UINT Adapter, D3DDISPLAYMODEEX *pMode, D3DDISPLAYROTATION *pRotation)
 {
-    UINT Mode;
+    int Mode;
 
     if (Adapter >= d3dadapter9_GetAdapterCount(This))
         return D3DERR_INVALIDCALL;
 
     if (pMode)
     {
-        Mode = ADAPTER_OUTPUT.current;
+        Mode = get_current_mode(This, Adapter);
+        if (Mode < 0)
+            return D3DERR_INVALIDCALL;
+
         pMode->Size = sizeof(D3DDISPLAYMODEEX);
         pMode->Width = ADAPTER_OUTPUT.modes[Mode].Width;
         pMode->Height = ADAPTER_OUTPUT.modes[Mode].Height;
