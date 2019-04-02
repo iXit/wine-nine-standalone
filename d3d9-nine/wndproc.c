@@ -51,28 +51,6 @@ static CRITICAL_SECTION nine_wndproc_cs = {&nine_wndproc_cs_debug, -1, 0, 0, 0, 
 
 BOOL nine_dll_init(HINSTANCE hInstDLL)
 {
-    WNDCLASSA wc;
-
-    /* We need our own window class for a fake window which we use to retrieve GL capabilities */
-    /* We might need CS_OWNDC in the future if we notice strange things on Windows.
-     * Various articles/posts about OpenGL problems on Windows recommend this. */
-    wc.style                = CS_HREDRAW | CS_VREDRAW;
-    wc.lpfnWndProc          = DefWindowProcA;
-    wc.cbClsExtra           = 0;
-    wc.cbWndExtra           = 0;
-    wc.hInstance            = hInstDLL;
-    wc.hIcon                = LoadIconA(NULL, (const char *)IDI_WINLOGO);
-    wc.hCursor              = LoadCursorA(NULL, (const char *)IDC_ARROW);
-    wc.hbrBackground        = NULL;
-    wc.lpszMenuName         = NULL;
-    wc.lpszClassName        = NINE_WINDOW_CLASS_NAME;
-
-    if (!RegisterClassA(&wc))
-    {
-        WINE_ERR("Failed to register window class '%s'!\n", NINE_WINDOW_CLASS_NAME);
-        return FALSE;
-    }
-
     DisableThreadLibraryCalls(hInstDLL);
 
     return TRUE;
@@ -92,11 +70,11 @@ BOOL nine_dll_destroy(HINSTANCE hInstDLL)
          * these entries. */
         WINE_WARN("Leftover wndproc table entry %p.\n", &wndproc_table.entries[i]);
     }
+
     HeapFree(GetProcessHeap(), 0, wndproc_table.entries);
 
-    UnregisterClassA(NINE_WINDOW_CLASS_NAME, hInstDLL);
-
     DeleteCriticalSection(&nine_wndproc_cs);
+
     return TRUE;
 }
 

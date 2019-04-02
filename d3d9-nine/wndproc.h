@@ -25,6 +25,4 @@ BOOL nine_dll_destroy(HINSTANCE hInstDLL);
 LRESULT device_process_message(struct DRIPresent *present, HWND window, BOOL unicode,
         UINT message, WPARAM wparam, LPARAM lparam, WNDPROC proc);
 
-#define NINE_WINDOW_CLASS_NAME "Gallium_Nine_Window"
-
 #endif /* __NINE_WNDPROC_H */
