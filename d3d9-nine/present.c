@@ -267,6 +267,8 @@ static HRESULT set_display_mode(struct DRIPresent *This, DEVMODEW *new_mode)
            || (current_mode.dmDisplayFrequency != new_mode->dmDisplayFrequency
            && (new_mode->dmFields & DM_DISPLAYFREQUENCY)))
     {
+        WINE_TRACE("changing display settings to %ux%u\n", new_mode->dmPelsWidth, new_mode->dmPelsHeight);
+
         hr = ChangeDisplaySettingsExW(This->devname, new_mode, 0, CDS_FULLSCREEN, NULL);
         if (hr != DISP_CHANGE_SUCCESSFUL)
         {
@@ -347,6 +349,8 @@ LRESULT device_process_message(struct DRIPresent *present, HWND window, BOOL uni
 
         if (wparam == WA_INACTIVE)
         {
+            WINE_TRACE("WM_ACTIVATEAPP WA_INACTIVE\n");
+
             present->occluded = TRUE;
             present->reapply_mode = TRUE;
 
@@ -361,6 +365,8 @@ LRESULT device_process_message(struct DRIPresent *present, HWND window, BOOL uni
         }
         else
         {
+            WINE_TRACE("WM_ACTIVATEAPP\n");
+
             present->occluded = FALSE;
 
             if (!present->no_window_changes)
