@@ -20,7 +20,7 @@
 
 #include "wndproc.h"
 
-WINE_DEFAULT_DEBUG_CHANNEL(d3dadapter);
+WINE_DEFAULT_DEBUG_CHANNEL(d3d9nine);
 
 struct nine_wndproc
 {
