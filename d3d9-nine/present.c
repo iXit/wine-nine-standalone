@@ -831,6 +831,7 @@ static HRESULT WINAPI DRIPresent_SetPresentParameters(struct DRIPresent *This,
                         params->BackBufferWidth,
                         params->BackBufferHeight,
                         TRUE);
+                ShowWindow(params->hDeviceWindow, SW_SHOW);
                 This->filter_messages = filter_messages;
             }
             else if (This->style || This->style_ex)
