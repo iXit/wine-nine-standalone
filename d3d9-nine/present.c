@@ -1138,7 +1138,7 @@ static void restore_fullscreen_window(struct DRIPresent *This,
     This->style_ex = 0;
 }
 
-static void DRIPresent_UpdatePresentationInterval(struct DRIPresent *This)
+static void update_presentation_interval(struct DRIPresent *This)
 {
     switch(This->params.PresentationInterval)
     {
@@ -1313,7 +1313,7 @@ static HRESULT DRIPresent_ChangePresentParameters(struct DRIPresent *This,
     This->params.MultiSampleType = params->MultiSampleType;
     This->params.MultiSampleQuality = params->MultiSampleQuality;
 
-    DRIPresent_UpdatePresentationInterval(This);
+    update_presentation_interval(This);
 
     if (!params->Windowed) {
         struct d3d_drawable *d3d = get_d3d_drawable(This->gdi_display, focus_window);
@@ -1435,7 +1435,7 @@ static HRESULT DRIPresent_new(Display *gdi_display, const WCHAR *devname,
 
     This->params = *params;
 
-    DRIPresent_UpdatePresentationInterval(This);
+    update_presentation_interval(This);
 
     lstrcpyW(This->devname, devname);
 
