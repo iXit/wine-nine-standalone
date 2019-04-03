@@ -31,7 +31,10 @@
 
 #define D3DADAPTER_DRIVER_PRESENT_VERSION_MAJOR 1
 #if defined (ID3DPresent_SetPresentParameters2)
-#define D3DADAPTER_DRIVER_PRESENT_VERSION_MINOR 3
+/* version 1.4 doesn't introduce a new member, but expects
+ * SetCursorPosition() calls for every position update
+ */
+#define D3DADAPTER_DRIVER_PRESENT_VERSION_MINOR 4
 #elif defined (ID3DPresent_ResolutionMismatch)
 #define D3DADAPTER_DRIVER_PRESENT_VERSION_MINOR 2
 #elif defined (ID3DPresent_GetWindowOccluded)
@@ -1169,6 +1172,14 @@ static HRESULT WINAPI DRIPresent_SetCursorPos( struct DRIPresent *This, POINT *p
     if (!pPoint)
         return D3DERR_INVALIDCALL;
 
+    /* starting with present v1.4 we check against proper values ourselves */
+    if (This->minor > 3)
+    {
+        GetCursorPos(&real_pos);
+        if (real_pos.x == pPoint->x && real_pos.y == pPoint->y)
+            return D3D_OK;
+    }
+
     ok = SetCursorPos(pPoint->x, pPoint->y);
     if (!ok)
         goto error;
@@ -1595,6 +1606,13 @@ HRESULT present_create_present_group(Display *gdi_display, const WCHAR *device_n
 
     This->major = D3DADAPTER_DRIVER_PRESENT_VERSION_MAJOR;
     This->minor = D3DADAPTER_DRIVER_PRESENT_VERSION_MINOR;
+    /* present v1.4 requires d3dadapter9 v0.2 */
+    if (d3d9_drm->minor_version < 2)
+    {
+        This->minor = min(This->minor, 3);
+        TRACE("Limiting present version due to d3dadapter9 v%u.%u\n",
+              d3d9_drm->major_version, d3d9_drm->minor_version);
+    }
     TRACE("Active present version: v%d.%d\n", This->major, This->minor);
 
     This->ex = ex;
