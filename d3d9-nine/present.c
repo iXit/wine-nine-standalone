@@ -125,6 +125,328 @@ struct DRIPresent
     struct dri_backend *dri_backend;
 };
 
+struct DRIPresentGroup
+{
+    /* COM vtable */
+    void *vtable;
+    /* IUnknown reference count */
+    LONG refs;
+
+    boolean ex;
+    struct DRIPresent **present_backends;
+    unsigned npresent_backends;
+    Display *gdi_display;
+    boolean no_window_changes;
+    struct dri_backend *dri_backend;
+};
+
+/* see WINE's fullscreen_style() */
+static LONG fullscreen_style(LONG style)
+{
+    /* Make sure the window is managed, otherwise we won't get keyboard input. */
+    style |= WS_POPUP | WS_SYSMENU;
+    style &= ~(WS_CAPTION | WS_THICKFRAME);
+
+    return style;
+}
+
+/* see WINE's fullscreen_exstyle() */
+static LONG fullscreen_exstyle(LONG exstyle)
+{
+    /* Filter out window decorations. */
+    exstyle &= ~(WS_EX_WINDOWEDGE | WS_EX_CLIENTEDGE);
+
+    return exstyle;
+}
+
+/* see WINE's wined3d_device_setup_fullscreen_window() */
+static void setup_fullscreen_window(struct DRIPresent *This, HWND hwnd, int w, int h)
+{
+    boolean filter_messages;
+    LONG style, style_ex;
+
+    This->style = GetWindowLongW(hwnd, GWL_STYLE);
+    This->style_ex = GetWindowLongW(hwnd, GWL_EXSTYLE);
+
+    style = fullscreen_style(This->style);
+    style_ex = fullscreen_exstyle(This->style_ex);
+
+    filter_messages = This->filter_messages;
+    This->filter_messages = TRUE;
+
+    SetWindowLongW(hwnd, GWL_STYLE, style);
+    SetWindowLongW(hwnd, GWL_EXSTYLE, style_ex);
+
+    SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, w, h,
+            SWP_FRAMECHANGED | SWP_SHOWWINDOW | SWP_NOACTIVATE);
+
+    This->filter_messages = filter_messages;
+}
+
+static void move_fullscreen_window(struct DRIPresent *This, HWND hwnd, int w, int h)
+{
+    boolean filter_messages;
+    LONG style, style_ex;
+
+    /* move draw window back to place */
+
+    style = GetWindowLongW(hwnd, GWL_STYLE);
+    style_ex = GetWindowLongW(hwnd, GWL_EXSTYLE);
+
+    style = fullscreen_style(style);
+    style_ex = fullscreen_exstyle(style_ex);
+
+    filter_messages = This->filter_messages;
+    This->filter_messages = TRUE;
+    SetWindowLongW(hwnd, GWL_STYLE, style);
+    SetWindowLongW(hwnd, GWL_EXSTYLE, style_ex);
+    SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, w, h,
+            SWP_FRAMECHANGED | SWP_SHOWWINDOW | SWP_NOACTIVATE);
+    This->filter_messages = filter_messages;
+}
+
+/* see WINE's wined3d_device_restore_fullscreen_window() */
+static void restore_fullscreen_window(struct DRIPresent *This, HWND hwnd)
+{
+    boolean filter_messages;
+    LONG style, style_ex;
+
+    /* switch from fullscreen to window */
+    style = GetWindowLongW(hwnd, GWL_STYLE);
+    style_ex = GetWindowLongW(hwnd, GWL_EXSTYLE);
+    /* These flags are set by us, not the
+     * application, and we want to ignore them in the test below, since it's
+     * not the application's fault that they changed. Additionally, we want to
+     * preserve the current status of these flags (i.e. don't restore them) to
+     * more closely emulate the behavior of Direct3D, which leaves these flags
+     * alone when returning to windowed mode. */
+    This->style ^= (This->style ^ style) & WS_VISIBLE;
+    This->style_ex ^= (This->style_ex ^ style_ex) & WS_EX_TOPMOST;
+
+    /* Only restore the style if the application didn't modify it during the
+     * fullscreen phase. Some applications change it before calling Reset()
+     * when switching between windowed and fullscreen modes (HL2), some
+     * depend on the original style (Eve Online). */
+    filter_messages = This->filter_messages;
+    This->filter_messages = TRUE;
+    if (style == fullscreen_style(This->style) &&
+            style_ex == fullscreen_exstyle(This->style_ex))
+    {
+        SetWindowLongW(hwnd, GWL_STYLE, This->style);
+        SetWindowLongW(hwnd, GWL_EXSTYLE, This->style_ex);
+    }
+    SetWindowPos(hwnd, 0, 0, 0, 0, 0, SWP_FRAMECHANGED |
+                 SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER |
+                 SWP_NOACTIVATE);
+    This->filter_messages = filter_messages;
+
+    This->style = 0;
+    This->style_ex = 0;
+}
+
+static HRESULT set_display_mode(struct DRIPresent *This, DEVMODEW *new_mode)
+{
+    DEVMODEW current_mode;
+    LONG hr;
+
+    /* Filter invalid resolution */
+    if (!new_mode->dmPelsWidth || !new_mode->dmPelsHeight)
+        return D3DERR_INVALIDCALL;
+
+    /* Ignore invalid frequency requested */
+    if (new_mode->dmDisplayFrequency > 1000)
+        new_mode->dmDisplayFrequency = 0;
+
+    ZeroMemory(&current_mode, sizeof(DEVMODEW));
+    current_mode.dmSize = sizeof(DEVMODEW);
+    /* Only change the mode if necessary. */
+    if (!EnumDisplaySettingsW(This->devname, ENUM_CURRENT_SETTINGS, &current_mode))
+       WINE_ERR("Failed to get current display mode.\n");
+    else if (current_mode.dmPelsWidth != new_mode->dmPelsWidth
+           || current_mode.dmPelsHeight != new_mode->dmPelsHeight
+           || (current_mode.dmDisplayFrequency != new_mode->dmDisplayFrequency
+           && (new_mode->dmFields & DM_DISPLAYFREQUENCY)))
+    {
+        hr = ChangeDisplaySettingsExW(This->devname, new_mode, 0, CDS_FULLSCREEN, NULL);
+        if (hr != DISP_CHANGE_SUCCESSFUL)
+        {
+            /* try again without display RefreshRate */
+            if (new_mode->dmFields & DM_DISPLAYFREQUENCY)
+            {
+                new_mode->dmFields &= ~DM_DISPLAYFREQUENCY;
+                new_mode->dmDisplayFrequency = 0;
+                hr = ChangeDisplaySettingsExW(This->devname, new_mode, 0, CDS_FULLSCREEN, NULL);
+                if (hr != DISP_CHANGE_SUCCESSFUL)
+                {
+                    WINE_ERR("ChangeDisplaySettingsExW failed with 0x%08X\n", hr);
+                    return D3DERR_INVALIDCALL;
+                }
+            }
+            else
+            {
+                WINE_ERR("ChangeDisplaySettingsExW failed with 0x%08X\n", hr);
+                return D3DERR_INVALIDCALL;
+            }
+        }
+    }
+    return D3D_OK;
+}
+
+LRESULT device_process_message(struct DRIPresent *present, HWND window, BOOL unicode,
+        UINT message, WPARAM wparam, LPARAM lparam, WNDPROC proc)
+{
+    boolean filter_messages;
+    WORD width, height;
+    DEVMODEW new_mode;
+
+    //WINE_TRACE("Got message: window %p, message %#x, wparam %#lx, lparam %#lx.\n",
+    //                window, message, wparam, lparam);
+
+    if (present->filter_messages && message != WM_DISPLAYCHANGE)
+    {
+        //WINE_TRACE("Filtering message: window %p, message %#x, wparam %#lx, lparam %#lx.\n",
+        //        window, message, wparam, lparam);
+        if (unicode)
+            return DefWindowProcW(window, message, wparam, lparam);
+        else
+            return DefWindowProcA(window, message, wparam, lparam);
+    }
+
+    if (message == WM_DESTROY)
+    {
+        WINE_TRACE("unregister window %p.\n", window);
+        (void) nine_unregister_window(window);
+    }
+    else if (message == WM_DISPLAYCHANGE)
+    {
+        width = LOWORD(lparam);
+        height = HIWORD(lparam);
+
+        WINE_TRACE("WM_DISPLAYCHANGE %ux%u -> %ux%u\n",
+                   present->params.BackBufferWidth, present->params.BackBufferHeight,
+                   width, height);
+
+        /* Ex restores display mode, while non Ex requires the
+         * user to call Device::Reset() */
+        if (!present->ex &&
+            !present->params.Windowed &&
+            present->params.hDeviceWindow &&
+            (width != present->params.BackBufferWidth ||
+             height != present->params.BackBufferHeight))
+        {
+            WINE_TRACE("setting resolution_mismatch for non-extended\n");
+            present->resolution_mismatch = TRUE;
+        } else {
+            present->resolution_mismatch = FALSE;
+        }
+    }
+    else if (message == WM_ACTIVATEAPP)
+    {
+        filter_messages = present->filter_messages;
+        present->filter_messages = TRUE;
+
+        if (wparam == WA_INACTIVE)
+        {
+            present->occluded = TRUE;
+            present->reapply_mode = TRUE;
+
+            ZeroMemory(&new_mode, sizeof(DEVMODEW));
+            new_mode.dmSize = sizeof(new_mode);
+            if (EnumDisplaySettingsW(present->devname, ENUM_REGISTRY_SETTINGS, &new_mode))
+                set_display_mode(present, &new_mode);
+
+            if (!present->no_window_changes &&
+                    IsWindowVisible(present->params.hDeviceWindow))
+                ShowWindow(present->params.hDeviceWindow, SW_MINIMIZE);
+        }
+        else
+        {
+            present->occluded = FALSE;
+
+            if (!present->no_window_changes)
+            {
+                /* restore window */
+                SetWindowPos(present->params.hDeviceWindow, NULL, 0, 0,
+                             present->params.BackBufferWidth, present->params.BackBufferHeight,
+                             SWP_NOACTIVATE | SWP_NOZORDER);
+            }
+
+            if (present->ex)
+            {
+                ZeroMemory(&new_mode, sizeof(DEVMODEW));
+                new_mode.dmSize = sizeof(new_mode);
+                new_mode.dmPelsWidth = present->params.BackBufferWidth;
+                new_mode.dmPelsHeight = present->params.BackBufferHeight;
+                new_mode.dmFields = DM_PELSWIDTH | DM_PELSHEIGHT;
+                if (present->params.FullScreen_RefreshRateInHz)
+                {
+                    new_mode.dmFields |= DM_DISPLAYFREQUENCY;
+                    new_mode.dmDisplayFrequency = present->params.FullScreen_RefreshRateInHz;
+                }
+                set_display_mode(present, &new_mode);
+            }
+        }
+        present->filter_messages = filter_messages;
+    }
+    else if (message == WM_SYSCOMMAND)
+    {
+        if (wparam == SC_RESTORE)
+        {
+            if (unicode)
+                DefWindowProcW(window, message, wparam, lparam);
+            else
+                DefWindowProcA(window, message, wparam, lparam);
+        }
+    }
+
+    if (unicode)
+        return CallWindowProcW(proc, window, message, wparam, lparam);
+    else
+        return CallWindowProcA(proc, window, message, wparam, lparam);
+}
+
+static void update_presentation_interval(struct DRIPresent *This)
+{
+    switch(This->params.PresentationInterval)
+    {
+        case D3DPRESENT_INTERVAL_DEFAULT:
+        case D3DPRESENT_INTERVAL_ONE:
+            This->present_interval = 1;
+            This->present_async = FALSE;
+            break;
+        case D3DPRESENT_INTERVAL_TWO:
+            This->present_interval = 2;
+            This->present_async = FALSE;
+            break;
+        case D3DPRESENT_INTERVAL_THREE:
+            This->present_interval = 3;
+            This->present_async = FALSE;
+            break;
+        case D3DPRESENT_INTERVAL_FOUR:
+            This->present_interval = 4;
+            This->present_async = FALSE;
+            break;
+        case D3DPRESENT_INTERVAL_IMMEDIATE:
+        default:
+            This->present_interval = 0;
+            This->present_async =
+                !(This->params.SwapEffect == D3DSWAPEFFECT_DISCARD &&
+                  This->tear_free_discard);
+            break;
+    }
+
+    /* D3DSWAPEFFECT_COPY: Force Copy.
+     * This->present_interval == 0: Force Copy to have buffers
+     * release as soon as possible (the display server/compositor
+     * won't hold any buffer), unless DISCARD and
+     * allow_discard_delayed_release */
+    This->present_swapeffectcopy =
+        This->params.SwapEffect == D3DSWAPEFFECT_COPY ||
+        (This->present_interval == 0 &&
+        !(This->params.SwapEffect == D3DSWAPEFFECT_DISCARD &&
+          This->allow_discard_delayed_release));
+}
+
 static void free_d3dadapter_drawable(struct d3d_drawable *d3d)
 {
     ReleaseDC(d3d->wnd, d3d->hdc);
@@ -361,6 +683,8 @@ static void release_d3d_drawable(struct d3d_drawable *d3d)
         WINE_ERR("Driver internal error: d3d_drawable is NULL\n");
     LeaveCriticalSection(&context_section);
 }
+
+/* ID3DPresentVtbl */
 
 static ULONG WINAPI DRIPresent_AddRef(struct DRIPresent *This)
 {
@@ -836,8 +1160,6 @@ static HRESULT WINAPI DRIPresent_WaitBufferReleaseEvent( struct DRIPresent *This
 }
 #endif
 
-/*----------*/
-
 static ID3DPresentVtbl DRIPresent_vtable = {
     (void *)DRIPresent_QueryInterface,
     (void *)DRIPresent_AddRef,
@@ -870,315 +1192,6 @@ static ID3DPresentVtbl DRIPresent_vtable = {
     (void *)DRIPresent_WaitBufferReleaseEvent,
 #endif
 };
-
-/* The following code is based on WINE's wined3d/device.c and
- * wined3d/swapchain.c and WINE's d3d9 files. */
-
-static LONG fullscreen_style(LONG style)
-{
-    /* Make sure the window is managed, otherwise we won't get keyboard input. */
-    style |= WS_POPUP | WS_SYSMENU;
-    style &= ~(WS_CAPTION | WS_THICKFRAME);
-
-    return style;
-}
-
-static LONG fullscreen_exstyle(LONG exstyle)
-{
-    /* Filter out window decorations. */
-    exstyle &= ~(WS_EX_WINDOWEDGE | WS_EX_CLIENTEDGE);
-
-    return exstyle;
-}
-
-static HRESULT set_display_mode(struct DRIPresent *This, DEVMODEW *new_mode)
-{
-    DEVMODEW current_mode;
-    LONG hr;
-
-    /* Filter invalid resolution */
-    if (!new_mode->dmPelsWidth || !new_mode->dmPelsHeight)
-        return D3DERR_INVALIDCALL;
-
-    /* Ignore invalid frequency requested */
-    if (new_mode->dmDisplayFrequency > 1000)
-        new_mode->dmDisplayFrequency = 0;
-
-    ZeroMemory(&current_mode, sizeof(DEVMODEW));
-    current_mode.dmSize = sizeof(DEVMODEW);
-    /* Only change the mode if necessary. */
-    if (!EnumDisplaySettingsW(This->devname, ENUM_CURRENT_SETTINGS, &current_mode))
-       WINE_ERR("Failed to get current display mode.\n");
-    else if (current_mode.dmPelsWidth != new_mode->dmPelsWidth
-           || current_mode.dmPelsHeight != new_mode->dmPelsHeight
-           || (current_mode.dmDisplayFrequency != new_mode->dmDisplayFrequency
-           && (new_mode->dmFields & DM_DISPLAYFREQUENCY)))
-    {
-        hr = ChangeDisplaySettingsExW(This->devname, new_mode, 0, CDS_FULLSCREEN, NULL);
-        if (hr != DISP_CHANGE_SUCCESSFUL)
-        {
-            /* try again without display RefreshRate */
-            if (new_mode->dmFields & DM_DISPLAYFREQUENCY)
-            {
-                new_mode->dmFields &= ~DM_DISPLAYFREQUENCY;
-                new_mode->dmDisplayFrequency = 0;
-                hr = ChangeDisplaySettingsExW(This->devname, new_mode, 0, CDS_FULLSCREEN, NULL);
-                if (hr != DISP_CHANGE_SUCCESSFUL)
-                {
-                    WINE_ERR("ChangeDisplaySettingsExW failed with 0x%08X\n", hr);
-                    return D3DERR_INVALIDCALL;
-                }
-            }
-            else
-            {
-                WINE_ERR("ChangeDisplaySettingsExW failed with 0x%08X\n", hr);
-                return D3DERR_INVALIDCALL;
-            }
-        }
-    }
-    return D3D_OK;
-}
-
-LRESULT device_process_message(struct DRIPresent *present, HWND window, BOOL unicode,
-        UINT message, WPARAM wparam, LPARAM lparam, WNDPROC proc)
-{
-    boolean filter_messages;
-    WORD width, height;
-    DEVMODEW new_mode;
-
-    //WINE_TRACE("Got message: window %p, message %#x, wparam %#lx, lparam %#lx.\n",
-    //                window, message, wparam, lparam);
-
-    if (present->filter_messages && message != WM_DISPLAYCHANGE)
-    {
-        //WINE_TRACE("Filtering message: window %p, message %#x, wparam %#lx, lparam %#lx.\n",
-        //        window, message, wparam, lparam);
-        if (unicode)
-            return DefWindowProcW(window, message, wparam, lparam);
-        else
-            return DefWindowProcA(window, message, wparam, lparam);
-    }
-
-    if (message == WM_DESTROY)
-    {
-        WINE_TRACE("unregister window %p.\n", window);
-        (void) nine_unregister_window(window);
-    }
-    else if (message == WM_DISPLAYCHANGE)
-    {
-        width = LOWORD(lparam);
-        height = HIWORD(lparam);
-
-        WINE_TRACE("WM_DISPLAYCHANGE %ux%u -> %ux%u\n",
-                   present->params.BackBufferWidth, present->params.BackBufferHeight,
-                   width, height);
-
-        /* Ex restores display mode, while non Ex requires the
-         * user to call Device::Reset() */
-        if (!present->ex &&
-            !present->params.Windowed &&
-            present->params.hDeviceWindow &&
-            (width != present->params.BackBufferWidth ||
-             height != present->params.BackBufferHeight))
-        {
-            WINE_TRACE("setting resolution_mismatch for non-extended\n");
-            present->resolution_mismatch = TRUE;
-        } else {
-            present->resolution_mismatch = FALSE;
-        }
-    }
-    else if (message == WM_ACTIVATEAPP)
-    {
-        filter_messages = present->filter_messages;
-        present->filter_messages = TRUE;
-
-        if (wparam == WA_INACTIVE)
-        {
-            present->occluded = TRUE;
-            present->reapply_mode = TRUE;
-
-            ZeroMemory(&new_mode, sizeof(DEVMODEW));
-            new_mode.dmSize = sizeof(new_mode);
-            if (EnumDisplaySettingsW(present->devname, ENUM_REGISTRY_SETTINGS, &new_mode))
-                set_display_mode(present, &new_mode);
-
-            if (!present->no_window_changes &&
-                    IsWindowVisible(present->params.hDeviceWindow))
-                ShowWindow(present->params.hDeviceWindow, SW_MINIMIZE);
-        }
-        else
-        {
-            present->occluded = FALSE;
-
-            if (!present->no_window_changes)
-            {
-                /* restore window */
-                SetWindowPos(present->params.hDeviceWindow, NULL, 0, 0,
-                             present->params.BackBufferWidth, present->params.BackBufferHeight,
-                             SWP_NOACTIVATE | SWP_NOZORDER);
-            }
-
-            if (present->ex)
-            {
-                ZeroMemory(&new_mode, sizeof(DEVMODEW));
-                new_mode.dmSize = sizeof(new_mode);
-                new_mode.dmPelsWidth = present->params.BackBufferWidth;
-                new_mode.dmPelsHeight = present->params.BackBufferHeight;
-                new_mode.dmFields = DM_PELSWIDTH | DM_PELSHEIGHT;
-                if (present->params.FullScreen_RefreshRateInHz)
-                {
-                    new_mode.dmFields |= DM_DISPLAYFREQUENCY;
-                    new_mode.dmDisplayFrequency = present->params.FullScreen_RefreshRateInHz;
-                }
-                set_display_mode(present, &new_mode);
-            }
-        }
-        present->filter_messages = filter_messages;
-    }
-    else if (message == WM_SYSCOMMAND)
-    {
-        if (wparam == SC_RESTORE)
-        {
-            if (unicode)
-                DefWindowProcW(window, message, wparam, lparam);
-            else
-                DefWindowProcA(window, message, wparam, lparam);
-        }
-    }
-
-    if (unicode)
-        return CallWindowProcW(proc, window, message, wparam, lparam);
-    else
-        return CallWindowProcA(proc, window, message, wparam, lparam);
-}
-
-static void setup_fullscreen_window(struct DRIPresent *This,
-        HWND hwnd, int w, int h)
-{
-    boolean filter_messages;
-    LONG style, style_ex;
-
-    This->style = GetWindowLongW(hwnd, GWL_STYLE);
-    This->style_ex = GetWindowLongW(hwnd, GWL_EXSTYLE);
-
-    style = fullscreen_style(This->style);
-    style_ex = fullscreen_exstyle(This->style_ex);
-
-    filter_messages = This->filter_messages;
-    This->filter_messages = TRUE;
-
-    SetWindowLongW(hwnd, GWL_STYLE, style);
-    SetWindowLongW(hwnd, GWL_EXSTYLE, style_ex);
-
-    SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, w, h,
-            SWP_FRAMECHANGED | SWP_SHOWWINDOW | SWP_NOACTIVATE);
-
-    This->filter_messages = filter_messages;
-}
-
-static void move_fullscreen_window(struct DRIPresent *This,
-        HWND hwnd, int w, int h)
-{
-    boolean filter_messages;
-    LONG style, style_ex;
-
-    /* move draw window back to place */
-
-    style = GetWindowLongW(hwnd, GWL_STYLE);
-    style_ex = GetWindowLongW(hwnd, GWL_EXSTYLE);
-
-    style = fullscreen_style(style);
-    style_ex = fullscreen_exstyle(style_ex);
-
-    filter_messages = This->filter_messages;
-    This->filter_messages = TRUE;
-    SetWindowLongW(hwnd, GWL_STYLE, style);
-    SetWindowLongW(hwnd, GWL_EXSTYLE, style_ex);
-    SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, w, h,
-            SWP_FRAMECHANGED | SWP_SHOWWINDOW | SWP_NOACTIVATE);
-    This->filter_messages = filter_messages;
-}
-
-static void restore_fullscreen_window(struct DRIPresent *This,
-        HWND hwnd)
-{
-    boolean filter_messages;
-    LONG style, style_ex;
-
-    /* switch from fullscreen to window */
-    style = GetWindowLongW(hwnd, GWL_STYLE);
-    style_ex = GetWindowLongW(hwnd, GWL_EXSTYLE);
-    /* These flags are set by us, not the
-     * application, and we want to ignore them in the test below, since it's
-     * not the application's fault that they changed. Additionally, we want to
-     * preserve the current status of these flags (i.e. don't restore them) to
-     * more closely emulate the behavior of Direct3D, which leaves these flags
-     * alone when returning to windowed mode. */
-    This->style ^= (This->style ^ style) & WS_VISIBLE;
-    This->style_ex ^= (This->style_ex ^ style_ex) & WS_EX_TOPMOST;
-
-    /* Only restore the style if the application didn't modify it during the
-     * fullscreen phase. Some applications change it before calling Reset()
-     * when switching between windowed and fullscreen modes (HL2), some
-     * depend on the original style (Eve Online). */
-    filter_messages = This->filter_messages;
-    This->filter_messages = TRUE;
-    if (style == fullscreen_style(This->style) &&
-            style_ex == fullscreen_exstyle(This->style_ex))
-    {
-        SetWindowLongW(hwnd, GWL_STYLE, This->style);
-        SetWindowLongW(hwnd, GWL_EXSTYLE, This->style_ex);
-    }
-    SetWindowPos(hwnd, 0, 0, 0, 0, 0, SWP_FRAMECHANGED |
-                 SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER |
-                 SWP_NOACTIVATE);
-    This->filter_messages = filter_messages;
-
-    This->style = 0;
-    This->style_ex = 0;
-}
-
-static void update_presentation_interval(struct DRIPresent *This)
-{
-    switch(This->params.PresentationInterval)
-    {
-        case D3DPRESENT_INTERVAL_DEFAULT:
-        case D3DPRESENT_INTERVAL_ONE:
-            This->present_interval = 1;
-            This->present_async = FALSE;
-            break;
-        case D3DPRESENT_INTERVAL_TWO:
-            This->present_interval = 2;
-            This->present_async = FALSE;
-            break;
-        case D3DPRESENT_INTERVAL_THREE:
-            This->present_interval = 3;
-            This->present_async = FALSE;
-            break;
-        case D3DPRESENT_INTERVAL_FOUR:
-            This->present_interval = 4;
-            This->present_async = FALSE;
-            break;
-        case D3DPRESENT_INTERVAL_IMMEDIATE:
-        default:
-            This->present_interval = 0;
-            This->present_async =
-                !(This->params.SwapEffect == D3DSWAPEFFECT_DISCARD &&
-                  This->tear_free_discard);
-            break;
-    }
-
-    /* D3DSWAPEFFECT_COPY: Force Copy.
-     * This->present_interval == 0: Force Copy to have buffers
-     * release as soon as possible (the display server/compositor
-     * won't hold any buffer), unless DISCARD and
-     * allow_discard_delayed_release */
-    This->present_swapeffectcopy =
-        This->params.SwapEffect == D3DSWAPEFFECT_COPY ||
-        (This->present_interval == 0 &&
-        !(This->params.SwapEffect == D3DSWAPEFFECT_DISCARD &&
-          This->allow_discard_delayed_release));
-}
 
 static HRESULT DRIPresent_ChangePresentParameters(struct DRIPresent *This,
         D3DPRESENT_PARAMETERS *params)
@@ -1345,8 +1358,6 @@ static HRESULT DRIPresent_ChangePresentParameters(struct DRIPresent *This,
     return D3D_OK;
 }
 
-/* The following code isn't based on WINE's wined3d or d3d9. */
-
 static HRESULT present_create(Display *gdi_display, const WCHAR *devname,
         D3DPRESENT_PARAMETERS *params, HWND focus_wnd, struct DRIPresent **out,
         boolean ex, boolean no_window_changes, struct dri_backend *dri_backend)
@@ -1456,20 +1467,7 @@ static HRESULT present_create(Display *gdi_display, const WCHAR *devname,
     return D3D_OK;
 }
 
-struct DRIPresentGroup
-{
-    /* COM vtable */
-    void *vtable;
-    /* IUnknown reference count */
-    LONG refs;
-
-    boolean ex;
-    struct DRIPresent **present_backends;
-    unsigned npresent_backends;
-    Display *gdi_display;
-    boolean no_window_changes;
-    struct dri_backend *dri_backend;
-};
+/* ID3DPresentGroupVtbl */
 
 static ULONG WINAPI DRIPresentGroup_AddRef(struct DRIPresentGroup *This)
 {
