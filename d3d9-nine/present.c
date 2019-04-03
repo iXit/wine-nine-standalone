@@ -731,16 +731,172 @@ static HRESULT WINAPI DRIPresent_QueryInterface(struct DRIPresent *This,
     return E_NOINTERFACE;
 }
 
-static HRESULT DRIPresent_ChangePresentParameters(struct DRIPresent *This,
-        D3DPRESENT_PARAMETERS *params);
-
 static HRESULT WINAPI DRIPresent_SetPresentParameters(struct DRIPresent *This,
-        D3DPRESENT_PARAMETERS *pPresentationParameters,
-        D3DDISPLAYMODEEX *pFullscreenDisplayMode)
+        D3DPRESENT_PARAMETERS *params, D3DDISPLAYMODEEX *pFullscreenDisplayMode)
 {
+    HWND focus_window = This->focus_wnd ? This->focus_wnd : params->hDeviceWindow;
+    RECT rect;
+    DEVMODEW new_mode;
+    HRESULT hr;
+    boolean filter_messages;
+
     if (pFullscreenDisplayMode)
         WINE_FIXME("Ignoring pFullscreenDisplayMode\n");
-    return DRIPresent_ChangePresentParameters(This, pPresentationParameters);
+
+    WINE_TRACE("This=%p, params=%p, focus_window=%p, params->hDeviceWindow=%p\n",
+            This, params, focus_window, params->hDeviceWindow);
+
+    This->params.SwapEffect = params->SwapEffect;
+    This->params.AutoDepthStencilFormat = params->AutoDepthStencilFormat;
+    This->params.Flags = params->Flags;
+    This->params.FullScreen_RefreshRateInHz = params->FullScreen_RefreshRateInHz;
+    This->params.PresentationInterval = params->PresentationInterval;
+    This->params.EnableAutoDepthStencil = params->EnableAutoDepthStencil;
+    if (!params->hDeviceWindow)
+        params->hDeviceWindow = This->params.hDeviceWindow;
+    else
+        This->params.hDeviceWindow = params->hDeviceWindow;
+
+    if ((This->params.BackBufferWidth != params->BackBufferWidth) ||
+            (This->params.BackBufferHeight != params->BackBufferHeight) ||
+            (This->params.Windowed != params->Windowed) ||
+            This->reapply_mode)
+    {
+        This->reapply_mode = FALSE;
+
+        if (!params->Windowed)
+        {
+            WINE_TRACE("Setting fullscreen mode: %dx%d@%d\n", params->BackBufferWidth,
+                     params->BackBufferHeight, params->FullScreen_RefreshRateInHz);
+
+            /* switch display mode */
+            ZeroMemory(&new_mode, sizeof(DEVMODEW));
+            new_mode.dmPelsWidth = params->BackBufferWidth;
+            new_mode.dmPelsHeight = params->BackBufferHeight;
+            new_mode.dmFields = DM_PELSWIDTH | DM_PELSHEIGHT;
+            if (params->FullScreen_RefreshRateInHz)
+            {
+                new_mode.dmFields |= DM_DISPLAYFREQUENCY;
+                new_mode.dmDisplayFrequency = params->FullScreen_RefreshRateInHz;
+            }
+            new_mode.dmSize = sizeof(DEVMODEW);
+            hr = set_display_mode(This, &new_mode);
+            if (FAILED(hr))
+                return hr;
+
+            /* Dirty as BackBufferWidth and BackBufferHeight hasn't been set yet */
+            This->resolution_mismatch = FALSE;
+        }
+        else if(!This->params.Windowed && params->Windowed)
+        {
+            WINE_TRACE("Setting fullscreen mode: %dx%d@%d\n", This->initial_mode.dmPelsWidth,
+                    This->initial_mode.dmPelsHeight, This->initial_mode.dmDisplayFrequency);
+
+            hr = set_display_mode(This, &This->initial_mode);
+            if (FAILED(hr))
+                return hr;
+
+            /* Dirty as BackBufferWidth and BackBufferHeight hasn't been set yet */
+            This->resolution_mismatch = FALSE;
+        }
+
+        if (This->params.Windowed)
+        {
+            if (!params->Windowed)
+            {
+                /* switch from window to fullscreen */
+                if (!nine_register_window(focus_window, This))
+                    return D3DERR_INVALIDCALL;
+
+                SetWindowPos(focus_window, 0, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE);
+
+                setup_fullscreen_window(This, params->hDeviceWindow,
+                        params->BackBufferWidth, params->BackBufferHeight);
+            }
+        }
+        else
+        {
+            if (!params->Windowed)
+            {
+                /* switch from fullscreen to fullscreen */
+                filter_messages = This->filter_messages;
+                This->filter_messages = TRUE;
+                MoveWindow(params->hDeviceWindow, 0, 0,
+                        params->BackBufferWidth,
+                        params->BackBufferHeight,
+                        TRUE);
+                This->filter_messages = filter_messages;
+            }
+            else if (This->style || This->style_ex)
+            {
+                restore_fullscreen_window(This, params->hDeviceWindow);
+            }
+
+            if (params->Windowed && !nine_unregister_window(focus_window))
+                WINE_ERR("Window %p is not registered with nine.\n", focus_window);
+        }
+        This->params.Windowed = params->Windowed;
+    }
+    else if (!params->Windowed)
+    {
+        move_fullscreen_window(This, params->hDeviceWindow, params->BackBufferWidth, params->BackBufferHeight);
+    }
+    else
+    {
+        WINE_TRACE("Nothing changed.\n");
+    }
+    if (!params->BackBufferWidth || !params->BackBufferHeight) {
+        if (!params->Windowed)
+            return D3DERR_INVALIDCALL;
+
+        if (!GetClientRect(params->hDeviceWindow, &rect))
+            return D3DERR_INVALIDCALL;
+
+        if (params->BackBufferWidth == 0)
+            params->BackBufferWidth = rect.right - rect.left;
+
+        if (params->BackBufferHeight == 0)
+            params->BackBufferHeight = rect.bottom - rect.top;
+    }
+
+    /* Set as last in case of failed reset those aren't updated */
+    This->params.BackBufferWidth = params->BackBufferWidth;
+    This->params.BackBufferHeight = params->BackBufferHeight;
+    This->params.BackBufferFormat = params->BackBufferFormat;
+    This->params.BackBufferCount = params->BackBufferCount;
+    This->params.MultiSampleType = params->MultiSampleType;
+    This->params.MultiSampleQuality = params->MultiSampleQuality;
+
+    update_presentation_interval(This);
+
+    if (!params->Windowed) {
+        struct d3d_drawable *d3d = get_d3d_drawable(This->gdi_display, focus_window);
+        Atom _NET_WM_BYPASS_COMPOSITOR = XInternAtom(This->gdi_display,
+                                                     "_NET_WM_BYPASS_COMPOSITOR",
+                                                     False);
+
+        Atom _VARIABLE_REFRESH = XInternAtom(This->gdi_display,
+                                             "_VARIABLE_REFRESH",
+                                             False);
+        if (!d3d)
+            return D3D_OK;
+
+        /* Disable compositing for fullscreen windows */
+        int bypass_value = 1;
+        XChangeProperty(This->gdi_display, d3d->drawable,
+                        _NET_WM_BYPASS_COMPOSITOR, XA_CARDINAL, 32,
+                        PropModeReplace, (unsigned char *)&bypass_value, 1);
+
+        /* Enable variable sync */
+        int vrr_value = 1;
+        XChangeProperty(This->gdi_display, d3d->drawable,
+                        _VARIABLE_REFRESH, XA_CARDINAL, 32,
+                        PropModeReplace, (unsigned char *)&vrr_value, 1);
+
+        release_d3d_drawable(d3d);
+    }
+
+    return D3D_OK;
 }
 
 static HRESULT WINAPI DRIPresent_D3DWindowBufferFromDmaBuf(struct DRIPresent *This,
@@ -1192,171 +1348,6 @@ static ID3DPresentVtbl DRIPresent_vtable = {
     (void *)DRIPresent_WaitBufferReleaseEvent,
 #endif
 };
-
-static HRESULT DRIPresent_ChangePresentParameters(struct DRIPresent *This,
-        D3DPRESENT_PARAMETERS *params)
-{
-    HWND focus_window = This->focus_wnd ? This->focus_wnd : params->hDeviceWindow;
-    RECT rect;
-    DEVMODEW new_mode;
-    HRESULT hr;
-    boolean filter_messages;
-
-    WINE_TRACE("This=%p, params=%p, focus_window=%p, params->hDeviceWindow=%p\n",
-            This, params, focus_window, params->hDeviceWindow);
-
-    This->params.SwapEffect = params->SwapEffect;
-    This->params.AutoDepthStencilFormat = params->AutoDepthStencilFormat;
-    This->params.Flags = params->Flags;
-    This->params.FullScreen_RefreshRateInHz = params->FullScreen_RefreshRateInHz;
-    This->params.PresentationInterval = params->PresentationInterval;
-    This->params.EnableAutoDepthStencil = params->EnableAutoDepthStencil;
-    if (!params->hDeviceWindow)
-        params->hDeviceWindow = This->params.hDeviceWindow;
-    else
-        This->params.hDeviceWindow = params->hDeviceWindow;
-
-    if ((This->params.BackBufferWidth != params->BackBufferWidth) ||
-            (This->params.BackBufferHeight != params->BackBufferHeight) ||
-            (This->params.Windowed != params->Windowed) ||
-            This->reapply_mode)
-    {
-        This->reapply_mode = FALSE;
-
-        if (!params->Windowed)
-        {
-            WINE_TRACE("Setting fullscreen mode: %dx%d@%d\n", params->BackBufferWidth,
-                     params->BackBufferHeight, params->FullScreen_RefreshRateInHz);
-
-            /* switch display mode */
-            ZeroMemory(&new_mode, sizeof(DEVMODEW));
-            new_mode.dmPelsWidth = params->BackBufferWidth;
-            new_mode.dmPelsHeight = params->BackBufferHeight;
-            new_mode.dmFields = DM_PELSWIDTH | DM_PELSHEIGHT;
-            if (params->FullScreen_RefreshRateInHz)
-            {
-                new_mode.dmFields |= DM_DISPLAYFREQUENCY;
-                new_mode.dmDisplayFrequency = params->FullScreen_RefreshRateInHz;
-            }
-            new_mode.dmSize = sizeof(DEVMODEW);
-            hr = set_display_mode(This, &new_mode);
-            if (FAILED(hr))
-                return hr;
-
-            /* Dirty as BackBufferWidth and BackBufferHeight hasn't been set yet */
-            This->resolution_mismatch = FALSE;
-        }
-        else if(!This->params.Windowed && params->Windowed)
-        {
-            WINE_TRACE("Setting fullscreen mode: %dx%d@%d\n", This->initial_mode.dmPelsWidth,
-                    This->initial_mode.dmPelsHeight, This->initial_mode.dmDisplayFrequency);
-
-            hr = set_display_mode(This, &This->initial_mode);
-            if (FAILED(hr))
-                return hr;
-
-            /* Dirty as BackBufferWidth and BackBufferHeight hasn't been set yet */
-            This->resolution_mismatch = FALSE;
-        }
-
-        if (This->params.Windowed)
-        {
-            if (!params->Windowed)
-            {
-                /* switch from window to fullscreen */
-                if (!nine_register_window(focus_window, This))
-                    return D3DERR_INVALIDCALL;
-
-                SetWindowPos(focus_window, 0, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE);
-
-                setup_fullscreen_window(This, params->hDeviceWindow,
-                        params->BackBufferWidth, params->BackBufferHeight);
-            }
-        }
-        else
-        {
-            if (!params->Windowed)
-            {
-                /* switch from fullscreen to fullscreen */
-                filter_messages = This->filter_messages;
-                This->filter_messages = TRUE;
-                MoveWindow(params->hDeviceWindow, 0, 0,
-                        params->BackBufferWidth,
-                        params->BackBufferHeight,
-                        TRUE);
-                This->filter_messages = filter_messages;
-            }
-            else if (This->style || This->style_ex)
-            {
-                restore_fullscreen_window(This, params->hDeviceWindow);
-            }
-
-            if (params->Windowed && !nine_unregister_window(focus_window))
-                WINE_ERR("Window %p is not registered with nine.\n", focus_window);
-        }
-        This->params.Windowed = params->Windowed;
-    }
-    else if (!params->Windowed)
-    {
-        move_fullscreen_window(This, params->hDeviceWindow, params->BackBufferWidth, params->BackBufferHeight);
-    }
-    else
-    {
-        WINE_TRACE("Nothing changed.\n");
-    }
-    if (!params->BackBufferWidth || !params->BackBufferHeight) {
-        if (!params->Windowed)
-            return D3DERR_INVALIDCALL;
-
-        if (!GetClientRect(params->hDeviceWindow, &rect))
-            return D3DERR_INVALIDCALL;
-
-        if (params->BackBufferWidth == 0)
-            params->BackBufferWidth = rect.right - rect.left;
-
-        if (params->BackBufferHeight == 0)
-            params->BackBufferHeight = rect.bottom - rect.top;
-    }
-
-    /* Set as last in case of failed reset those aren't updated */
-    This->params.BackBufferWidth = params->BackBufferWidth;
-    This->params.BackBufferHeight = params->BackBufferHeight;
-    This->params.BackBufferFormat = params->BackBufferFormat;
-    This->params.BackBufferCount = params->BackBufferCount;
-    This->params.MultiSampleType = params->MultiSampleType;
-    This->params.MultiSampleQuality = params->MultiSampleQuality;
-
-    update_presentation_interval(This);
-
-    if (!params->Windowed) {
-        struct d3d_drawable *d3d = get_d3d_drawable(This->gdi_display, focus_window);
-        Atom _NET_WM_BYPASS_COMPOSITOR = XInternAtom(This->gdi_display,
-                                                     "_NET_WM_BYPASS_COMPOSITOR",
-                                                     False);
-
-        Atom _VARIABLE_REFRESH = XInternAtom(This->gdi_display,
-                                             "_VARIABLE_REFRESH",
-                                             False);
-        if (!d3d)
-            return D3D_OK;
-
-        /* Disable compositing for fullscreen windows */
-        int bypass_value = 1;
-        XChangeProperty(This->gdi_display, d3d->drawable,
-                        _NET_WM_BYPASS_COMPOSITOR, XA_CARDINAL, 32,
-                        PropModeReplace, (unsigned char *)&bypass_value, 1);
-
-        /* Enable variable sync */
-        int vrr_value = 1;
-        XChangeProperty(This->gdi_display, d3d->drawable,
-                        _VARIABLE_REFRESH, XA_CARDINAL, 32,
-                        PropModeReplace, (unsigned char *)&vrr_value, 1);
-
-        release_d3d_drawable(d3d);
-    }
-
-    return D3D_OK;
-}
 
 static HRESULT present_create(Display *gdi_display, const WCHAR *devname,
         D3DPRESENT_PARAMETERS *params, HWND focus_wnd, struct DRIPresent **out,
