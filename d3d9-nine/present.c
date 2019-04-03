@@ -1347,7 +1347,7 @@ static HRESULT DRIPresent_ChangePresentParameters(struct DRIPresent *This,
 
 /* The following code isn't based on WINE's wined3d or d3d9. */
 
-static HRESULT DRIPresent_new(Display *gdi_display, const WCHAR *devname,
+static HRESULT present_create(Display *gdi_display, const WCHAR *devname,
         D3DPRESENT_PARAMETERS *params, HWND focus_wnd, struct DRIPresent **out,
         boolean ex, boolean no_window_changes, struct dri_backend *dri_backend)
 {
@@ -1542,7 +1542,7 @@ static HRESULT WINAPI DRIPresentGroup_CreateAdditionalPresent(struct DRIPresentG
         D3DPRESENT_PARAMETERS *pPresentationParameters, ID3DPresent **ppPresent)
 {
     HRESULT hr;
-    hr = DRIPresent_new(This->gdi_display, This->present_backends[0]->devname,
+    hr = present_create(This->gdi_display, This->present_backends[0]->devname,
             pPresentationParameters, 0, (struct DRIPresent **)ppPresent,
             This->ex, This->no_window_changes, This->dri_backend);
 
@@ -1615,7 +1615,7 @@ HRESULT present_create_present_group(Display *gdi_display, const WCHAR *device_n
         }
 
         /* create an ID3DPresent for it */
-        hr = DRIPresent_new(gdi_display, dd.DeviceName, &params[i],
+        hr = present_create(gdi_display, dd.DeviceName, &params[i],
                 focus_wnd, &This->present_backends[i], ex, This->no_window_changes,
                 This->dri_backend);
         if (FAILED(hr))
