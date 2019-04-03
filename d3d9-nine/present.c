@@ -111,7 +111,7 @@ struct DRIPresent
     BOOL ex;
     BOOL resolution_mismatch;
     BOOL occluded;
-    BOOL drop_wnd_messages;
+    BOOL filter_messages;
     BOOL no_window_changes;
     Display *gdi_display;
 
@@ -942,14 +942,14 @@ static HRESULT DRIPresent_ChangeDisplaySettingsIfNeccessary(struct DRIPresent *T
 LRESULT device_process_message(struct DRIPresent *present, HWND window, BOOL unicode,
         UINT message, WPARAM wparam, LPARAM lparam, WNDPROC proc)
 {
-    boolean drop_wnd_messages;
+    boolean filter_messages;
     WORD width, height;
     DEVMODEW new_mode;
 
     //WINE_TRACE("Got message: window %p, message %#x, wparam %#lx, lparam %#lx.\n",
     //                window, message, wparam, lparam);
 
-    if (present->drop_wnd_messages && message != WM_DISPLAYCHANGE)
+    if (present->filter_messages && message != WM_DISPLAYCHANGE)
     {
         //WINE_TRACE("Filtering message: window %p, message %#x, wparam %#lx, lparam %#lx.\n",
         //        window, message, wparam, lparam);
@@ -989,8 +989,8 @@ LRESULT device_process_message(struct DRIPresent *present, HWND window, BOOL uni
     }
     else if (message == WM_ACTIVATEAPP)
     {
-        drop_wnd_messages = present->drop_wnd_messages;
-        present->drop_wnd_messages = TRUE;
+        filter_messages = present->filter_messages;
+        present->filter_messages = TRUE;
 
         if (wparam == WA_INACTIVE)
         {
@@ -1033,7 +1033,7 @@ LRESULT device_process_message(struct DRIPresent *present, HWND window, BOOL uni
                 DRIPresent_ChangeDisplaySettingsIfNeccessary(present, &new_mode);
             }
         }
-        present->drop_wnd_messages = drop_wnd_messages;
+        present->filter_messages = filter_messages;
     }
     else if (message == WM_SYSCOMMAND)
     {
@@ -1055,7 +1055,7 @@ LRESULT device_process_message(struct DRIPresent *present, HWND window, BOOL uni
 static void setup_fullscreen_window(struct DRIPresent *This,
         HWND hwnd, int w, int h)
 {
-    boolean drop_wnd_messages;
+    boolean filter_messages;
     LONG style, style_ex;
 
     This->style = GetWindowLongW(hwnd, GWL_STYLE);
@@ -1064,8 +1064,8 @@ static void setup_fullscreen_window(struct DRIPresent *This,
     style = fullscreen_style(This->style);
     style_ex = fullscreen_exstyle(This->style_ex);
 
-    drop_wnd_messages = This->drop_wnd_messages;
-    This->drop_wnd_messages = TRUE;
+    filter_messages = This->filter_messages;
+    This->filter_messages = TRUE;
 
     SetWindowLongW(hwnd, GWL_STYLE, style);
     SetWindowLongW(hwnd, GWL_EXSTYLE, style_ex);
@@ -1073,13 +1073,13 @@ static void setup_fullscreen_window(struct DRIPresent *This,
     SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, w, h,
             SWP_FRAMECHANGED | SWP_SHOWWINDOW | SWP_NOACTIVATE);
 
-    This->drop_wnd_messages = drop_wnd_messages;
+    This->filter_messages = filter_messages;
 }
 
 static void move_fullscreen_window(struct DRIPresent *This,
         HWND hwnd, int w, int h)
 {
-    boolean drop_wnd_messages;
+    boolean filter_messages;
     LONG style, style_ex;
 
     /* move draw window back to place */
@@ -1090,19 +1090,19 @@ static void move_fullscreen_window(struct DRIPresent *This,
     style = fullscreen_style(style);
     style_ex = fullscreen_exstyle(style_ex);
 
-    drop_wnd_messages = This->drop_wnd_messages;
-    This->drop_wnd_messages = TRUE;
+    filter_messages = This->filter_messages;
+    This->filter_messages = TRUE;
     SetWindowLongW(hwnd, GWL_STYLE, style);
     SetWindowLongW(hwnd, GWL_EXSTYLE, style_ex);
     SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, w, h,
             SWP_FRAMECHANGED | SWP_SHOWWINDOW | SWP_NOACTIVATE);
-    This->drop_wnd_messages = drop_wnd_messages;
+    This->filter_messages = filter_messages;
 }
 
 static void restore_fullscreen_window(struct DRIPresent *This,
         HWND hwnd)
 {
-    boolean drop_wnd_messages;
+    boolean filter_messages;
     LONG style, style_ex;
 
     /* switch from fullscreen to window */
@@ -1121,8 +1121,8 @@ static void restore_fullscreen_window(struct DRIPresent *This,
      * fullscreen phase. Some applications change it before calling Reset()
      * when switching between windowed and fullscreen modes (HL2), some
      * depend on the original style (Eve Online). */
-    drop_wnd_messages = This->drop_wnd_messages;
-    This->drop_wnd_messages = TRUE;
+    filter_messages = This->filter_messages;
+    This->filter_messages = TRUE;
     if (style == fullscreen_style(This->style) &&
             style_ex == fullscreen_exstyle(This->style_ex))
     {
@@ -1132,7 +1132,7 @@ static void restore_fullscreen_window(struct DRIPresent *This,
     SetWindowPos(hwnd, 0, 0, 0, 0, 0, SWP_FRAMECHANGED |
                  SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER |
                  SWP_NOACTIVATE);
-    This->drop_wnd_messages = drop_wnd_messages;
+    This->filter_messages = filter_messages;
 
     This->style = 0;
     This->style_ex = 0;
@@ -1187,7 +1187,7 @@ static HRESULT DRIPresent_ChangePresentParameters(struct DRIPresent *This,
     RECT rect;
     DEVMODEW new_mode;
     HRESULT hr;
-    boolean drop_wnd_messages;
+    boolean filter_messages;
 
     WINE_TRACE("This=%p, params=%p, focus_window=%p, params->hDeviceWindow=%p\n",
             This, params, focus_window, params->hDeviceWindow);
@@ -1265,13 +1265,13 @@ static HRESULT DRIPresent_ChangePresentParameters(struct DRIPresent *This,
             if (!params->Windowed)
             {
                 /* switch from fullscreen to fullscreen */
-                drop_wnd_messages = This->drop_wnd_messages;
-                This->drop_wnd_messages = TRUE;
+                filter_messages = This->filter_messages;
+                This->filter_messages = TRUE;
                 MoveWindow(params->hDeviceWindow, 0, 0,
                         params->BackBufferWidth,
                         params->BackBufferHeight,
                         TRUE);
-                This->drop_wnd_messages = drop_wnd_messages;
+                This->filter_messages = filter_messages;
             }
             else if (This->style || This->style_ex)
             {
