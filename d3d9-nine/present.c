@@ -243,7 +243,7 @@ static BOOL get_wine_drawable_from_wnd(HWND hwnd, Drawable *drawable, HDC *hdc)
     return TRUE;
 }
 
-static void DRIPresent_FillOffset(Display *gdi_display, struct d3d_drawable *d3d)
+static void get_drawable_offset(Display *gdi_display, struct d3d_drawable *d3d)
 {
     Drawable wineRoot;
     POINT pt;
@@ -318,7 +318,7 @@ static struct d3d_drawable *create_d3dadapter_drawable(Display *gdi_display, HWN
     WINE_TRACE("hwnd drawable: %ld\n", d3d->drawable);
     d3d->wnd = hwnd;
     GetWindowRect(hwnd, &d3d->windowRect);
-    DRIPresent_FillOffset(gdi_display, d3d);
+    get_drawable_offset(gdi_display, d3d);
 
     return d3d;
 }
@@ -516,7 +516,7 @@ static HRESULT WINAPI DRIPresent_PresentBuffer( struct DRIPresent *This,
         windowRect.right != d3d->windowRect.right)
     {
         d3d->windowRect = windowRect;
-        DRIPresent_FillOffset(This->gdi_display, d3d);
+        get_drawable_offset(This->gdi_display, d3d);
     }
 
     GetClientRect(d3d->wnd, &offset);
