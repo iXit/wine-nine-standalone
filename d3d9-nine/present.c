@@ -891,7 +891,7 @@ static LONG fullscreen_exstyle(LONG exstyle)
     return exstyle;
 }
 
-static HRESULT DRIPresent_ChangeDisplaySettingsIfNeccessary(struct DRIPresent *This, DEVMODEW *new_mode)
+static HRESULT set_display_mode(struct DRIPresent *This, DEVMODEW *new_mode)
 {
     DEVMODEW current_mode;
     LONG hr;
@@ -1000,7 +1000,7 @@ LRESULT device_process_message(struct DRIPresent *present, HWND window, BOOL uni
             ZeroMemory(&new_mode, sizeof(DEVMODEW));
             new_mode.dmSize = sizeof(new_mode);
             if (EnumDisplaySettingsW(present->devname, ENUM_REGISTRY_SETTINGS, &new_mode))
-                DRIPresent_ChangeDisplaySettingsIfNeccessary(present, &new_mode);
+                set_display_mode(present, &new_mode);
 
             if (!present->no_window_changes &&
                     IsWindowVisible(present->params.hDeviceWindow))
@@ -1030,7 +1030,7 @@ LRESULT device_process_message(struct DRIPresent *present, HWND window, BOOL uni
                     new_mode.dmFields |= DM_DISPLAYFREQUENCY;
                     new_mode.dmDisplayFrequency = present->params.FullScreen_RefreshRateInHz;
                 }
-                DRIPresent_ChangeDisplaySettingsIfNeccessary(present, &new_mode);
+                set_display_mode(present, &new_mode);
             }
         }
         present->filter_messages = filter_messages;
@@ -1226,7 +1226,7 @@ static HRESULT DRIPresent_ChangePresentParameters(struct DRIPresent *This,
                 new_mode.dmDisplayFrequency = params->FullScreen_RefreshRateInHz;
             }
             new_mode.dmSize = sizeof(DEVMODEW);
-            hr = DRIPresent_ChangeDisplaySettingsIfNeccessary(This, &new_mode);
+            hr = set_display_mode(This, &new_mode);
             if (FAILED(hr))
                 return hr;
 
@@ -1238,7 +1238,7 @@ static HRESULT DRIPresent_ChangePresentParameters(struct DRIPresent *This,
             WINE_TRACE("Setting fullscreen mode: %dx%d@%d\n", This->initial_mode.dmPelsWidth,
                     This->initial_mode.dmPelsHeight, This->initial_mode.dmDisplayFrequency);
 
-            hr = DRIPresent_ChangeDisplaySettingsIfNeccessary(This, &This->initial_mode);
+            hr = set_display_mode(This, &This->initial_mode);
             if (FAILED(hr))
                 return hr;
 
@@ -1408,7 +1408,7 @@ static HRESULT present_create(Display *gdi_display, const WCHAR *devname,
             new_mode.dmDisplayFrequency = params->FullScreen_RefreshRateInHz;
         }
 
-        hr = DRIPresent_ChangeDisplaySettingsIfNeccessary(This, &new_mode);
+        hr = set_display_mode(This, &new_mode);
         if (FAILED(hr))
         {
             nine_unregister_window(focus_window);
