@@ -93,6 +93,8 @@ struct DRIPresent
     void *vtable;
     /* IUnknown reference count */
     LONG refs;
+    /* Active present version */
+    int major, minor;
 
     D3DPRESENT_PARAMETERS params;
     HWND focus_wnd;
@@ -130,6 +132,8 @@ struct DRIPresentGroup
     void *vtable;
     /* IUnknown reference count */
     LONG refs;
+    /* Active present version */
+    int major, minor;
 
     boolean ex;
     struct DRIPresent **present_backends;
@@ -1359,7 +1363,8 @@ static ID3DPresentVtbl DRIPresent_vtable = {
 
 static HRESULT present_create(Display *gdi_display, const WCHAR *devname,
         D3DPRESENT_PARAMETERS *params, HWND focus_wnd, struct DRIPresent **out,
-        boolean ex, boolean no_window_changes, struct dri_backend *dri_backend)
+        boolean ex, boolean no_window_changes, struct dri_backend *dri_backend,
+        int major, int minor)
 {
     struct DRIPresent *This;
     HWND focus_window;
@@ -1384,6 +1389,8 @@ static HRESULT present_create(Display *gdi_display, const WCHAR *devname,
     This->gdi_display = gdi_display;
     This->vtable = &DRIPresent_vtable;
     This->refs = 1;
+    This->major = major;
+    This->minor = minor;
     This->focus_wnd = focus_wnd;
     This->ex = ex;
     This->no_window_changes = no_window_changes;
@@ -1541,7 +1548,8 @@ static HRESULT WINAPI DRIPresentGroup_CreateAdditionalPresent(struct DRIPresentG
     HRESULT hr;
     hr = present_create(This->gdi_display, This->present_backends[0]->devname,
             pPresentationParameters, 0, (struct DRIPresent **)ppPresent,
-            This->ex, This->no_window_changes, This->dri_backend);
+            This->ex, This->no_window_changes, This->dri_backend,
+            This->major, This->minor);
 
     return hr;
 }
@@ -1549,8 +1557,8 @@ static HRESULT WINAPI DRIPresentGroup_CreateAdditionalPresent(struct DRIPresentG
 static void WINAPI DRIPresentGroup_GetVersion(struct DRIPresentGroup *This,
         int *major, int *minor)
 {
-    *major = D3DADAPTER_DRIVER_PRESENT_VERSION_MAJOR;
-    *minor = D3DADAPTER_DRIVER_PRESENT_VERSION_MINOR;
+    *major = This->major;
+    *minor = This->minor;
 }
 
 static ID3DPresentGroupVtbl DRIPresentGroup_vtable = {
@@ -1584,6 +1592,11 @@ HRESULT present_create_present_group(Display *gdi_display, const WCHAR *device_n
     This->gdi_display = gdi_display;
     This->vtable = &DRIPresentGroup_vtable;
     This->refs = 1;
+
+    This->major = D3DADAPTER_DRIVER_PRESENT_VERSION_MAJOR;
+    This->minor = D3DADAPTER_DRIVER_PRESENT_VERSION_MINOR;
+    TRACE("Active present version: v%d.%d\n", This->major, This->minor);
+
     This->ex = ex;
     This->dri_backend = dri_backend;
     This->npresent_backends = nparams;
@@ -1614,7 +1627,7 @@ HRESULT present_create_present_group(Display *gdi_display, const WCHAR *device_n
         /* create an ID3DPresent for it */
         hr = present_create(gdi_display, dd.DeviceName, &params[i],
                 focus_wnd, &This->present_backends[i], ex, This->no_window_changes,
-                This->dri_backend);
+                This->dri_backend, This->major, This->minor);
         if (FAILED(hr))
         {
             DRIPresentGroup_Release(This);
