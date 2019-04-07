@@ -103,7 +103,7 @@ meson \
 %else
         --cross-file "./tools/cross-wine32" \
 %endif
-        --buildtype "release" \
+        --buildtype "debug" \
         --bindir bin \
         --libdir lib \
         $MESONARGS \
