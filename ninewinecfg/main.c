@@ -661,8 +661,10 @@ static void load_debug_settings(HWND dialog)
     /* Set defaults */
     set_dlg_string(dialog, IDC_GB_NINE_DEBUG, IDS_GB_NINE_DEBUG);
     set_dlg_string(dialog, IDC_TEXT_BACKEND, IDS_TEXT_BACKEND);
-    set_dlg_string(dialog, IDC_TEXT_BACKEND_NAME, IDS_TEXT_BACKEND_UNKNOWN);
+    set_dlg_string(dialog, IDC_TEXT_BACKEND_NAME, IDS_TEXT_UNKNOWN);
     set_dlg_string(dialog, IDC_TEXT_BACKEND_TIP, 0);
+    set_dlg_string(dialog, IDC_TEXT_PRESENTATION_IFACE, IDS_TEXT_PRESENTATION_IFACE);
+    set_dlg_string(dialog, IDC_TEXT_PRESENTATION_IFACE_VER, IDS_TEXT_UNKNOWN);
 
     hmod = LoadLibraryA(fn_nine_dll);
 
@@ -690,6 +692,13 @@ static void load_debug_settings(HWND dialog)
                 set_dlg_string(dialog, IDC_TEXT_BACKEND_TIP,
                         IDS_TEXT_BACKEND_TIP_DRI2);
 
+            HeapFree(GetProcessHeap(), 0, value);
+        }
+
+        if (common_get_registry_string(reg_path_nine,
+                reg_key_debug_wine_present_version, &value))
+        {
+            SetDlgItemTextA(dialog, IDC_TEXT_PRESENTATION_IFACE_VER, value);
             HeapFree(GetProcessHeap(), 0, value);
         }
 

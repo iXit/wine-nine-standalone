@@ -60,8 +60,11 @@
 #define IDC_TEXT_BACKEND_NAME                   65
 #define IDC_TEXT_BACKEND_TIP                    66
 #define IDS_TEXT_BACKEND                        67
-#define IDS_TEXT_BACKEND_UNKNOWN                68
+#define IDS_TEXT_UNKNOWN                        68
 #define IDS_TEXT_BACKEND_TIP_DRI2               69
+#define IDC_TEXT_PRESENTATION_IFACE             70
+#define IDS_TEXT_PRESENTATION_IFACE             71
+#define IDC_TEXT_PRESENTATION_IFACE_VER         72
 
 #define IDS_ERR_UNKNOWN                        100
 #define IDS_ERR_OUTOFMEMORY                    101
