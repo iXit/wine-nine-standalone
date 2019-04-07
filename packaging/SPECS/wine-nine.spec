@@ -37,7 +37,8 @@ Requires(postun): /sbin/ldconfig
 ExclusiveArch:  %{ix86} x86_64
 
 BuildRequires:  gcc
-BuildRequires:  meson
+# BUG: Meson 0.50 cross compilation is broken
+BuildRequires:  meson <= 0.49
 BuildRequires:  libX11-devel
 BuildRequires:  mesa-libGL-devel
 BuildRequires:  mesa-libd3d-devel
