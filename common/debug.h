@@ -5,10 +5,51 @@
 
 #include <stdio.h>
 #include <stdarg.h>
+#include <unistd.h>
 
 #include <windows.h>
 
+enum __nine_debug_class
+{
+    __NINE_DBCL_FIXME,
+    __NINE_DBCL_ERR,
+    __NINE_DBCL_WARN,
+    __NINE_DBCL_TRACE,
+};
+
+extern unsigned char __nine_debug_flags;
+
 const char *__nine_dbg_strdup(const char *s);
+
+static inline int __nine_dbg_log(enum __nine_debug_class dbcl, const char *function,
+                                 const char *format, ...) __attribute__((format(printf, 3, 4)));
+static inline int __nine_dbg_log(enum __nine_debug_class dbcl, const char *function,
+                                 const char *format, ...)
+{
+    char buf[1024];
+    va_list args;
+    int n;
+
+    static const char *const classes[] = { "fixme", "err", "warn", "trace" };
+    n = sprintf(buf, "%s:d3d9nine:%s ", classes[dbcl], function);
+
+    va_start(args, format);
+    n += vsnprintf(buf + n, sizeof(buf) - n, format, args);
+    va_end(args);
+
+    return write(STDERR_FILENO, buf, n);
+}
+
+#define __NINE_DPRINTF(dbcl, args...) \
+    do { \
+        if (__nine_debug_flags & (1 << dbcl)) \
+            __nine_dbg_log(dbcl, __FUNCTION__, args); \
+    } while (0)
+
+#define FIXME(args...) __NINE_DPRINTF(__NINE_DBCL_FIXME, args)
+#define ERR(args...) __NINE_DPRINTF(__NINE_DBCL_ERR, args)
+#define WARN(args...) __NINE_DPRINTF(__NINE_DBCL_WARN, args)
+#define TRACE(args...) __NINE_DPRINTF(__NINE_DBCL_TRACE, args)
 
 static inline const char *nine_dbg_sprintf(const char *format, ...) __attribute__((format(printf, 1, 2)));
 static inline const char *nine_dbg_sprintf(const char *format, ...)

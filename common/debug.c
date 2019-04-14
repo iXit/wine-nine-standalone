@@ -1,8 +1,15 @@
 /* SPDX-License-Identifier: LGPL-2.1-or-later */
 
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <assert.h>
+#include <stdlib.h>
+#include <unistd.h>
 
 #include "debug.h"
+
+unsigned char __nine_debug_flags = (1 << __NINE_DBCL_FIXME) |
+                                   (1 << __NINE_DBCL_ERR);
 
 /* a single simple ring buffer for all threads */
 #define NINE_DEBUG_BUFFERSIZE 1024
@@ -47,3 +54,38 @@ const char *__nine_dbg_strdup(const char *s)
     return memcpy(buf, s, n);
 }
 
+static void nine_dbg_init() __attribute__((constructor));
+static void nine_dbg_init()
+{
+    char *env;
+    struct stat st1, st2;
+
+    /* check for stderr pointing to /dev/null */
+    if (!fstat(STDERR_FILENO, &st1) && S_ISCHR(st1.st_mode) &&
+        !stat("/dev/null", &st2) && S_ISCHR(st2.st_mode) &&
+        st1.st_rdev == st2.st_rdev)
+    {
+        __nine_debug_flags = 0;
+        return;
+    }
+
+    /* new style debug mask */
+    env = getenv("D3D_DEBUG");
+    if (env)
+    {
+        __nine_debug_flags = strtol(env, NULL, 0);
+        return;
+    }
+
+    /* fallback to old style WINE debug channel */
+    env = getenv("WINEDEBUG");
+    if (!env)
+        return;
+
+    /* just the most basic version, no support for classes */
+    if (strstr(env, "d3d9nine"))
+        __nine_debug_flags = (1 << __NINE_DBCL_FIXME) |
+                             (1 << __NINE_DBCL_ERR) |
+                             (1 << __NINE_DBCL_WARN) |
+                             (1 << __NINE_DBCL_TRACE);
+}
