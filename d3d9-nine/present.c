@@ -610,18 +610,18 @@ static void get_drawable_offset(Display *gdi_display, struct d3d_drawable *d3d)
         WINE_ERR("ClientToScreen failed: 0x%x\n", GetLastError());
         return;
     }
-    WINE_TRACE("Relative coord client area: %d %d\n", pt.x, pt.y);
+    WINE_TRACE("Relative coord client area: %s\n", wine_dbgstr_point(&pt));
     offset_by_virtual_screen(&pt);
-    WINE_TRACE("Coord client area: %d %d\n", pt.x, pt.y);
+    WINE_TRACE("Coord client area: %s\n", wine_dbgstr_point(&pt));
     d3d->offset.x += pt.x;
     d3d->offset.y += pt.y;
 
     get_relative_position(gdi_display, d3d->drawable, wineRoot, &pt);
-    WINE_TRACE("Coord drawable: %d %d\n", pt.x, pt.y);
+    WINE_TRACE("Coord drawable: %s\n", wine_dbgstr_point(&pt));
     d3d->offset.x -= pt.x;
     d3d->offset.y -= pt.y;
 
-    WINE_TRACE("Offset: %d %d\n", d3d->offset.x, d3d->offset.y);
+    WINE_TRACE("Offset: %s\n", wine_dbgstr_point(&d3d->offset));
 }
 
 static struct d3d_drawable *create_d3dadapter_drawable(Display *gdi_display, HWND hwnd)
@@ -1260,7 +1260,9 @@ static HRESULT WINAPI DRIPresent_GetWindowInfo( struct DRIPresent *This,
     hr = GetClientRect(hWnd, &pRect);
     if (!hr)
         return D3DERR_INVALIDCALL;
-    //WINE_TRACE("pRect: %d %d %d %d\n", pRect.left, pRect.top, pRect.right, pRect.bottom);
+
+    //WINE_TRACE("pRect: %s\n", wine_dbgstr_rect(&pRect));
+
     *width = pRect.right - pRect.left;
     *height = pRect.bottom - pRect.top;
     *depth = 24; //TODO
