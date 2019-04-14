@@ -19,6 +19,7 @@
 #include <stdlib.h>
 #include <dlfcn.h>
 
+#include "../common/debug.h"
 #include "../common/library.h"
 #include "../common/registry.h"
 #include "backend.h"
@@ -527,7 +528,7 @@ static void offset_by_virtual_screen(POINT *pt)
     SetRectEmpty(&r);
     EnumDisplayMonitors(0, NULL, edm_callback, (LPARAM)&r);
 
-    WINE_TRACE("Virtual screen size: %s\n", wine_dbgstr_rect(&r));
+    WINE_TRACE("Virtual screen size: %s\n", nine_dbgstr_rect(&r));
 
     pt->x -= r.left;
     pt->y -= r.top;
@@ -610,18 +611,18 @@ static void get_drawable_offset(Display *gdi_display, struct d3d_drawable *d3d)
         WINE_ERR("ClientToScreen failed: 0x%x\n", GetLastError());
         return;
     }
-    WINE_TRACE("Relative coord client area: %s\n", wine_dbgstr_point(&pt));
+    WINE_TRACE("Relative coord client area: %s\n", nine_dbgstr_point(&pt));
     offset_by_virtual_screen(&pt);
-    WINE_TRACE("Coord client area: %s\n", wine_dbgstr_point(&pt));
+    WINE_TRACE("Coord client area: %s\n", nine_dbgstr_point(&pt));
     d3d->offset.x += pt.x;
     d3d->offset.y += pt.y;
 
     get_relative_position(gdi_display, d3d->drawable, wineRoot, &pt);
-    WINE_TRACE("Coord drawable: %s\n", wine_dbgstr_point(&pt));
+    WINE_TRACE("Coord drawable: %s\n", nine_dbgstr_point(&pt));
     d3d->offset.x -= pt.x;
     d3d->offset.y -= pt.y;
 
-    WINE_TRACE("Offset: %s\n", wine_dbgstr_point(&d3d->offset));
+    WINE_TRACE("Offset: %s\n", nine_dbgstr_point(&d3d->offset));
 }
 
 static struct d3d_drawable *create_d3dadapter_drawable(Display *gdi_display, HWND hwnd)
@@ -732,7 +733,7 @@ static HRESULT WINAPI DRIPresent_QueryInterface(struct DRIPresent *This,
         return S_OK;
     }
 
-    WINE_WARN("%s not implemented, returning E_NOINTERFACE.\n", wine_dbgstr_guid(riid));
+    WINE_WARN("%s not implemented, returning E_NOINTERFACE.\n", nine_dbgstr_guid(riid));
     *ppvObject = NULL;
 
     return E_NOINTERFACE;
@@ -1261,7 +1262,7 @@ static HRESULT WINAPI DRIPresent_GetWindowInfo( struct DRIPresent *This,
     if (!hr)
         return D3DERR_INVALIDCALL;
 
-    //WINE_TRACE("pRect: %s\n", wine_dbgstr_rect(&pRect));
+    //WINE_TRACE("pRect: %s\n", nine_dbgstr_rect(&pRect));
 
     *width = pRect.right - pRect.left;
     *height = pRect.bottom - pRect.top;
@@ -1511,7 +1512,7 @@ static HRESULT WINAPI DRIPresentGroup_QueryInterface(struct DRIPresentGroup *Thi
         return S_OK;
     }
 
-    WINE_WARN("%s not implemented, returning E_NOINTERFACE.\n", wine_dbgstr_guid(riid));
+    WINE_WARN("%s not implemented, returning E_NOINTERFACE.\n", nine_dbgstr_guid(riid));
     *ppvObject = NULL;
 
     return E_NOINTERFACE;
@@ -1610,7 +1611,7 @@ HRESULT present_create_present_group(Display *gdi_display, const WCHAR *device_n
         if (!EnumDisplayDevicesW(device_name, adapter + i, &dd, 0))
         {
             WINE_WARN("Couldn't find subdevice %d from `%s'\n",
-                    i, wine_dbgstr_w(device_name));
+                    i, nine_dbgstr_w(device_name));
         }
 
         /* create an ID3DPresent for it */

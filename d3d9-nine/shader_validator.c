@@ -8,6 +8,7 @@
 #include <windows.h>
 #include <wine/debug.h>
 
+#include "../common/debug.h"
 #include "shader_validator.h"
 
 WINE_DEFAULT_DEBUG_CHANNEL(d3d9nine);
@@ -17,7 +18,7 @@ static HRESULT WINAPI IDirect3DShaderValidator9Impl_QueryInterface(IDirect3DShad
 {
     /* TODO: AddRef(iface). */
     *ppobj = This;
-    WINE_TRACE("This=%p, riid=%s, object=%p.\n", This, wine_dbgstr_guid(riid), ppobj);
+    WINE_TRACE("This=%p, riid=%s, object=%p.\n", This, nine_dbgstr_guid(riid), ppobj);
 
     return S_OK;
 }
