@@ -41,11 +41,9 @@ endif
 
 dep_wine = cc.find_library('wine')
 
-foreach h : ['wine/debug.h']
-  if not cc.has_header(h, dependencies : dep_wine)
-    error('WINE headers not found')
-  endif
-endforeach
+if not cc.has_header_symbol('windows.h', 'wine_get_unix_file_name')
+  error('WINE headers not found')
+endif
 
 version = meson.project_version().split('-')[0].split('.')
 wrc = [
