@@ -7,16 +7,14 @@
  */
 
 #include <windows.h>
-#include <wine/debug.h>
 #include <X11/Xlib-xcb.h>
 #include <xcb/present.h>
 #include <fcntl.h>
 #include <stdlib.h>
 #include <unistd.h>
 
+#include "../common/debug.h"
 #include "xcb_present.h"
-
-WINE_DEFAULT_DEBUG_CHANNEL(d3d9nine);
 
 struct PRESENTPriv {
     xcb_connection_t *xcb_connection;
@@ -80,7 +78,7 @@ BOOL PRESENTCheckExtension(Display *dpy, int major, int minor)
     extension = xcb_get_extension_data(xcb_connection, &xcb_present_id);
     if (!(extension && extension->present))
     {
-        WINE_ERR("PRESENT extension is not present\n");
+        ERR("PRESENT extension is not present\n");
         return FALSE;
     }
 
@@ -90,12 +88,12 @@ BOOL PRESENTCheckExtension(Display *dpy, int major, int minor)
     if (!present_reply)
     {
         free(error);
-        WINE_ERR("Issue getting requested v%d,%d of PRESENT\n", major, minor);
+        ERR("Issue getting requested v%d,%d of PRESENT\n", major, minor);
         return FALSE;
     }
 
-    WINE_TRACE("PRESENT v%d.%d found, v%u.%u requested\n", major, minor,
-            present_reply->major_version, present_reply->minor_version);
+    TRACE("PRESENT v%d.%d found, v%u.%u requested\n", major, minor,
+          present_reply->major_version, present_reply->minor_version);
 
     free(present_reply);
 
@@ -204,7 +202,7 @@ static BOOL PRESENTwait_events(PRESENTpriv *present_priv, BOOL allow_other_threa
     }
     if (!ev)
     {
-        WINE_ERR("FATAL error: xcb had an error\n");
+        ERR("FATAL error: xcb had an error\n");
         return FALSE;
     }
 
@@ -294,7 +292,7 @@ static void PRESENTForceReleases(PRESENTpriv *present_priv)
         {
             if (!current->last_present_was_flip && !present_priv->xcb_wait)
             {
-                WINE_ERR("ERROR: a pixmap seems not released by PRESENT for no reason. Code bug.\n");
+                ERR("ERROR: a pixmap seems not released by PRESENT for no reason. Code bug.\n");
             }
             else
             {
@@ -358,7 +356,7 @@ static BOOL PRESENTPrivChangeWindow(PRESENTpriv *present_priv, XID window)
         error = xcb_request_check(present_priv->xcb_connection, cookie); /* performs a flush */
         if (error || !present_priv->special_event)
         {
-            WINE_ERR("FAILED to use the X PRESENT extension. Was the destination a window ?\n");
+            ERR("FAILED to use the X PRESENT extension. Was the destination a window ?\n");
             if (present_priv->special_event)
                 xcb_unregister_for_special_event(present_priv->xcb_connection, present_priv->special_event);
             present_priv->special_event = NULL;
@@ -375,14 +373,14 @@ static void PRESENTDestroyPixmapContent(PRESENTPixmapPriv *present_pixmap)
     xcb_void_cookie_t cookie;
     xcb_generic_error_t *error;
 
-    WINE_TRACE("Releasing pixmap priv %p\n", present_pixmap);
+    TRACE("Releasing pixmap priv %p\n", present_pixmap);
 
     cookie = xcb_free_pixmap(present_priv->xcb_connection,
                              present_pixmap->pixmap);
 
     error = xcb_request_check(present_priv->xcb_connection, cookie);
     if (error)
-        WINE_ERR("Failed to free pixmap\n");
+        ERR("Failed to free pixmap\n");
 }
 
 void PRESENTDestroy(PRESENTpriv *present_priv)
@@ -421,9 +419,9 @@ BOOL PRESENTPixmapCreate(PRESENTpriv *present_priv, int screen,
     xcb_generic_error_t *error;
     xcb_screen_t *xcb_screen;
 
-    WINE_TRACE("present_priv=%p, pixmap=%p, width=%d, height=%d, stride=%d,"
-            " depth=%d, bpp=%d\n", present_priv, pixmap, width, height,
-            stride, depth, bpp);
+    TRACE("present_priv=%p, pixmap=%p, width=%d, height=%d, stride=%d,"
+          " depth=%d, bpp=%d\n", present_priv, pixmap, width, height,
+          stride, depth, bpp);
 
     EnterCriticalSection(&present_priv->mutex_present);
 
@@ -493,7 +491,7 @@ BOOL PRESENTTryFreePixmap(PRESENTPixmapPriv *present_pixmap_priv)
     if (!present_pixmap_priv->released || present_pixmap_priv->present_complete_pending)
     {
         LeaveCriticalSection(&present_priv->mutex_present);
-        WINE_TRACE("Releasing pixmap priv %p later\n", present_pixmap_priv);
+        TRACE("Releasing pixmap priv %p later\n", present_pixmap_priv);
         return FALSE;
     }
 
@@ -555,7 +553,7 @@ BOOL PRESENTPixmapPrepare(XID window, PRESENTPixmapPriv *present_pixmap_priv)
 
     if (!window)
     {
-        WINE_ERR("ERROR: Try to Present a pixmap on a NULL window\n");
+        ERR("ERROR: Try to Present a pixmap on a NULL window\n");
         LeaveCriticalSection(&present_priv->mutex_present);
         return FALSE;
     }
@@ -566,7 +564,7 @@ BOOL PRESENTPixmapPrepare(XID window, PRESENTPixmapPriv *present_pixmap_priv)
      * event. */
     if (!present_pixmap_priv->released)
     {
-        WINE_ERR("FATAL ERROR: Trying to Present a pixmap not released\n");
+        ERR("FATAL ERROR: Trying to Present a pixmap not released\n");
         LeaveCriticalSection(&present_priv->mutex_present);
         return FALSE;
     }
@@ -685,26 +683,26 @@ BOOL PRESENTPixmap(XID window, PRESENTPixmapPriv *present_pixmap_priv,
         cookie_geom = xcb_get_geometry(present_priv->xcb_connection_bis, window);
         reply = xcb_get_geometry_reply(present_priv->xcb_connection_bis, cookie_geom, NULL);
 
-        WINE_ERR("Error using PRESENT. Here some debug info\n");
+        ERR("Error using PRESENT. Here some debug info\n");
         if (!reply)
         {
-            WINE_ERR("Error querying window info. Perhaps it doesn't exist anymore\n");
+            ERR("Error querying window info. Perhaps it doesn't exist anymore\n");
             LeaveCriticalSection(&present_priv->mutex_present);
             return FALSE;
         }
-        WINE_ERR("Pixmap: width=%d, height=%d, depth=%d\n",
-                present_pixmap_priv->width, present_pixmap_priv->height,
-                present_pixmap_priv->depth);
+        ERR("Pixmap: width=%d, height=%d, depth=%d\n",
+            present_pixmap_priv->width, present_pixmap_priv->height,
+            present_pixmap_priv->depth);
 
-        WINE_ERR("Window: width=%d, height=%d, depth=%d, x=%d, y=%d\n",
-                (int) reply->width, (int) reply->height,
-                (int) reply->depth, (int) reply->x, (int) reply->y);
+        ERR("Window: width=%d, height=%d, depth=%d, x=%d, y=%d\n",
+            (int) reply->width, (int) reply->height,
+            (int) reply->depth, (int) reply->x, (int) reply->y);
 
-        WINE_ERR("Present parameter: PresentationInterval=%d, Pending presentations=%d\n",
-                PresentationInterval, present_priv->pixmap_present_pending);
+        ERR("Present parameter: PresentationInterval=%d, Pending presentations=%d\n",
+            PresentationInterval, present_priv->pixmap_present_pending);
 
         if (present_pixmap_priv->depth != reply->depth)
-            WINE_ERR("Depths are different. PRESENT needs the pixmap and the window have same depth\n");
+            ERR("Depths are different. PRESENT needs the pixmap and the window have same depth\n");
         free(reply);
         LeaveCriticalSection(&present_priv->mutex_present);
         return FALSE;
@@ -789,7 +787,7 @@ BOOL PRESENTWaitReleaseEvent(PRESENTpriv *present_priv)
         }
         else if (!PRESENTwait_events(present_priv, TRUE))
         {
-            WINE_ERR("Issue in PRESENTWaitReleaseEvent\n");
+            ERR("Issue in PRESENTWaitReleaseEvent\n");
             LeaveCriticalSection(&present_priv->mutex_present);
             return FALSE;
         }

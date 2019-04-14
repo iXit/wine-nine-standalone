@@ -9,7 +9,6 @@
 #ifdef D3D9NINE_DRI2
 
 #include <windows.h>
-#include <wine/debug.h>
 #include <sys/ioctl.h>
 #include <X11/Xlib-xcb.h>
 #include <xcb/dri2.h>
@@ -24,10 +23,9 @@
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
 
+#include "../common/debug.h"
 #include "backend.h"
 #include "xcb_present.h"
-
-WINE_DEFAULT_DEBUG_CHANNEL(d3d9nine);
 
 const char * const lib_egl = "libEGL.so.1";
 
@@ -160,7 +158,7 @@ static void *dri2_eglGetProcAddress(struct dri2_priv *priv, const char *procname
         p = priv->eglGetProcAddress(procname);
 
     if (!p)
-        WINE_ERR("%s is missing but required\n", procname);
+        ERR("%s is missing but required\n", procname);
 
     return p;
 }
@@ -207,7 +205,7 @@ static BOOL dri2_create(Display *dpy, int screen, struct dri_backend_priv **priv
     p->h_egl = dlopen(lib_egl, RTLD_LAZY);
     if (!p->h_egl)
     {
-        WINE_ERR("failed to open %s: %s\n", lib_egl, dlerror());
+        ERR("failed to open %s: %s\n", lib_egl, dlerror());
         goto err_egl;
     }
 
@@ -348,7 +346,7 @@ static BOOL dri2_present_pixmap(struct dri_backend_priv *priv, struct buffer_pri
     }
     else
     {
-        WINE_ERR("eglMakeCurrent failed with 0x%0X\n", p->eglGetError());
+        ERR("eglMakeCurrent failed with 0x%0X\n", p->eglGetError());
         return FALSE;
     }
 
@@ -377,8 +375,8 @@ static BOOL dri2_present(struct dri_backend_priv *priv, int fd, int width, int h
     EGLenum current_api = 0;
     int status;
 
-    WINE_TRACE("fd=%d, width=%d, height=%d, stride=%d, depth=%d, bpp=%d\n",
-            fd, width, height, stride, depth, bpp);
+    TRACE("fd=%d, width=%d, height=%d, stride=%d, depth=%d, bpp=%d\n",
+          fd, width, height, stride, depth, bpp);
 
     attribs[1] = width;
     attribs[3] = height;
@@ -396,7 +394,7 @@ static BOOL dri2_present(struct dri_backend_priv *priv, int fd, int width, int h
                                  NULL, attribs);
 
     if (image == EGL_NO_IMAGE_KHR) {
-        WINE_ERR("eglCreateImageKHR failed with 0x%0X\n", p->eglGetError());
+        ERR("eglCreateImageKHR failed with 0x%0X\n", p->eglGetError());
         goto fail;
     }
     close(fd);
@@ -445,7 +443,7 @@ static BOOL dri2_present(struct dri_backend_priv *priv, int fd, int width, int h
         p->eglDestroyImageKHR(p->display, image);
     }
     else
-        WINE_ERR("eglMakeCurrent failed with 0x%0X\n", p->eglGetError());
+        ERR("eglMakeCurrent failed with 0x%0X\n", p->eglGetError());
 
     p->eglMakeCurrent(p->display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
 
@@ -481,7 +479,7 @@ static BOOL dri2_window_buffer_from_dmabuf(struct dri_backend_priv *priv,
     struct dri2_priv *p = (struct dri2_priv *)priv;
     Pixmap pixmap;
 
-    WINE_TRACE("present_priv=%p dmaBufFd=%d\n", present_priv, fd);
+    TRACE("present_priv=%p dmaBufFd=%d\n", present_priv, fd);
 
     if (!out)
         return FALSE;
@@ -495,21 +493,21 @@ static BOOL dri2_window_buffer_from_dmabuf(struct dri_backend_priv *priv,
             width, height, stride, depth, bpp))
     {
         HeapFree(GetProcessHeap(), 0, *out);
-        WINE_ERR("Failed to create pixmap\n");
+        ERR("Failed to create pixmap\n");
         return FALSE;
     }
 
     if (!dri2_present(priv, fd, width, height, stride, depth, bpp,
             &(*out)->priv, &pixmap))
     {
-        WINE_ERR("dri2_present failed\n");
+        ERR("dri2_present failed\n");
         HeapFree(GetProcessHeap(), 0, *out);
         return FALSE;
     }
 
     if (!PRESENTPixmapInit(present_priv, pixmap, &((*out)->present_pixmap_priv)))
     {
-        WINE_ERR("PRESENTPixmapInit failed\n");
+        ERR("PRESENTPixmapInit failed\n");
         HeapFree(GetProcessHeap(), 0, *out);
         return FALSE;
     }
@@ -553,7 +551,7 @@ static void dri2_destroy_pixmap(struct dri_backend_priv *priv, struct buffer_pri
         p->glDeleteTextures(1, &pp->texture_write);
     }
     else
-        WINE_ERR("eglMakeCurrent failed with 0x%0X\n", p->eglGetError());
+        ERR("eglMakeCurrent failed with 0x%0X\n", p->eglGetError());
 
     p->eglMakeCurrent(p->display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
     p->eglBindAPI(current_api);
@@ -621,7 +619,7 @@ static BOOL dri2_probe(Display *dpy)
     extension = xcb_get_extension_data(conn, &xcb_dri2_id);
     if (!(extension && extension->present))
     {
-        WINE_WARN("DRI2 extension is not present\n");
+        WARN("DRI2 extension is not present\n");
         return FALSE;
     }
 
@@ -631,12 +629,12 @@ static BOOL dri2_probe(Display *dpy)
     if (!dri2_reply)
     {
         free(error);
-        WINE_WARN("Issue getting requested v%d.%d of DRI2\n", major, minor);
+        WARN("Issue getting requested v%d.%d of DRI2\n", major, minor);
         return FALSE;
     }
 
-    WINE_TRACE("DRI2 v%d.%d requested, v%d.%d found\n", major, minor,
-            (int)dri2_reply->major_version, (int)dri2_reply->minor_version);
+    TRACE("DRI2 v%d.%d requested, v%d.%d found\n", major, minor,
+          (int)dri2_reply->major_version, (int)dri2_reply->minor_version);
     free(dri2_reply);
 
     return TRUE;

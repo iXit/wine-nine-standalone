@@ -6,19 +6,16 @@
  */
 
 #include <windows.h>
-#include <wine/debug.h>
 
 #include "../common/debug.h"
 #include "shader_validator.h"
-
-WINE_DEFAULT_DEBUG_CHANNEL(d3d9nine);
 
 static HRESULT WINAPI IDirect3DShaderValidator9Impl_QueryInterface(IDirect3DShaderValidator9Impl *This,
         REFIID riid, LPVOID* ppobj)
 {
     /* TODO: AddRef(iface). */
     *ppobj = This;
-    WINE_TRACE("This=%p, riid=%s, object=%p.\n", This, nine_dbgstr_guid(riid), ppobj);
+    TRACE("This=%p, riid=%s, object=%p.\n", This, nine_dbgstr_guid(riid), ppobj);
 
     return S_OK;
 }
@@ -26,7 +23,7 @@ static HRESULT WINAPI IDirect3DShaderValidator9Impl_QueryInterface(IDirect3DShad
 static ULONG WINAPI IDirect3DShaderValidator9Impl_AddRef(IDirect3DShaderValidator9Impl *This)
 {
     ULONG ref = InterlockedIncrement(&This->ref);
-    WINE_TRACE("This=%p increasing refcount to %u.\n", This, ref);
+    TRACE("This=%p increasing refcount to %u.\n", This, ref);
 
     return ref;
 }
@@ -34,7 +31,7 @@ static ULONG WINAPI IDirect3DShaderValidator9Impl_AddRef(IDirect3DShaderValidato
 static ULONG WINAPI IDirect3DShaderValidator9Impl_Release(IDirect3DShaderValidator9Impl *This)
 {
     ULONG ref = InterlockedDecrement(&This->ref);
-    WINE_TRACE("This=%p decreasing refcount to %u.\n", This, ref);
+    TRACE("This=%p decreasing refcount to %u.\n", This, ref);
 
     if (ref == 0)
         HeapFree(GetProcessHeap(), 0, This);
@@ -45,20 +42,20 @@ static ULONG WINAPI IDirect3DShaderValidator9Impl_Release(IDirect3DShaderValidat
 static LONG WINAPI IDirect3DShaderValidator9Impl_Begin(IDirect3DShaderValidator9Impl *This,
         void* callback, void* unknown1, ULONG unknown2)
 {
-    WINE_TRACE("This=%p, callback=%p, unknown1=%p, unknown2=%u\n", This, callback, unknown1, unknown2);
+    TRACE("This=%p, callback=%p, unknown1=%p, unknown2=%u\n", This, callback, unknown1, unknown2);
     return 1;
 }
 
 static LONG WINAPI IDirect3DShaderValidator9Impl_Instruction(IDirect3DShaderValidator9Impl *This,
         const char* unknown1, unsigned int unknown2, const unsigned long* unknown3, unsigned int unknown4)
 {
-    WINE_TRACE("This=%p, unknown1=%p, unknown2=%u, unknown3=%p, unknown4=%u\n", This, unknown1, unknown2, unknown3, unknown4);
+    TRACE("This=%p, unknown1=%p, unknown2=%u, unknown3=%p, unknown4=%u\n", This, unknown1, unknown2, unknown3, unknown4);
     return 1;
 }
 
 static LONG WINAPI IDirect3DShaderValidator9Impl_End(IDirect3DShaderValidator9Impl *This)
 {
-    WINE_TRACE("This=%p\n", This);
+    TRACE("This=%p\n", This);
     return 1;
 }
 

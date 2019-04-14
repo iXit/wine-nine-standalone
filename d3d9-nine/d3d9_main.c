@@ -9,15 +9,12 @@
  */
 
 #include <d3d9.h>
-#include <wine/debug.h>
 #include <fcntl.h>
 
 #include "../common/debug.h"
 #include "d3dadapter9.h"
 #include "wndproc.h"
 #include "shader_validator.h"
-
-WINE_DEFAULT_DEBUG_CHANNEL(d3d9nine);
 
 static int D3DPERF_event_level = 0;
 static Display *gdi_display;
@@ -30,7 +27,7 @@ void WINAPI DebugSetMute(void)
 IDirect3D9 * WINAPI DECLSPEC_HOTPATCH Direct3DCreate9(UINT sdk_version)
 {
     IDirect3D9 *native;
-    WINE_TRACE("sdk_version %#x.\n", sdk_version);
+    TRACE("sdk_version %#x.\n", sdk_version);
 
     if (SUCCEEDED(d3dadapter9_new(gdi_display, FALSE, (IDirect3D9Ex **)&native)))
         return native;
@@ -40,7 +37,7 @@ IDirect3D9 * WINAPI DECLSPEC_HOTPATCH Direct3DCreate9(UINT sdk_version)
 
 HRESULT WINAPI DECLSPEC_HOTPATCH Direct3DCreate9Ex(UINT sdk_version, IDirect3D9Ex **d3d9ex)
 {
-    WINE_TRACE("sdk_version %#x, d3d9ex %p.\n", sdk_version, d3d9ex);
+    TRACE("sdk_version %#x, d3d9ex %p.\n", sdk_version, d3d9ex);
 
     return d3dadapter9_new(gdi_display, TRUE, d3d9ex);
 }
@@ -61,7 +58,7 @@ void* WINAPI Direct3DShaderValidatorCreate9(void)
     object->lpVtbl = &IDirect3DShaderValidator9Vtbl;
     object->ref = 1;
 
-    WINE_TRACE("Returning interface %p\n", object);
+    TRACE("Returning interface %p\n", object);
     return (void*) object;
 }
 
@@ -75,7 +72,7 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, void *reserved)
         case DLL_PROCESS_ATTACH:
             if (!(gdi_display = XOpenDisplay( NULL )))
             {
-                WINE_ERR("Failed to open display\n");
+                ERR("Failed to open display\n");
                 return FALSE;
             }
 
@@ -97,7 +94,7 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, void *reserved)
  */
 int WINAPI D3DPERF_BeginEvent(D3DCOLOR color, const WCHAR *name)
 {
-    WINE_TRACE("color 0x%08x, name %s.\n", color, nine_dbgstr_w(name));
+    TRACE("color 0x%08x, name %s.\n", color, nine_dbgstr_w(name));
 
     return D3DPERF_event_level++;
 }
@@ -107,7 +104,7 @@ int WINAPI D3DPERF_BeginEvent(D3DCOLOR color, const WCHAR *name)
  */
 int WINAPI D3DPERF_EndEvent(void)
 {
-    WINE_TRACE("(void) : stub\n");
+    TRACE("(void) : stub\n");
 
     return --D3DPERF_event_level;
 }
@@ -117,7 +114,7 @@ int WINAPI D3DPERF_EndEvent(void)
  */
 DWORD WINAPI D3DPERF_GetStatus(void)
 {
-    WINE_FIXME("(void) : stub\n");
+    FIXME("(void) : stub\n");
 
     return 0;
 }
@@ -128,7 +125,7 @@ DWORD WINAPI D3DPERF_GetStatus(void)
  */
 void WINAPI D3DPERF_SetOptions(DWORD options)
 {
-  WINE_FIXME("(%#x) : stub\n", options);
+  FIXME("(%#x) : stub\n", options);
 }
 
 /***********************************************************************
@@ -136,7 +133,7 @@ void WINAPI D3DPERF_SetOptions(DWORD options)
  */
 BOOL WINAPI D3DPERF_QueryRepeatFrame(void)
 {
-    WINE_FIXME("(void) : stub\n");
+    FIXME("(void) : stub\n");
 
     return FALSE;
 }
@@ -146,7 +143,7 @@ BOOL WINAPI D3DPERF_QueryRepeatFrame(void)
  */
 void WINAPI D3DPERF_SetMarker(D3DCOLOR color, const WCHAR *name)
 {
-    WINE_FIXME("color 0x%08x, name %s stub!\n", color, nine_dbgstr_w(name));
+    FIXME("color 0x%08x, name %s stub!\n", color, nine_dbgstr_w(name));
 }
 
 /***********************************************************************
@@ -154,5 +151,5 @@ void WINAPI D3DPERF_SetMarker(D3DCOLOR color, const WCHAR *name)
  */
 void WINAPI D3DPERF_SetRegion(D3DCOLOR color, const WCHAR *name)
 {
-    WINE_FIXME("color 0x%08x, name %s stub!\n", color, nine_dbgstr_w(name));
+    FIXME("color 0x%08x, name %s stub!\n", color, nine_dbgstr_w(name));
 }

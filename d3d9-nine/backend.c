@@ -8,15 +8,13 @@
  */
 
 #include <windows.h>
-#include <wine/debug.h>
 #include <X11/Xlib-xcb.h>
 #include <stdlib.h>
 
+#include "../common/debug.h"
+#include "../common/registry.h"
 #include "backend.h"
 #include "xcb_present.h"
-#include "../common/registry.h"
-
-WINE_DEFAULT_DEBUG_CHANNEL(d3d9nine);
 
 extern const struct dri_backend_funcs dri3_funcs;
 #ifdef D3D9NINE_DRI2
@@ -40,7 +38,7 @@ static const char *backend_getenv()
     if (env && first)
     {
         first = FALSE;
-        WINE_WARN("Backend overwritten by D3D_BACKEND: %s\n", env);
+        WARN("Backend overwritten by D3D_BACKEND: %s\n", env);
     }
 
     return env;
@@ -52,7 +50,7 @@ BOOL backend_probe(Display *dpy)
     const char *env;
     struct dri_backend_priv *p;
 
-    WINE_TRACE("dpy=%p\n", dpy);
+    TRACE("dpy=%p\n", dpy);
 
     if (!dpy)
         return FALSE;
@@ -66,19 +64,19 @@ BOOL backend_probe(Display *dpy)
 
         if (!backends[i]->probe(dpy))
         {
-            WINE_TRACE("Error probing backend %s\n", backends[i]->name);
+            TRACE("Error probing backend %s\n", backends[i]->name);
             continue;
         }
 
         if (!backends[i]->create(dpy, DefaultScreen(dpy), &p))
         {
-            WINE_TRACE("Error creating backend %s\n", backends[i]->name);
+            TRACE("Error creating backend %s\n", backends[i]->name);
             continue;
         }
 
         if (!backends[i]->init(p))
         {
-            WINE_TRACE("Error initializing backend %s\n", backends[i]->name);
+            TRACE("Error initializing backend %s\n", backends[i]->name);
             backends[i]->destroy(p);
             continue;
         }
@@ -86,7 +84,7 @@ BOOL backend_probe(Display *dpy)
         backends[i]->destroy(p);
 
         if (i != 0)
-            wine_dbg_printf("\033[1;31mDRI3 backend not active (slower performance)\033[0m\n");
+            printf("\033[1;31mDRI3 backend not active (slower performance)\033[0m\n");
 
         return TRUE;
     }
@@ -100,7 +98,7 @@ struct dri_backend *backend_create(Display *dpy, int screen)
     int i;
     const char *env;
 
-    WINE_TRACE("dpy=%p screen=%d\n", dpy, screen);
+    TRACE("dpy=%p screen=%d\n", dpy, screen);
 
     dri_backend = HeapAlloc(GetProcessHeap(), 0, sizeof(struct dri_backend));
     if (!dri_backend)
@@ -121,14 +119,13 @@ struct dri_backend *backend_create(Display *dpy, int screen)
 
         if (backends[i]->create(dpy, screen, &dri_backend->priv))
         {
-            WINE_TRACE("Active backend: %s\n", backends[i]->name);
+            TRACE("Active backend: %s\n", backends[i]->name);
 
 #ifndef NDEBUG
             if (!common_set_registry_string(reg_path_nine,
                     reg_key_debug_active_backend, backends[i]->name))
             {
-                WINE_ERR("Failed to set registry key %s\n",
-                        reg_key_debug_active_backend);
+                ERR("Failed to set registry key %s\n", reg_key_debug_active_backend);
             }
 #endif
 
@@ -136,7 +133,7 @@ struct dri_backend *backend_create(Display *dpy, int screen)
             return dri_backend;
         }
 
-        WINE_ERR("Error creating backend %s\n", backends[i]->name);
+        ERR("Error creating backend %s\n", backends[i]->name);
     }
 
     HeapFree(GetProcessHeap(), 0, dri_backend);
@@ -145,7 +142,7 @@ struct dri_backend *backend_create(Display *dpy, int screen)
 
 void backend_destroy(struct dri_backend *dri_backend)
 {
-    WINE_TRACE("dri_backend=%p\n", dri_backend);
+    TRACE("dri_backend=%p\n", dri_backend);
 
     if (!dri_backend)
         return;

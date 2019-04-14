@@ -13,14 +13,12 @@
  */
 
 #include <windows.h>
-#include <wine/debug.h>
 #include <stdarg.h>
 #include <math.h>
 #include <limits.h>
 
+#include "../common/debug.h"
 #include "wndproc.h"
-
-WINE_DEFAULT_DEBUG_CHANNEL(d3d9nine);
 
 struct nine_wndproc
 {
@@ -68,7 +66,7 @@ BOOL nine_dll_destroy(HINSTANCE hInstDLL)
          * registered, or if the application still has an active nine
          * device. In the latter case the application has bigger problems than
          * these entries. */
-        WINE_WARN("Leftover wndproc table entry %p.\n", &wndproc_table.entries[i]);
+        WARN("Leftover wndproc table entry %p.\n", &wndproc_table.entries[i]);
     }
 
     HeapFree(GetProcessHeap(), 0, wndproc_table.entries);
@@ -116,7 +114,7 @@ static LRESULT CALLBACK nine_wndproc(HWND window, UINT message, WPARAM wparam, L
     if (!entry)
     {
         nine_wndproc_mutex_unlock();
-        WINE_ERR("Window %p is not registered with nine.\n", window);
+        ERR("Window %p is not registered with nine.\n", window);
         return DefWindowProcW(window, message, wparam, lparam);
     }
 
@@ -141,7 +139,7 @@ BOOL nine_register_window(HWND window, struct DRIPresent *present)
     if (nine_find_wndproc(window))
     {
         nine_wndproc_mutex_unlock();
-        WINE_WARN("Window %p is already registered with nine.\n", window);
+        WARN("Window %p is already registered with nine.\n", window);
         return TRUE;
     }
 
@@ -156,7 +154,7 @@ BOOL nine_register_window(HWND window, struct DRIPresent *present)
         if (!new_entries)
         {
             nine_wndproc_mutex_unlock();
-            WINE_ERR("Failed to grow table.\n");
+            ERR("Failed to grow table.\n");
             return FALSE;
         }
 
@@ -201,8 +199,8 @@ BOOL nine_unregister_window(HWND window)
         {
             entry->present = NULL;
             nine_wndproc_mutex_unlock();
-            WINE_WARN("Not unregistering window %p, window proc %#lx doesn't match nine window proc %p.\n",
-                    window, proc, nine_wndproc);
+            WARN("Not unregistering window %p, window proc %#lx doesn't match nine window proc %p.\n",
+                 window, proc, nine_wndproc);
             return FALSE;
         }
 
@@ -215,8 +213,8 @@ BOOL nine_unregister_window(HWND window)
         {
             entry->present = NULL;
             nine_wndproc_mutex_unlock();
-            WINE_WARN("Not unregistering window %p, window proc %#lx doesn't match nine window proc %p.\n",
-                    window, proc, nine_wndproc);
+            WARN("Not unregistering window %p, window proc %#lx doesn't match nine window proc %p.\n",
+                 window, proc, nine_wndproc);
             return FALSE;
         }
 

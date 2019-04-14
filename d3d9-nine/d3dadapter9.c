@@ -11,14 +11,11 @@
  */
 
 #include <d3dadapter/d3dadapter9.h>
-#include <wine/debug.h>
 
 #include "../common/debug.h"
 #include "present.h"
 #include "device_wrap.h"
 #include "backend.h"
-
-WINE_DEFAULT_DEBUG_CHANNEL(d3d9nine);
 
 /* this represents a snapshot taken at the moment of creation */
 struct output
@@ -130,8 +127,8 @@ static int get_current_mode(struct d3dadapter9 *This, UINT Adapter)
         if (ADAPTER_OUTPUT.modes[i].ScanLineOrdering != slo)
             continue;
 
-        WINE_TRACE("current mode %d (%ux%ux%u)\n", i,
-                   m.dmPelsWidth, m.dmPelsHeight, m.dmBitsPerPel);
+        TRACE("current mode %d (%ux%ux%u)\n", i,
+              m.dmPelsWidth, m.dmPelsHeight, m.dmBitsPerPel);
 
         return i;
     }
@@ -146,14 +143,14 @@ static HRESULT WINAPI d3dadapter9_CheckDeviceFormat(struct d3dadapter9 *This,
 static ULONG WINAPI d3dadapter9_AddRef(struct d3dadapter9 *This)
 {
     ULONG refs = InterlockedIncrement(&This->refs);
-    WINE_TRACE("%p increasing refcount to %u.\n", This, refs);
+    TRACE("%p increasing refcount to %u.\n", This, refs);
     return refs;
 }
 
 static ULONG WINAPI d3dadapter9_Release(struct d3dadapter9 *This)
 {
     ULONG refs = InterlockedDecrement(&This->refs);
-    WINE_TRACE("%p decreasing refcount to %u.\n", This, refs);
+    TRACE("%p decreasing refcount to %u.\n", This, refs);
     if (refs == 0)
     {
         /* dtor */
@@ -208,7 +205,7 @@ static HRESULT WINAPI d3dadapter9_QueryInterface(struct d3dadapter9 *This,
         return S_OK;
     }
 
-    WINE_WARN("%s not implemented, returning E_NOINTERFACE.\n", nine_dbgstr_guid(riid));
+    WARN("%s not implemented, returning E_NOINTERFACE.\n", nine_dbgstr_guid(riid));
     *ppvObject = NULL;
 
     return E_NOINTERFACE;
@@ -217,7 +214,7 @@ static HRESULT WINAPI d3dadapter9_QueryInterface(struct d3dadapter9 *This,
 static HRESULT WINAPI d3dadapter9_RegisterSoftwareDevice(struct d3dadapter9 *This,
         void *pInitializeFunction)
 {
-    WINE_FIXME("(%p, %p), stub!\n", This, pInitializeFunction);
+    FIXME("(%p, %p), stub!\n", This, pInitializeFunction);
     return D3DERR_INVALIDCALL;
 }
 
@@ -244,7 +241,7 @@ static HRESULT WINAPI d3dadapter9_GetAdapterIdentifier(struct d3dadapter9 *This,
                 pIdentifier->DeviceName, sizeof(pIdentifier->DeviceName), NULL, NULL))
             return D3DERR_INVALIDCALL;
 
-        WINE_TRACE("DeviceName overriden: %s\n", pIdentifier->DeviceName);
+        TRACE("DeviceName overriden: %s\n", pIdentifier->DeviceName);
 
         /* Override PCI IDs when wined3d registry keys are set */
         if (!RegOpenKeyA(HKEY_CURRENT_USER, "Software\\Wine\\Direct3DNine", &regkey))
@@ -257,17 +254,17 @@ static HRESULT WINAPI d3dadapter9_GetAdapterIdentifier(struct d3dadapter9 *This,
                 pIdentifier->DeviceId = data;
             if (size != sizeof(DWORD))
             {
-                WINE_ERR("VideoPciDeviceID is not a DWORD\n");
+                ERR("VideoPciDeviceID is not a DWORD\n");
                 size = sizeof(DWORD);
             }
             if (!RegQueryValueExA(regkey, "VideoPciVendorID", 0, &type, (BYTE *)&data, &size) &&
                     (type == REG_DWORD) && (size == sizeof(DWORD)))
                 pIdentifier->VendorId = data;
             if (size != sizeof(DWORD))
-                WINE_ERR("VideoPciVendorID is not a DWORD\n");
+                ERR("VideoPciVendorID is not a DWORD\n");
             RegCloseKey(regkey);
 
-            WINE_TRACE("DeviceId:VendorId overridden: %04X:%04X\n", pIdentifier->DeviceId, pIdentifier->VendorId);
+            TRACE("DeviceId:VendorId overridden: %04X:%04X\n", pIdentifier->DeviceId, pIdentifier->VendorId);
         }
     }
     return hr;
@@ -282,11 +279,11 @@ static UINT WINAPI d3dadapter9_GetAdapterModeCount(struct d3dadapter9 *This,
     if (FAILED(d3dadapter9_CheckDeviceFormat(This, Adapter, D3DDEVTYPE_HAL,
             Format, D3DUSAGE_RENDERTARGET, D3DRTYPE_SURFACE, Format)))
     {
-        WINE_WARN("DeviceFormat not available.\n");
+        WARN("DeviceFormat not available.\n");
         return 0;
     }
 
-    WINE_TRACE("%u modes.\n", ADAPTER_OUTPUT.nmodes);
+    TRACE("%u modes.\n", ADAPTER_OUTPUT.nmodes);
     return ADAPTER_OUTPUT.nmodes;
 }
 
@@ -303,13 +300,13 @@ static HRESULT WINAPI d3dadapter9_EnumAdapterModes(struct d3dadapter9 *This,
 
     if (FAILED(hr))
     {
-        WINE_TRACE("DeviceFormat not available.\n");
+        TRACE("DeviceFormat not available.\n");
         return hr;
     }
 
     if (Mode >= ADAPTER_OUTPUT.nmodes)
     {
-        WINE_WARN("Mode %u does not exist.\n", Mode);
+        WARN("Mode %u does not exist.\n", Mode);
         return D3DERR_INVALIDCALL;
     }
 
@@ -447,7 +444,7 @@ static HRESULT WINAPI DECLSPEC_HOTPATCH d3dadapter9_CreateDevice(struct d3dadapt
 static UINT WINAPI d3dadapter9_GetAdapterModeCountEx(struct d3dadapter9 *This,
         UINT Adapter, const D3DDISPLAYMODEFILTER *pFilter)
 {
-    WINE_FIXME("(%p, %u, %p), half stub!\n", This, Adapter, pFilter);
+    FIXME("(%p, %u, %p), half stub!\n", This, Adapter, pFilter);
     return d3dadapter9_GetAdapterModeCount(This, Adapter, pFilter->Format);
 }
 
@@ -457,7 +454,7 @@ static HRESULT WINAPI d3dadapter9_EnumAdapterModesEx(struct d3dadapter9 *This,
 {
     HRESULT hr;
 
-    WINE_FIXME("(%p, %u, %p, %u, %p), half stub!\n", This, Adapter, pFilter, Mode, pMode);
+    FIXME("(%p, %u, %p, %u, %p), half stub!\n", This, Adapter, pFilter, Mode, pMode);
 
     if (Adapter >= d3dadapter9_GetAdapterCount(This))
         return D3DERR_INVALIDCALL;
@@ -467,13 +464,13 @@ static HRESULT WINAPI d3dadapter9_EnumAdapterModesEx(struct d3dadapter9 *This,
 
     if (FAILED(hr))
     {
-        WINE_TRACE("DeviceFormat not available.\n");
+        TRACE("DeviceFormat not available.\n");
         return hr;
     }
 
     if (Mode >= ADAPTER_OUTPUT.nmodes)
     {
-        WINE_WARN("Mode %u does not exist.\n", Mode);
+        WARN("Mode %u does not exist.\n", Mode);
         return D3DERR_INVALIDCALL;
     }
 
@@ -547,7 +544,7 @@ static HRESULT WINAPI DECLSPEC_HOTPATCH d3dadapter9_CreateDeviceEx(struct d3dada
 
     if (FAILED(hr))
     {
-        WINE_WARN("Failed to create PresentGroup.\n");
+        WARN("Failed to create PresentGroup.\n");
         return hr;
     }
 
@@ -566,7 +563,7 @@ static HRESULT WINAPI DECLSPEC_HOTPATCH d3dadapter9_CreateDeviceEx(struct d3dada
     }
     if (FAILED(hr))
     {
-        WINE_WARN("ADAPTER_PROC failed.\n");
+        WARN("ADAPTER_PROC failed.\n");
         ID3DPresentGroup_Release(present);
         return hr;
     }
@@ -585,7 +582,7 @@ static HRESULT WINAPI DECLSPEC_HOTPATCH d3dadapter9_CreateDeviceEx(struct d3dada
 static HRESULT WINAPI d3dadapter9_GetAdapterLUID(struct d3dadapter9 *This,
         UINT Adapter, LUID *pLUID)
 {
-    WINE_FIXME("(%p, %u, %p), stub!\n", This, Adapter, pLUID);
+    FIXME("(%p, %u, %p), stub!\n", This, Adapter, pLUID);
     return D3DERR_INVALIDCALL;
 }
 
@@ -731,7 +728,7 @@ static HRESULT fill_groups(struct d3dadapter9 *This)
         struct adapter_group *group = add_group(This);
         if (!group)
         {
-            WINE_ERR("Out of memory.\n");
+            ERR("Out of memory.\n");
             return E_OUTOFMEMORY;
         }
 
@@ -739,14 +736,14 @@ static HRESULT fill_groups(struct d3dadapter9 *This)
         if (!hdc)
         {
             remove_group(This);
-            WINE_WARN("Unable to create DC for display %d.\n", i);
+            WARN("Unable to create DC for display %d.\n", i);
             goto end_group;
         }
 
         group->dri_backend = backend_create(This->gdi_display, DefaultScreen(This->gdi_display));
         if (!group->dri_backend)
         {
-            WINE_ERR("Unable to open backend for display %d.\n", i);
+            ERR("Unable to open backend for display %d.\n", i);
             goto end_group;
         }
 
@@ -767,7 +764,7 @@ static HRESULT fill_groups(struct d3dadapter9 *This)
             boolean orient = FALSE, monit = FALSE;
             if (!out)
             {
-                WINE_ERR("Out of memory.\n");
+                ERR("Out of memory.\n");
                 return E_OUTOFMEMORY;
             }
 
@@ -776,7 +773,7 @@ static HRESULT fill_groups(struct d3dadapter9 *This)
                 D3DDISPLAYMODEEX *mode = add_mode(This);
                 if (!out)
                 {
-                    WINE_ERR("Out of memory.\n");
+                    ERR("Out of memory.\n");
                     return E_OUTOFMEMORY;
                 }
 
@@ -800,8 +797,8 @@ static HRESULT fill_groups(struct d3dadapter9 *This)
 
                     default:
                         remove_mode(This);
-                        WINE_WARN("Unknown format (%u bpp) in display %d, monitor "
-                                "%d, mode %d.\n", dm.dmBitsPerPel, i, j, k);
+                        WARN("Unknown format (%u bpp) in display %d, monitor "
+                             "%d, mode %d.\n", dm.dmBitsPerPel, i, j, k);
                         goto end_mode;
                 }
 
@@ -827,8 +824,8 @@ static HRESULT fill_groups(struct d3dadapter9 *This)
 
                         default:
                             remove_output(This);
-                            WINE_WARN("Unknown display rotation in display %d, "
-                                    "monitor %d\n", i, j);
+                            WARN("Unknown display rotation in display %d, "
+                                 "monitor %d\n", i, j);
                             goto end_output;
                     }
                     orient = TRUE;
@@ -842,8 +839,8 @@ static HRESULT fill_groups(struct d3dadapter9 *This)
                     if (!out->monitor)
                     {
                         remove_output(This);
-                        WINE_WARN("Unable to get monitor handle for display %d, "
-                                "monitor %d.\n", i, j);
+                        WARN("Unable to get monitor handle for display %d, "
+                             "monitor %d.\n", i, j);
                         goto end_output;
                     }
                     monit = TRUE;
@@ -901,7 +898,7 @@ HRESULT d3dadapter9_new(Display *gdi_display, boolean ex, IDirect3D9Ex **ppOut)
     This = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(struct d3dadapter9));
     if (!This)
     {
-        WINE_ERR("Out of memory.\n");
+        ERR("Out of memory.\n");
         return E_OUTOFMEMORY;
     }
 
@@ -912,7 +909,7 @@ HRESULT d3dadapter9_new(Display *gdi_display, boolean ex, IDirect3D9Ex **ppOut)
 
     if (!present_has_d3dadapter(gdi_display))
     {
-        WINE_ERR("Your display driver doesn't support native D3D9 adapters.\n");
+        ERR("Your display driver doesn't support native D3D9 adapters.\n");
         d3dadapter9_Release(This);
         return D3DERR_NOTAVAILABLE;
     }
@@ -933,7 +930,7 @@ HRESULT d3dadapter9_new(Display *gdi_display, boolean ex, IDirect3D9Ex **ppOut)
     }
     if (This->nadapters == 0)
     {
-        WINE_ERR("No available native adapters in system.\n");
+        ERR("No available native adapters in system.\n");
         d3dadapter9_Release(This);
         return D3DERR_NOTAVAILABLE;
     }
@@ -944,7 +941,7 @@ HRESULT d3dadapter9_new(Display *gdi_display, boolean ex, IDirect3D9Ex **ppOut)
     if (!This->map)
     {
         d3dadapter9_Release(This);
-        WINE_ERR("Out of memory.\n");
+        ERR("Out of memory.\n");
         return E_OUTOFMEMORY;
     }
     for (i = k = 0; i < This->ngroups; ++i)
@@ -958,8 +955,8 @@ HRESULT d3dadapter9_new(Display *gdi_display, boolean ex, IDirect3D9Ex **ppOut)
 
     *ppOut = (IDirect3D9Ex *)This;
 
-    wine_dbg_printf("\033[1;32mNative Direct3D 9 " NINE_VERSION " is active.\n"
-                    "For more information visit " NINE_URL "\033[0m\n");
+    printf("\033[1;32mNative Direct3D 9 " NINE_VERSION " is active.\n"
+           "For more information visit " NINE_URL "\033[0m\n");
 
     return D3D_OK;
 }

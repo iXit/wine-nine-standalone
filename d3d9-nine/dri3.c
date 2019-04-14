@@ -7,17 +7,15 @@
  */
 
 #include <windows.h>
-#include <wine/debug.h>
 #include <X11/Xlib-xcb.h>
 #include <xcb/dri3.h>
 #include <fcntl.h>
 #include <stdlib.h>
 #include <unistd.h>
 
+#include "../common/debug.h"
 #include "backend.h"
 #include "xcb_present.h"
-
-WINE_DEFAULT_DEBUG_CHANNEL(d3d9nine);
 
 struct dri3_priv {
     Display *dpy;
@@ -103,7 +101,7 @@ static BOOL dri3_window_buffer_from_dmabuf(struct dri_backend_priv *priv,
     xcb_void_cookie_t cookie;
     xcb_generic_error_t *error;
 
-    WINE_TRACE("present_priv=%p dmaBufFd=%d\n", present_priv, fd);
+    TRACE("present_priv=%p dmaBufFd=%d\n", present_priv, fd);
 
     if (!out)
         goto err;
@@ -120,13 +118,13 @@ static BOOL dri3_window_buffer_from_dmabuf(struct dri_backend_priv *priv,
     error = xcb_request_check(xcb_connection, cookie); /* performs a flush */
     if (error)
     {
-        WINE_ERR("Error using DRI3 to convert a DmaBufFd to pixmap\n");
+        ERR("Error using DRI3 to convert a DmaBufFd to pixmap\n");
         goto err;
     }
 
     if (!PRESENTPixmapInit(present_priv, pixmap, &((*out)->present_pixmap_priv)))
     {
-        WINE_ERR("PRESENTPixmapInit failed\n");
+        ERR("PRESENTPixmapInit failed\n");
         HeapFree(GetProcessHeap(), 0, *out);
         return FALSE;
     }
@@ -134,7 +132,7 @@ static BOOL dri3_window_buffer_from_dmabuf(struct dri_backend_priv *priv,
     return TRUE;
 
 err:
-    WINE_ERR("dri3_window_buffer_from_dmabuf failed\n");
+    ERR("dri3_window_buffer_from_dmabuf failed\n");
     if (out)
         HeapFree(GetProcessHeap(), 0, *out);
     return FALSE;
@@ -169,7 +167,7 @@ static BOOL dri3_probe(Display *dpy)
     extension = xcb_get_extension_data(xcb_connection, &xcb_dri3_id);
     if (!(extension && extension->present))
     {
-        WINE_WARN("DRI3 extension is not present\n");
+        WARN("DRI3 extension is not present\n");
         return FALSE;
     }
 
@@ -179,12 +177,12 @@ static BOOL dri3_probe(Display *dpy)
     if (!dri3_reply)
     {
         free(error);
-        WINE_WARN("Issue getting requested v%d.%d of DRI3\n", major, minor);
+        WARN("Issue getting requested v%d.%d of DRI3\n", major, minor);
         return FALSE;
     }
 
-    WINE_TRACE("DRI3 v%d.%d found, v%d.%d requested\n", major, minor,
-            (int)dri3_reply->major_version, (int)dri3_reply->minor_version);
+    TRACE("DRI3 v%d.%d found, v%d.%d requested\n", major, minor,
+          (int)dri3_reply->major_version, (int)dri3_reply->minor_version);
     free(dri3_reply);
 
     return TRUE;
