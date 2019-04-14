@@ -16,7 +16,6 @@
 #include <objbase.h>
 #include <winternl.h>
 #include <d3d9.h>
-#include <wine/debug.h>
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -30,8 +29,6 @@
 #include "../common/library.h"
 #include "../common/registry.h"
 #include "resource.h"
-
-WINE_DEFAULT_DEBUG_CHANNEL(ninecfg);
 
 static const char * const fn_nine_dll = "d3d9-nine.dll";
 static const char * const fn_d3d9_dll = "d3d9.dll";
@@ -59,28 +56,28 @@ static DWORD executeCmdline(LPSTR cmdline)
     si.cb = sizeof(si);
     ZeroMemory( &pi, sizeof(pi) );
 
-    WINE_TRACE("Executing cmdline '%s'\n", cmdline);
+    TRACE("Executing cmdline '%s'\n", cmdline);
 
     if (!CreateProcessA(NULL, cmdline, NULL, NULL,
         FALSE, 0, NULL, NULL, &si, &pi ))
     {
-        WINE_ERR("CreateProcessA failed, error=%d", GetLastError());
+        ERR("CreateProcessA failed, error=%d", GetLastError());
         return ~0u;
     }
 
     if (WaitForSingleObject( pi.hProcess, INFINITE ) != WAIT_OBJECT_0)
     {
-        WINE_ERR("WaitForSingleObject failed, error=%d", GetLastError());
+        ERR("WaitForSingleObject failed, error=%d", GetLastError());
         return ~0u;
     }
 
     if (!GetExitCodeProcess( pi.hProcess, &exit_code ))
     {
-        WINE_ERR("GetExitCodeProcess failed, error=%d", GetLastError());
+        ERR("GetExitCodeProcess failed, error=%d", GetLastError());
         return ~0u;
     }
 
-    WINE_TRACE("Exit code: %u\n", exit_code);
+    TRACE("Exit code: %u\n", exit_code);
 
     return exit_code;
 }
@@ -152,7 +149,7 @@ static BOOL WINAPI DeleteSymLinkW(LPCWSTR lpFileName)
     ANSI_STRING unixDest;
     BOOL ret = FALSE;
 
-    WINE_TRACE("(%s)\n", nine_dbgstr_w(lpFileName));
+    TRACE("(%s)\n", nine_dbgstr_w(lpFileName));
 
     ntDest.Buffer = NULL;
     if (!RtlDosPathNameToNtPathName_U( lpFileName, &ntDest, NULL, NULL ))
@@ -167,13 +164,13 @@ static BOOL WINAPI DeleteSymLinkW(LPCWSTR lpFileName)
     {
         if (!unlink(unixDest.Buffer))
         {
-            WINE_TRACE("Removed symlink '%s'\n", nine_dbgstr_a( unixDest.Buffer ));
+            TRACE("Removed symlink '%s'\n", nine_dbgstr_a( unixDest.Buffer ));
             ret = TRUE;
             status = STATUS_SUCCESS;
         }
         else
         {
-            WINE_ERR("Failed to remove symlink\n");
+            ERR("Failed to remove symlink\n");
         }
     }
 
@@ -212,8 +209,8 @@ static BOOL WINAPI CreateSymLinkW(LPCWSTR lpFileName, LPCSTR existingUnixFileNam
     ANSI_STRING unixDest;
     BOOL ret = FALSE;
 
-    WINE_TRACE("(%s, %s, %p)\n", nine_dbgstr_w(lpFileName),
-         existingUnixFileName, lpSecurityAttributes);
+    TRACE("(%s, %s, %p)\n", nine_dbgstr_w(lpFileName),
+          existingUnixFileName, lpSecurityAttributes);
 
     ntDest.Buffer = NULL;
     if (!RtlDosPathNameToNtPathName_U( lpFileName, &ntDest, NULL, NULL ))
@@ -236,8 +233,8 @@ static BOOL WINAPI CreateSymLinkW(LPCWSTR lpFileName, LPCSTR existingUnixFileNam
         SetLastError( RtlNtStatusToDosError(status) );
     else if (!symlink( existingUnixFileName, unixDest.Buffer ))
     {
-        WINE_TRACE("Symlinked '%s' to '%s'\n", nine_dbgstr_a( unixDest.Buffer ),
-            existingUnixFileName);
+        TRACE("Symlinked '%s' to '%s'\n", nine_dbgstr_a( unixDest.Buffer ),
+              existingUnixFileName);
         ret = TRUE;
     }
 
@@ -274,7 +271,7 @@ static BOOL WINAPI IsFileSymLinkW(LPCWSTR lpExistingFileName)
     BOOL ret = FALSE;
     struct stat sb;
 
-    WINE_TRACE("(%s)\n", nine_dbgstr_w(lpExistingFileName));
+    TRACE("(%s)\n", nine_dbgstr_w(lpExistingFileName));
 
     ntSource.Buffer = NULL;
     if (!RtlDosPathNameToNtPathName_U( lpExistingFileName, &ntSource, NULL, NULL ))
@@ -388,7 +385,7 @@ static BOOL nine_get(void)
 
     if (!nine_get_system_path(buf, sizeof(buf)))
     {
-        WINE_ERR("Failed to get system path\n");
+        ERR("Failed to get system path\n");
         return FALSE;
     }
     strcat(buf, "\\");
@@ -397,7 +394,7 @@ static BOOL nine_get(void)
     if (!ret && IsFileSymLinkA(buf))
     {
         /* Sanity: Remove symlink if any */
-        WINE_ERR("removing obsolete symlink\n");
+        ERR("removing obsolete symlink\n");
         DeleteSymLinkA(buf);
         return FALSE;
     }
@@ -407,7 +404,7 @@ static BOOL nine_get(void)
     {
         /* broken symlink */
         DeleteSymLinkA(buf);
-        WINE_ERR("removing dead symlink\n");
+        ERR("removing dead symlink\n");
         return FALSE;
     }
 
@@ -436,16 +433,16 @@ static void nine_set(BOOL status, BOOL NoOtherArch)
     if (!status)
     {
         if (!common_del_registry_key(reg_path_dll_overrides, reg_key_d3d9))
-            WINE_ERR("Failed to delete 'HKCU\\%s\\%s'\n'", reg_path_dll_overrides, reg_key_d3d9);
+            ERR("Failed to delete 'HKCU\\%s\\%s'\n'", reg_path_dll_overrides, reg_key_d3d9);
     }
     else
     {
         if (!common_set_registry_string(reg_path_dll_overrides, reg_key_d3d9, reg_value_override))
-            WINE_ERR("Failed to write 'HKCU\\%s\\%s'\n", reg_path_dll_overrides, reg_key_d3d9);
+            ERR("Failed to write 'HKCU\\%s\\%s'\n", reg_path_dll_overrides, reg_key_d3d9);
     }
 
     if (!nine_get_system_path(dst, sizeof(dst))) {
-        WINE_ERR("Failed to get system path\n");
+        ERR("Failed to get system path\n");
         return;
     }
     strcat(dst, "\\");
@@ -466,15 +463,15 @@ static void nine_set(BOOL status, BOOL NoOtherArch)
             if (dladdr(hmod, &info) && info.dli_fname)
             {
                 if (!CreateSymLinkA(dst, info.dli_fname, NULL))
-                    WINE_ERR("CreateSymLinkA(%s,%s) failed\n", dst, info.dli_fname);
+                    ERR("CreateSymLinkA(%s,%s) failed\n", dst, info.dli_fname);
             }
             else
-                WINE_ERR("dladdr failed to get file path\n");
+                ERR("dladdr failed to get file path\n");
 
             FreeLibrary(hmod);
         } else {
             LPWSTR msg = load_message(GetLastError());
-            WINE_ERR("Couldn't load %s: %s\n", fn_nine_dll, nine_dbgstr_w(msg));
+            ERR("Couldn't load %s: %s\n", fn_nine_dll, nine_dbgstr_w(msg));
             LocalFree(msg);
         }
     }
@@ -621,7 +618,7 @@ static BOOL ProcessCmdLine(WCHAR *cmdline, BOOL *result)
         switch (towupper(argv[i][1]))
         {
         case '?':
-            WINE_ERR("\nSupported arguments: [ -e | -d ][ -n ]\n-e Enable nine\n-d Disable nine\n-n Do not call other arch exe\n");
+            ERR("\nSupported arguments: [ -e | -d ][ -n ]\n-e Enable nine\n-d Disable nine\n-n Do not call other arch exe\n");
             return TRUE;
         case 'E':
             NineSet = TRUE;
@@ -875,11 +872,11 @@ WinMain (HINSTANCE hInstance, HINSTANCE hPrev, LPSTR szCmdLine, int nShow)
     CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
     if (doPropertySheet (hInstance, NULL) > 0)
     {
-        WINE_TRACE("OK\n");
+        TRACE("OK\n");
     }
     else
     {
-        WINE_TRACE("Cancel\n");
+        TRACE("Cancel\n");
     }
     CoUninitialize();
     ExitProcess (0);
