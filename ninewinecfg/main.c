@@ -26,6 +26,7 @@
 #include <dlfcn.h>
 #include <wctype.h>
 
+#include "../common/debug.h"
 #include "../common/library.h"
 #include "../common/registry.h"
 #include "resource.h"
@@ -151,7 +152,7 @@ static BOOL WINAPI DeleteSymLinkW(LPCWSTR lpFileName)
     ANSI_STRING unixDest;
     BOOL ret = FALSE;
 
-    WINE_TRACE("(%s)\n", wine_dbgstr_w(lpFileName));
+    WINE_TRACE("(%s)\n", nine_dbgstr_w(lpFileName));
 
     ntDest.Buffer = NULL;
     if (!RtlDosPathNameToNtPathName_U( lpFileName, &ntDest, NULL, NULL ))
@@ -166,7 +167,7 @@ static BOOL WINAPI DeleteSymLinkW(LPCWSTR lpFileName)
     {
         if (!unlink(unixDest.Buffer))
         {
-            WINE_TRACE("Removed symlink '%s'\n", wine_dbgstr_a( unixDest.Buffer ));
+            WINE_TRACE("Removed symlink '%s'\n", nine_dbgstr_a( unixDest.Buffer ));
             ret = TRUE;
             status = STATUS_SUCCESS;
         }
@@ -211,7 +212,7 @@ static BOOL WINAPI CreateSymLinkW(LPCWSTR lpFileName, LPCSTR existingUnixFileNam
     ANSI_STRING unixDest;
     BOOL ret = FALSE;
 
-    WINE_TRACE("(%s, %s, %p)\n", wine_dbgstr_w(lpFileName),
+    WINE_TRACE("(%s, %s, %p)\n", nine_dbgstr_w(lpFileName),
          existingUnixFileName, lpSecurityAttributes);
 
     ntDest.Buffer = NULL;
@@ -235,7 +236,7 @@ static BOOL WINAPI CreateSymLinkW(LPCWSTR lpFileName, LPCSTR existingUnixFileNam
         SetLastError( RtlNtStatusToDosError(status) );
     else if (!symlink( existingUnixFileName, unixDest.Buffer ))
     {
-        WINE_TRACE("Symlinked '%s' to '%s'\n", wine_dbgstr_a( unixDest.Buffer ),
+        WINE_TRACE("Symlinked '%s' to '%s'\n", nine_dbgstr_a( unixDest.Buffer ),
             existingUnixFileName);
         ret = TRUE;
     }
@@ -273,7 +274,7 @@ static BOOL WINAPI IsFileSymLinkW(LPCWSTR lpExistingFileName)
     BOOL ret = FALSE;
     struct stat sb;
 
-    WINE_TRACE("(%s)\n", wine_dbgstr_w(lpExistingFileName));
+    WINE_TRACE("(%s)\n", nine_dbgstr_w(lpExistingFileName));
 
     ntSource.Buffer = NULL;
     if (!RtlDosPathNameToNtPathName_U( lpExistingFileName, &ntSource, NULL, NULL ))
@@ -473,7 +474,7 @@ static void nine_set(BOOL status, BOOL NoOtherArch)
             FreeLibrary(hmod);
         } else {
             LPWSTR msg = load_message(GetLastError());
-            WINE_ERR("Couldn't load %s: %s\n", fn_nine_dll, wine_dbgstr_w(msg));
+            WINE_ERR("Couldn't load %s: %s\n", fn_nine_dll, nine_dbgstr_w(msg));
             LocalFree(msg);
         }
     }
