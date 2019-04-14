@@ -1,11 +1,9 @@
 /* SPDX-License-Identifier: LGPL-2.1-or-later */
 
 #include <windows.h>
-#include <wine/debug.h>
 
+#include "../common/debug.h"
 #include "registry.h"
-
-WINE_DEFAULT_DEBUG_CHANNEL(ninecfg);
 
 const char * const reg_path_dll_overrides = "Software\\Wine\\DllOverrides";
 const char * const reg_path_dll_redirects = "Software\\Wine\\DllRedirects";
@@ -22,24 +20,24 @@ BOOL common_get_registry_string(LPCSTR path, LPCSTR name, LPSTR *value)
     DWORD type;
     DWORD size = 0;
 
-    WINE_TRACE("Getting string key '%s' at 'HKCU\\%s'\n", name, path);
+    TRACE("Getting string key '%s' at 'HKCU\\%s'\n", name, path);
 
     if (RegOpenKeyA(HKEY_CURRENT_USER, path, &regkey) != ERROR_SUCCESS)
     {
-        WINE_TRACE("Failed to open path 'HKCU\\%s'\n", path);
+        TRACE("Failed to open path 'HKCU\\%s'\n", path);
         return FALSE;
     }
 
     if (RegQueryValueExA(regkey, name, 0, &type, NULL, &size) != ERROR_SUCCESS)
     {
-        WINE_TRACE("Failed to query key '%s' at 'HKCU\\%s'\n", name, path);
+        TRACE("Failed to query key '%s' at 'HKCU\\%s'\n", name, path);
         RegCloseKey(regkey);
         return FALSE;
     }
 
     if (type != REG_SZ)
     {
-        WINE_TRACE("Key '%s' at 'HKCU\\%s' is not a string\n", name, path);
+        TRACE("Key '%s' at 'HKCU\\%s' is not a string\n", name, path);
         RegCloseKey(regkey);
         return FALSE;
     }
@@ -53,7 +51,7 @@ BOOL common_get_registry_string(LPCSTR path, LPCSTR name, LPSTR *value)
 
     if (RegQueryValueExA(regkey, name, 0, &type, (LPBYTE)*value, &size) != ERROR_SUCCESS)
     {
-        WINE_TRACE("Failed to read value of key '%s' at 'HKCU\\%s'\n", name, path);
+        TRACE("Failed to read value of key '%s' at 'HKCU\\%s'\n", name, path);
         HeapFree(GetProcessHeap(), 0, *value);
         RegCloseKey(regkey);
         return FALSE;
@@ -61,7 +59,7 @@ BOOL common_get_registry_string(LPCSTR path, LPCSTR name, LPSTR *value)
 
     RegCloseKey(regkey);
 
-    WINE_TRACE("Value is '%s'\n", *value);
+    TRACE("Value is '%s'\n", *value);
 
     return TRUE;
 }
@@ -70,17 +68,17 @@ BOOL common_set_registry_string(LPCSTR path, LPCSTR name, LPCSTR value)
 {
     HKEY regkey;
 
-    WINE_TRACE("Setting key '%s' at 'HKCU\\%s' to '%s'\n", name, path, value);
+    TRACE("Setting key '%s' at 'HKCU\\%s' to '%s'\n", name, path, value);
 
     if (RegCreateKeyA(HKEY_CURRENT_USER, path, &regkey) != ERROR_SUCCESS)
     {
-        WINE_TRACE("Failed to open path 'HKCU\\%s'\n", path);
+        TRACE("Failed to open path 'HKCU\\%s'\n", path);
         return FALSE;
     }
 
     if (RegSetValueExA(regkey, name, 0, REG_SZ, (LPBYTE)value, strlen(value)) != ERROR_SUCCESS)
     {
-        WINE_TRACE("Failed to write key '%s' at 'HKCU\\%s'\n", name, path);
+        TRACE("Failed to write key '%s' at 'HKCU\\%s'\n", name, path);
         RegCloseKey(regkey);
         return FALSE;
     }
@@ -95,7 +93,7 @@ BOOL common_del_registry_key(LPCSTR path, LPCSTR name)
     HKEY regkey;
     LSTATUS rc;
 
-    WINE_TRACE("Deleting key '%s' at 'HKCU\\%s'\n", name, path);
+    TRACE("Deleting key '%s' at 'HKCU\\%s'\n", name, path);
 
     rc = RegOpenKeyA(HKEY_CURRENT_USER, path, &regkey);
     if (rc == ERROR_FILE_NOT_FOUND)
@@ -103,14 +101,14 @@ BOOL common_del_registry_key(LPCSTR path, LPCSTR name)
 
     if (rc != ERROR_SUCCESS)
     {
-        WINE_TRACE("Failed to open path 'HKCU\\%s'\n", path);
+        TRACE("Failed to open path 'HKCU\\%s'\n", path);
         return FALSE;
     }
 
     rc = RegDeleteValueA(regkey, name);
     if (rc != ERROR_FILE_NOT_FOUND && rc != ERROR_SUCCESS)
     {
-        WINE_TRACE("Failed to delete key '%s' at 'HKCU\\%s'\n", name, path);
+        TRACE("Failed to delete key '%s' at 'HKCU\\%s'\n", name, path);
         RegCloseKey(regkey);
         return FALSE;
     }

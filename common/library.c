@@ -1,7 +1,5 @@
 /* SPDX-License-Identifier: LGPL-2.1-or-later */
 
-#include <wine/debug.h>
-
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <stdio.h>
@@ -9,10 +7,9 @@
 #include <dlfcn.h>
 #include <unistd.h>
 
+#include "../common/debug.h"
 #include "library.h"
 #include "registry.h"
-
-WINE_DEFAULT_DEBUG_CHANNEL(d3d9nine);
 
 #define D3DADAPTER9 "d3dadapter9.so.1"
 
@@ -37,7 +34,7 @@ static void *open_d3dadapter(char *paths, char **res, char **err)
         if (!stat(path, &st) && S_ISDIR(st.st_mode))
             strcat(path, "/" D3DADAPTER9);
 
-        WINE_TRACE("Trying to load '%s'\n", path);
+        TRACE("Trying to load '%s'\n", path);
         handle = dlopen(path, RTLD_GLOBAL | RTLD_NOW);
 
         if (handle) {
@@ -50,7 +47,7 @@ static void *open_d3dadapter(char *paths, char **res, char **err)
         free(lasterr);
         lasterr = strdup(dlerror());
 
-        WINE_TRACE("Failed to load '%s': %s\n", path, lasterr);
+        TRACE("Failed to load '%s': %s\n", path, lasterr);
     }
 
     if (handle || !err)
@@ -60,7 +57,7 @@ static void *open_d3dadapter(char *paths, char **res, char **err)
     }
 
     if (handle)
-        WINE_TRACE("Loaded '%s'\n", path);
+        TRACE("Loaded '%s'\n", path);
 
     if (err)
         *err = lasterr;
@@ -79,7 +76,7 @@ void *common_load_d3dadapter(char **path, char **err)
         handle = open_d3dadapter(env, path, err);
 
         if (!handle)
-            WINE_ERR("Failed to load " D3DADAPTER9 " set by D3D_MODULE_PATH (%s)\n", env);
+            ERR("Failed to load " D3DADAPTER9 " set by D3D_MODULE_PATH (%s)\n", env);
 
         return handle;
     }
@@ -89,7 +86,7 @@ void *common_load_d3dadapter(char **path, char **err)
         handle = open_d3dadapter(reg, path, err);
 
         if (!handle)
-            WINE_ERR("Failed to load " D3DADAPTER9 " set by ModulePath (%s)\n", reg);
+            ERR("Failed to load " D3DADAPTER9 " set by ModulePath (%s)\n", reg);
 
         HeapFree(GetProcessHeap(), 0, reg);
 
@@ -100,8 +97,8 @@ void *common_load_d3dadapter(char **path, char **err)
     handle = open_d3dadapter(D3D9NINE_MODULEPATH, path, err);
 
     if (!handle)
-        WINE_ERR("Failed to load " D3DADAPTER9 " set by builtin default '%s'\n",
-                 D3D9NINE_MODULEPATH);
+        ERR("Failed to load " D3DADAPTER9 " set by builtin default '%s'\n",
+            D3D9NINE_MODULEPATH);
 
     return handle;
 #else
@@ -113,9 +110,9 @@ void *common_load_d3dadapter(char **path, char **err)
                              , path, err);
 
     if (!handle)
-        WINE_ERR(D3DADAPTER9 " was not found on your system.\n"
-                 "Setting the envvar D3D_MODULE_PATH or "
-                 "regkey Software\\Wine\\Direct3DNine\\ModulePath is required\n");
+        ERR(D3DADAPTER9 " was not found on your system.\n"
+            "Setting the envvar D3D_MODULE_PATH or "
+            "regkey Software\\Wine\\Direct3DNine\\ModulePath is required\n");
 
     return handle;
 #endif
