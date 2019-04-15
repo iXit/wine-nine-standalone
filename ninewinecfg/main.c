@@ -126,6 +126,26 @@ static BOOL Call64bitNineWineCfg(BOOL state)
     return res;
 }
 
+static char *unix_filename(const LPCSTR filename)
+{
+    int len;
+    WCHAR *filename_w;
+    char *filename_u;
+
+    len = MultiByteToWideChar(CP_ACP, 0, filename, -1, NULL, 0);
+    filename_w = HeapAlloc(GetProcessHeap(), 0, len * sizeof(WCHAR));
+    if (!filename_w)
+        return NULL;
+
+    MultiByteToWideChar(CP_ACP, 0, filename, -1, filename_w, len);
+
+    filename_u = wine_get_unix_file_name(filename_w);
+
+    HeapFree(GetProcessHeap(), 0, filename_w);
+
+    return filename_u;
+}
+
 /* helper functions taken from NTDLL and KERNEL32 */
 static LPWSTR FILE_name_AtoW(LPCSTR name, int optarg)
 {
