@@ -208,58 +208,22 @@ static BOOL create_symlink(LPCSTR target, LPCSTR filename)
     return ret;
 }
 
-static BOOL WINAPI IsFileSymLinkW(LPCWSTR lpExistingFileName)
+static BOOL is_symlink(LPCSTR filename)
 {
-    NTSTATUS status;
-    UNICODE_STRING ntSource;
-    ANSI_STRING unixSource;
-    BOOL ret = FALSE;
+    BOOL ret;
+    char *fn = unix_filename(filename);
     struct stat sb;
 
-    TRACE("(%s)\n", nine_dbgstr_w(lpExistingFileName));
-
-    ntSource.Buffer = NULL;
-    if (!RtlDosPathNameToNtPathName_U( lpExistingFileName, &ntSource, NULL, NULL ))
-    {
-        SetLastError( ERROR_PATH_NOT_FOUND );
-        goto err;
-    }
-
-    unixSource.Buffer = NULL;
-    status = wine_nt_to_unix_file_name( &ntSource, &unixSource, FILE_OPEN, FALSE );
-    if (status == STATUS_NO_SUCH_FILE)
-    {
-        SetLastError( ERROR_PATH_NOT_FOUND );
-        goto err;
-    }
-
-    if (!lstat( unixSource.Buffer, &sb) && (sb.st_mode & S_IFMT) == S_IFLNK)
-    {
-        ret = TRUE;
-    }
-
-    RtlFreeAnsiString( &unixSource );
-
-err:
-    RtlFreeUnicodeString( &ntSource );
-    return ret;
-}
-
-static BOOL WINAPI IsFileSymLinkA(LPCSTR lpExistingFileName)
-{
-    WCHAR *sourceW;
-    BOOL res;
-
-    if (!(sourceW = FILE_name_AtoW( lpExistingFileName, TRUE )))
-    {
+    if (!fn)
         return FALSE;
-    }
 
-    res = IsFileSymLinkW( sourceW );
+    ret = !lstat(fn, &sb) && S_ISLNK(sb.st_mode);
 
-    HeapFree( GetProcessHeap(), 0, sourceW );
+    TRACE("%s: %d\n", nine_dbgstr_a(fn), ret);
 
-    return res;
+    HeapFree(GetProcessHeap(), 0, fn);
+
+    return ret;
 }
 
 static BOOL nine_get_system_path(CHAR *pOut, DWORD SizeOut)
@@ -336,7 +300,7 @@ static BOOL nine_get(void)
     strcat(buf, "\\");
     strcat(buf, fn_d3d9_dll);
 
-    if (!ret && IsFileSymLinkA(buf))
+    if (!ret && is_symlink(buf))
     {
         /* Sanity: Remove symlink if any */
         ERR("removing obsolete symlink\n");
@@ -344,7 +308,7 @@ static BOOL nine_get(void)
         return FALSE;
     }
 
-    ret = IsFileSymLinkA(buf);
+    ret = is_symlink(buf);
     if (ret && !PathFileExistsA(buf))
     {
         /* broken symlink */
