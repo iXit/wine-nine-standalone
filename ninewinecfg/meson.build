@@ -30,7 +30,6 @@ ninewinecfg_exe = executable(
                      dep_user32,
                      dep_comctl32,
                      dep_ole32,
-                     dep_shlwapi,
                    ],
   install        : true
 )

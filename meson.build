@@ -111,7 +111,6 @@ dep_user32 = cc.find_library('user32')
 dep_shell32 = cc.find_library('shell32')
 dep_comctl32 = cc.find_library('comctl32')
 dep_ole32 = cc.find_library('ole32')
-dep_shlwapi = cc.find_library('shlwapi')
 
 moduledir = dep_d3dadapter9.get_pkgconfig_variable('moduledir')
 
