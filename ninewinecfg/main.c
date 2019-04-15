@@ -144,6 +144,27 @@ static char *unix_filename(const LPCSTR filename)
     return filename_u;
 }
 
+static BOOL file_exist(LPCSTR filename, BOOL link)
+{
+    BOOL ret;
+    char *fn = unix_filename(filename);
+    struct stat sb;
+
+    if (!fn)
+        return FALSE;
+
+    if (link)
+        ret = !lstat(fn, &sb);
+    else
+        ret = !stat(fn, &sb);
+
+    TRACE("%s: %d (%d)\n", nine_dbgstr_a(fn), ret, link);
+
+    HeapFree(GetProcessHeap(), 0, fn);
+
+    return ret;
+}
+
 static BOOL remove_file(LPCSTR filename)
 {
     BOOL ret;
@@ -291,7 +312,7 @@ static BOOL nine_get(void)
     }
 
     ret = is_symlink(buf);
-    if (ret && !PathFileExistsA(buf))
+    if (ret && !file_exist(buf, FALSE))
     {
         /* broken symlink */
         remove_file(buf);
@@ -344,7 +365,8 @@ static void nine_set(BOOL status, BOOL NoOtherArch)
         HMODULE hmod;
 
         /* Sanity: Always recreate symlink */
-        remove_file(dst);
+        if (file_exist(dst, TRUE))
+            remove_file(dst);
 
         hmod = LoadLibraryExA(fn_nine_dll, NULL, DONT_RESOLVE_DLL_REFERENCES);
         if (hmod)
