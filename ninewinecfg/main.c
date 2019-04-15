@@ -162,63 +162,26 @@ static LPWSTR FILE_name_AtoW(LPCSTR name, int optarg)
     return NULL;
 }
 
-static BOOL WINAPI DeleteSymLinkW(LPCWSTR lpFileName)
+static BOOL remove_file(LPCSTR filename)
 {
-    NTSTATUS status;
-    UNICODE_STRING ntDest;
-    ANSI_STRING unixDest;
-    BOOL ret = FALSE;
+    BOOL ret;
+    char *fn = unix_filename(filename);
 
-    TRACE("(%s)\n", nine_dbgstr_w(lpFileName));
-
-    ntDest.Buffer = NULL;
-    if (!RtlDosPathNameToNtPathName_U( lpFileName, &ntDest, NULL, NULL ))
-    {
-        SetLastError( ERROR_PATH_NOT_FOUND );
-        goto err;
-    }
-
-    unixDest.Buffer = NULL;
-    status = wine_nt_to_unix_file_name( &ntDest, &unixDest, 0, FALSE );
-    if (!status)
-    {
-        if (!unlink(unixDest.Buffer))
-        {
-            TRACE("Removed symlink '%s'\n", nine_dbgstr_a( unixDest.Buffer ));
-            ret = TRUE;
-            status = STATUS_SUCCESS;
-        }
-        else
-        {
-            ERR("Failed to remove symlink\n");
-        }
-    }
-
-    if (status)
-         SetLastError( RtlNtStatusToDosError(status) );
-
-    RtlFreeAnsiString( &unixDest );
-
-err:
-    RtlFreeUnicodeString( &ntDest );
-    return ret;
-}
-
-static BOOL WINAPI DeleteSymLinkA(LPCSTR lpFileName)
-{
-    WCHAR *destW;
-    BOOL res;
-
-    if (!(destW = FILE_name_AtoW( lpFileName, TRUE )))
-    {
+    if (!fn)
         return FALSE;
+
+    if (!unlink(fn))
+    {
+        ret = TRUE;
+        TRACE("Removed %s\n", nine_dbgstr_a(fn));
+    } else {
+        ret = FALSE;
+        ERR("Failed to remove %s\n", nine_dbgstr_a(fn));
     }
 
-    res = DeleteSymLinkW( destW );
+    HeapFree(GetProcessHeap(), 0, fn);
 
-    HeapFree( GetProcessHeap(), 0, destW );
-
-    return res;
+    return ret;
 }
 
 static BOOL WINAPI CreateSymLinkW(LPCWSTR lpFileName, LPCSTR existingUnixFileName,
@@ -415,7 +378,7 @@ static BOOL nine_get(void)
     {
         /* Sanity: Remove symlink if any */
         ERR("removing obsolete symlink\n");
-        DeleteSymLinkA(buf);
+        remove_file(buf);
         return FALSE;
     }
 
@@ -423,7 +386,7 @@ static BOOL nine_get(void)
     if (ret && !PathFileExistsA(buf))
     {
         /* broken symlink */
-        DeleteSymLinkA(buf);
+        remove_file(buf);
         ERR("removing dead symlink\n");
         return FALSE;
     }
@@ -473,7 +436,7 @@ static void nine_set(BOOL status, BOOL NoOtherArch)
         HMODULE hmod;
 
         /* Sanity: Always recreate symlink */
-        DeleteSymLinkA(dst);
+        remove_file(dst);
 
         hmod = LoadLibraryExA(fn_nine_dll, NULL, DONT_RESOLVE_DLL_REFERENCES);
         if (hmod)
@@ -494,9 +457,9 @@ static void nine_set(BOOL status, BOOL NoOtherArch)
             ERR("Couldn't load %s: %s\n", fn_nine_dll, nine_dbgstr_w(msg));
             LocalFree(msg);
         }
+    } else {
+        remove_file(dst);
     }
-    else
-        DeleteSymLinkA(dst);
 }
 
 typedef HRESULT (WINAPI *LPDIRECT3DCREATE9EX)(UINT, IDirect3D9Ex **);
