@@ -9,12 +9,10 @@
  */
 
 #include <windows.h>
-#include <ntstatus.h>
 #include <commctrl.h>
 #include <shellapi.h>
 #include <shlwapi.h>
 #include <objbase.h>
-#include <winternl.h>
 #include <d3d9.h>
 
 #include <sys/types.h>
@@ -144,22 +142,6 @@ static char *unix_filename(const LPCSTR filename)
     HeapFree(GetProcessHeap(), 0, filename_w);
 
     return filename_u;
-}
-
-/* helper functions taken from NTDLL and KERNEL32 */
-static LPWSTR FILE_name_AtoW(LPCSTR name, int optarg)
-{
-    ANSI_STRING str;
-    UNICODE_STRING strW, *pstrW;
-    NTSTATUS status;
-
-    RtlInitAnsiString( &str, name );
-    pstrW = &strW ;
-    status = RtlAnsiStringToUnicodeString( pstrW, &str, TRUE );
-    if (status == STATUS_SUCCESS)
-        return pstrW->Buffer;
-
-    return NULL;
 }
 
 static BOOL remove_file(LPCSTR filename)
