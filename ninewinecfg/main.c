@@ -184,66 +184,28 @@ static BOOL remove_file(LPCSTR filename)
     return ret;
 }
 
-static BOOL WINAPI CreateSymLinkW(LPCWSTR lpFileName, LPCSTR existingUnixFileName,
-    LPSECURITY_ATTRIBUTES lpSecurityAttributes)
+static BOOL create_symlink(LPCSTR target, LPCSTR filename)
 {
-    NTSTATUS status;
-    UNICODE_STRING ntDest;
-    ANSI_STRING unixDest;
-    BOOL ret = FALSE;
+    BOOL ret;
+    char *fn = unix_filename(filename);
 
-    TRACE("(%s, %s, %p)\n", nine_dbgstr_w(lpFileName),
-          existingUnixFileName, lpSecurityAttributes);
-
-    ntDest.Buffer = NULL;
-    if (!RtlDosPathNameToNtPathName_U( lpFileName, &ntDest, NULL, NULL ))
-    {
-        SetLastError( ERROR_PATH_NOT_FOUND );
-        goto err;
-    }
-
-    unixDest.Buffer = NULL;
-    status = wine_nt_to_unix_file_name( &ntDest, &unixDest, FILE_CREATE, FALSE );
-    if (!status) /* destination must not exist */
-    {
-        status = STATUS_OBJECT_NAME_EXISTS;
-    } else if (status == STATUS_NO_SUCH_FILE)
-    {
-        status = STATUS_SUCCESS;
-    }
-
-    if (status)
-        SetLastError( RtlNtStatusToDosError(status) );
-    else if (!symlink( existingUnixFileName, unixDest.Buffer ))
-    {
-        TRACE("Symlinked '%s' to '%s'\n", nine_dbgstr_a( unixDest.Buffer ),
-              existingUnixFileName);
-        ret = TRUE;
-    }
-
-    RtlFreeAnsiString( &unixDest );
-
-err:
-    RtlFreeUnicodeString( &ntDest );
-    return ret;
-}
-
-static BOOL WINAPI CreateSymLinkA(LPCSTR lpFileName, LPCSTR lpExistingUnixFileName,
-    LPSECURITY_ATTRIBUTES lpSecurityAttributes)
-{
-    WCHAR *destW;
-    BOOL res;
-
-    if (!(destW = FILE_name_AtoW( lpFileName, TRUE )))
-    {
+    if (!fn)
         return FALSE;
+
+    if (!symlink(target, fn))
+    {
+        TRACE("Symlinked '%s' to '%s'\n", nine_dbgstr_a(fn),
+              nine_dbgstr_a(target));
+        ret = TRUE;
+    } else {
+        ERR("Failed to symlinked '%s' to '%s'\n", nine_dbgstr_a(fn),
+              nine_dbgstr_a(target));
+        ret = FALSE;
     }
 
-    res = CreateSymLinkW( destW, lpExistingUnixFileName, lpSecurityAttributes );
+    HeapFree(GetProcessHeap(), 0, fn);
 
-    HeapFree( GetProcessHeap(), 0, destW );
-
-    return res;
+    return ret;
 }
 
 static BOOL WINAPI IsFileSymLinkW(LPCWSTR lpExistingFileName)
@@ -444,10 +406,7 @@ static void nine_set(BOOL status, BOOL NoOtherArch)
             Dl_info info;
 
             if (dladdr(hmod, &info) && info.dli_fname)
-            {
-                if (!CreateSymLinkA(dst, info.dli_fname, NULL))
-                    ERR("CreateSymLinkA(%s,%s) failed\n", dst, info.dli_fname);
-            }
+                create_symlink(info.dli_fname, dst);
             else
                 ERR("dladdr failed to get file path\n");
 
