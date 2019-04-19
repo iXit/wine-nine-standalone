@@ -29,15 +29,15 @@
 #define D3DPRESENT_DONOTWAIT      0x00000001
 #endif
 
-#define WINE_D3DADAPTER_DRIVER_PRESENT_VERSION_MAJOR 1
+#define D3DADAPTER_DRIVER_PRESENT_VERSION_MAJOR 1
 #if defined (ID3DPresent_SetPresentParameters2)
-#define WINE_D3DADAPTER_DRIVER_PRESENT_VERSION_MINOR 3
+#define D3DADAPTER_DRIVER_PRESENT_VERSION_MINOR 3
 #elif defined (ID3DPresent_ResolutionMismatch)
-#define WINE_D3DADAPTER_DRIVER_PRESENT_VERSION_MINOR 2
+#define D3DADAPTER_DRIVER_PRESENT_VERSION_MINOR 2
 #elif defined (ID3DPresent_GetWindowOccluded)
-#define WINE_D3DADAPTER_DRIVER_PRESENT_VERSION_MINOR 1
+#define D3DADAPTER_DRIVER_PRESENT_VERSION_MINOR 1
 #else
-#define WINE_D3DADAPTER_DRIVER_PRESENT_VERSION_MINOR 0
+#define D3DADAPTER_DRIVER_PRESENT_VERSION_MINOR 0
 #endif
 
 static const struct D3DAdapter9DRM *d3d9_drm = NULL;
@@ -1267,14 +1267,14 @@ static HRESULT WINAPI DRIPresent_GetWindowInfo( struct DRIPresent *This,
     return D3D_OK;
 }
 
-#if WINE_D3DADAPTER_DRIVER_PRESENT_VERSION_MINOR >= 1
+#if D3DADAPTER_DRIVER_PRESENT_VERSION_MINOR >= 1
 static BOOL WINAPI DRIPresent_GetWindowOccluded(struct DRIPresent *This)
 {
     return This->occluded;
 }
 #endif
 
-#if WINE_D3DADAPTER_DRIVER_PRESENT_VERSION_MINOR >= 2
+#if D3DADAPTER_DRIVER_PRESENT_VERSION_MINOR >= 2
 static BOOL WINAPI DRIPresent_ResolutionMismatch(struct DRIPresent *This)
 {
     /* The resolution might change due to a third party app.
@@ -1303,7 +1303,7 @@ static BOOL WINAPI DRIPresent_WaitForThread( struct DRIPresent *This, HANDLE thr
 }
 #endif
 
-#if WINE_D3DADAPTER_DRIVER_PRESENT_VERSION_MINOR >= 3
+#if D3DADAPTER_DRIVER_PRESENT_VERSION_MINOR >= 3
 static HRESULT WINAPI DRIPresent_SetPresentParameters2( struct DRIPresent *This, D3DPRESENT_PARAMETERS2 *pParams )
 {
     This->allow_discard_delayed_release = pParams->AllowDISCARDDelayedRelease;
@@ -1342,15 +1342,15 @@ static ID3DPresentVtbl DRIPresent_vtable = {
     (void *)DRIPresent_SetCursor,
     (void *)DRIPresent_SetGammaRamp,
     (void *)DRIPresent_GetWindowInfo,
-#if WINE_D3DADAPTER_DRIVER_PRESENT_VERSION_MINOR >= 1
+#if D3DADAPTER_DRIVER_PRESENT_VERSION_MINOR >= 1
     (void *)DRIPresent_GetWindowOccluded,
 #endif
-#if WINE_D3DADAPTER_DRIVER_PRESENT_VERSION_MINOR >= 2
+#if D3DADAPTER_DRIVER_PRESENT_VERSION_MINOR >= 2
     (void *)DRIPresent_ResolutionMismatch,
     (void *)DRIPresent_CreateThread,
     (void *)DRIPresent_WaitForThread,
 #endif
-#if WINE_D3DADAPTER_DRIVER_PRESENT_VERSION_MINOR >= 3
+#if D3DADAPTER_DRIVER_PRESENT_VERSION_MINOR >= 3
     (void *)DRIPresent_SetPresentParameters2,
     (void *)DRIPresent_IsBufferReleased,
     (void *)DRIPresent_WaitBufferReleaseEvent,
@@ -1549,8 +1549,8 @@ static HRESULT WINAPI DRIPresentGroup_CreateAdditionalPresent(struct DRIPresentG
 static void WINAPI DRIPresentGroup_GetVersion(struct DRIPresentGroup *This,
         int *major, int *minor)
 {
-    *major = WINE_D3DADAPTER_DRIVER_PRESENT_VERSION_MAJOR;
-    *minor = WINE_D3DADAPTER_DRIVER_PRESENT_VERSION_MINOR;
+    *major = D3DADAPTER_DRIVER_PRESENT_VERSION_MAJOR;
+    *minor = D3DADAPTER_DRIVER_PRESENT_VERSION_MINOR;
 }
 
 static ID3DPresentGroupVtbl DRIPresentGroup_vtable = {
@@ -1723,8 +1723,8 @@ BOOL present_has_d3dadapter(Display *gdi_display)
 #ifndef NDEBUG
     char buf[16];
     sprintf(buf, "%d.%d\n",
-        WINE_D3DADAPTER_DRIVER_PRESENT_VERSION_MAJOR,
-        WINE_D3DADAPTER_DRIVER_PRESENT_VERSION_MINOR);
+            D3DADAPTER_DRIVER_PRESENT_VERSION_MAJOR,
+            D3DADAPTER_DRIVER_PRESENT_VERSION_MINOR);
 
     if (!common_set_registry_string(reg_path_nine, reg_key_debug_wine_present_version, buf))
         ERR("Failed to set registry key %s\n", reg_key_debug_wine_present_version);
