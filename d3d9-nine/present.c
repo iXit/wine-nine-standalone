@@ -1697,10 +1697,13 @@ BOOL present_has_d3dadapter(Display *gdi_display)
     /* verify that we're binary compatible */
     if (d3d9_drm->major_version != 0)
     {
-        ERR("Version mismatch. %s has %d.%d, was expecting 0.x\n",
+        ERR("Version mismatch. %s has %u.%u, was expecting 0.x\n",
             pathbuf, d3d9_drm->major_version, d3d9_drm->minor_version);
         goto cleanup;
     }
+
+    TRACE("d3dadapter9 version: %u.%u\n",
+          d3d9_drm->major_version, d3d9_drm->minor_version);
 
     /* this will be used to store d3d_drawables */
     d3d_hwnd_context = XUniqueContext();
