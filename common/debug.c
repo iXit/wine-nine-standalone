@@ -43,15 +43,14 @@ retry:
     return __nine_debug.buf + pos_use;
 }
 
-const char *__nine_dbg_strdup(const char *s)
+const char *__nine_dbg_strdup(const char *s, size_t len)
 {
-    size_t n = strlen(s) + 1;
-    char *buf = __nine_debug_buf(n);
+    char *buf = __nine_debug_buf(len + 1);
 
     if (!buf)
         return NULL;
 
-    return memcpy(buf, s, n);
+    return memcpy(buf, s, len + 1);
 }
 
 static void nine_dbg_init() __attribute__((constructor));

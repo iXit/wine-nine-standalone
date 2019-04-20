@@ -21,7 +21,7 @@ enum __nine_debug_class
 
 extern unsigned char __nine_debug_flags;
 
-const char *__nine_dbg_strdup(const char *s);
+const char *__nine_dbg_strdup(const char *s, size_t len);
 
 static inline int __nine_dbg_log(enum __nine_debug_class dbcl, const char *function,
                                  const char *format, ...) NINE_ATTR_PRINTF(3, 4);
@@ -58,11 +58,12 @@ static inline const char *nine_dbg_sprintf(const char *format, ...)
 {
     char buffer[256] NINE_ATTR_ALIGNED(16);
     va_list args;
+    size_t len;
 
     va_start(args, format);
-    vsnprintf(buffer, sizeof(buffer), format, args);
+    len = vsnprintf(buffer, sizeof(buffer), format, args);
     va_end(args);
-    return __nine_dbg_strdup(buffer);
+    return __nine_dbg_strdup(buffer, len);
 }
 
 /* see WINE's wine_dbgstr_an() */
@@ -106,7 +107,7 @@ static inline const char *nine_dbgstr_an( const char *str, int n )
         *dst++ = '.';
     }
     *dst = 0;
-    return __nine_dbg_strdup( buffer );
+    return __nine_dbg_strdup( buffer, dst - buffer );
 }
 
 /* see WINE's wine_dbgstr_wn() */
@@ -152,7 +153,7 @@ static inline const char *nine_dbgstr_wn( const WCHAR *str, int n )
         *dst++ = '.';
     }
     *dst = 0;
-    return __nine_dbg_strdup( buffer );
+    return __nine_dbg_strdup( buffer, dst - buffer );
 }
 
 /* see WINE's wine_dbgstr_a() */
