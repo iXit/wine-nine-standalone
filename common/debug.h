@@ -9,6 +9,8 @@
 
 #include <windows.h>
 
+#include "compiler.h"
+
 enum __nine_debug_class
 {
     __NINE_DBCL_FIXME,
@@ -22,7 +24,7 @@ extern unsigned char __nine_debug_flags;
 const char *__nine_dbg_strdup(const char *s);
 
 static inline int __nine_dbg_log(enum __nine_debug_class dbcl, const char *function,
-                                 const char *format, ...) __attribute__((format(printf, 3, 4)));
+                                 const char *format, ...) NINE_ATTR_PRINTF(3, 4);
 static inline int __nine_dbg_log(enum __nine_debug_class dbcl, const char *function,
                                  const char *format, ...)
 {
@@ -51,7 +53,7 @@ static inline int __nine_dbg_log(enum __nine_debug_class dbcl, const char *funct
 #define WARN(args...) __NINE_DPRINTF(__NINE_DBCL_WARN, args)
 #define TRACE(args...) __NINE_DPRINTF(__NINE_DBCL_TRACE, args)
 
-static inline const char *nine_dbg_sprintf(const char *format, ...) __attribute__((format(printf, 1, 2)));
+static inline const char *nine_dbg_sprintf(const char *format, ...) NINE_ATTR_PRINTF(1, 2);
 static inline const char *nine_dbg_sprintf(const char *format, ...)
 {
     char buffer[200];
