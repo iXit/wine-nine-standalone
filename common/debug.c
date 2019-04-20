@@ -16,8 +16,8 @@ unsigned char __nine_debug_flags = (1 << __NINE_DBCL_FIXME) |
 
 static struct
 {
+    char buf[NINE_DEBUG_BUFFERSIZE] NINE_ATTR_ALIGNED(16);
     LONG pos;
-    char buf[NINE_DEBUG_BUFFERSIZE];
 } __nine_debug;
 
 static char *__nine_debug_buf(size_t len)
@@ -35,7 +35,7 @@ retry:
     else
         pos_use = pos_cur;
 
-    pos_new = (pos_use + len);
+    pos_new = (pos_use + len + 15) & ~15;
 
     if (!__sync_bool_compare_and_swap(&__nine_debug.pos, pos_cur, pos_new))
         goto retry;

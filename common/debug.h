@@ -28,7 +28,7 @@ static inline int __nine_dbg_log(enum __nine_debug_class dbcl, const char *funct
 static inline int __nine_dbg_log(enum __nine_debug_class dbcl, const char *function,
                                  const char *format, ...)
 {
-    char buf[1024];
+    char buf[1024] NINE_ATTR_ALIGNED(16);
     va_list args;
     int n;
 
@@ -56,7 +56,7 @@ static inline int __nine_dbg_log(enum __nine_debug_class dbcl, const char *funct
 static inline const char *nine_dbg_sprintf(const char *format, ...) NINE_ATTR_PRINTF(1, 2);
 static inline const char *nine_dbg_sprintf(const char *format, ...)
 {
-    char buffer[200];
+    char buffer[256] NINE_ATTR_ALIGNED(16);
     va_list args;
 
     va_start(args, format);
@@ -69,7 +69,8 @@ static inline const char *nine_dbg_sprintf(const char *format, ...)
 static inline const char *nine_dbgstr_an( const char *str, int n )
 {
     static const char hex[16] = "0123456789abcdef";
-    char buffer[300], *dst = buffer;
+    char buffer[256] NINE_ATTR_ALIGNED(16);
+    char *dst = buffer;
 
     if (!str) return "(null)";
     if (!((ULONG_PTR)str >> 16)) return nine_dbg_sprintf( "#%04x", LOWORD(str) );
@@ -112,7 +113,8 @@ static inline const char *nine_dbgstr_an( const char *str, int n )
 static inline const char *nine_dbgstr_wn( const WCHAR *str, int n )
 {
     static const char hex[16] = "0123456789abcdef";
-    char buffer[300], *dst = buffer;
+    char buffer[256] NINE_ATTR_ALIGNED(16);
+    char *dst = buffer;
 
     if (!str) return "(null)";
     if (!((ULONG_PTR)str >> 16)) return nine_dbg_sprintf( "#%04x", LOWORD(str) );
