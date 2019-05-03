@@ -30,6 +30,10 @@ for i in $ID $ID_LIKE; do
 			PKG_CONFIG_32=i586-slackware-linux-gnu-pkg-config
 			PKG_CONFIG_64=x86_64-slackware-linux-gnu-pkg-config
 			;;
+		solus)
+			PKG_CONFIG_32=pkg-config
+			PKG_CONFIG_64=x86_64-solus-linux-gnu-pkg-config
+			;;
 		*)
 			continue
 			;;
