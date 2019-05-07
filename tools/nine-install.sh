@@ -1,6 +1,6 @@
 #!/bin/sh -e
 
-BASE=`dirname $(readlink -f $0)`
+BASE="`dirname "$(readlink -f "$0")"`"
 
 die() {
 	echo "$*"
