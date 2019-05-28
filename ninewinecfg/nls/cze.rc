@@ -1,0 +1,29 @@
+/* SPDX-License-Identifier: LGPL-2.1-or-later */
+
+#pragma code_page(65001) /* UTF-8 */
+
+STRINGTABLE LANGUAGE LANG_CZECH, SUBLANG_CZECH_CZECH_REPUBLIC
+BEGIN
+    IDS_TAB_MAIN                             "Globální nastavení"
+    IDS_TAB_ABOUT                            "O aplikaci"
+
+    IDS_GB_LICENSE                           "Licence"
+    IDS_GB_AUTHORS                           "Autoři"
+    IDS_TEXT_MESA_DEP                        "Gallium Nine vyžaduje grafický ovladač MESA gallium"
+
+    IDS_TEXT_LOAD_D3DADAPTER                 "Načítání d3d9adapter9 bylo úspěšné"
+    IDS_TEXT_D3D9_NINE_LOAD                  "d3d9-nine.dll lze načíst"
+    IDS_TEXT_CREATE_D3D9_DEV                 "Direct3D9 zařízení bylo úspěšně vytvořeno"
+
+    IDS_BTN_ENABLE_NINE                      "Povolit &Gallium Nine pro navýšení grafického výkonu D3D9 aplikací"
+
+    IDS_GB_NINE_SETTINGS                     "Nastavení Gallium Nine"
+    IDS_GB_INSTALL_STATE                     "Stav instalace"
+
+    IDS_NINECFG_TITLE                        "Konfigurace Gallium Nine"
+
+    IDS_ERR_UNKNOWN                          "Neznámá chyba"
+    IDS_ERR_OUTOFMEMORY                      "Nedostatek paměti"
+    IDS_ERR_D3D_NOTAVAILABLE                 "Nenalezena žádná kompatibilní GPU. Na systémech s více GPU může být nutné nejprve nastavit DRI_PRIME=1"
+END
+
