@@ -38,7 +38,8 @@ ExclusiveArch:  %{ix86} x86_64
 
 BuildRequires:  gcc
 # BUG: Meson 0.50 cross compilation is broken
-BuildRequires:  meson <= 0.49
+#      Assume 0.51 works
+BuildRequires:  meson <= 0.49, meson > 0.50
 BuildRequires:  libX11-devel
 BuildRequires:  mesa-libGL-devel
 BuildRequires:  mesa-libd3d-devel
