@@ -99,6 +99,7 @@ jobs:
         # Get copr-cli
         - pip3 install --user setuptools
         - pip3 install --user --upgrade pip
+        - pip3 install --user --upgrade requests
         - pip3 install --user copr-cli
       script:
         # create the folder structure for RPMBUILD
@@ -142,6 +143,7 @@ jobs:
         # Get copr-cli
         - pip3 install --user setuptools
         - pip3 install --user --upgrade pip
+        - pip3 install --user --upgrade requests
         - pip3 install --user copr-cli
       script:
         # create the folder structure for RPMBUILD
