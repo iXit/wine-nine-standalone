@@ -100,6 +100,7 @@ jobs:
         - pip3 install --user setuptools
         - pip3 install --user --upgrade pip
         - pip3 install --user --upgrade requests
+        - pip3 install --user --upgrade marshmallow
         - pip3 install --user copr-cli
       script:
         # create the folder structure for RPMBUILD
@@ -144,6 +145,7 @@ jobs:
         - pip3 install --user setuptools
         - pip3 install --user --upgrade pip
         - pip3 install --user --upgrade requests
+        - pip3 install --user --upgrade marshmallow
         - pip3 install --user copr-cli
       script:
         # create the folder structure for RPMBUILD
