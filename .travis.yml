@@ -120,8 +120,8 @@ jobs:
         - printf "%%define mychangelog %s\n" "$MYCHANGELOG" >> $HOME/rpmbuild/SPECS/wine-nine-unstable.spec
         - cat ./packaging/SPECS/wine-nine-unstable.spec >> $HOME/rpmbuild/SPECS/wine-nine-unstable.spec
         # create the SRPMs
-        - sudo docker run -it --rm -v $HOME/rpmbuild/:/home/rpmbuild/rpmbuild:z mgruener/rpmbuild rpmbuild -bs --define 'dist .fc28' rpmbuild/SPECS/wine-nine-unstable.spec
         - sudo docker run -it --rm -v $HOME/rpmbuild/:/home/rpmbuild/rpmbuild:z mgruener/rpmbuild rpmbuild -bs --define 'dist .fc29' rpmbuild/SPECS/wine-nine-unstable.spec
+        - sudo docker run -it --rm -v $HOME/rpmbuild/:/home/rpmbuild/rpmbuild:z mgruener/rpmbuild rpmbuild -bs --define 'dist .fc30' rpmbuild/SPECS/wine-nine-unstable.spec
         - mkdir -p $HOME/.config/
         - echo "$SIRO_COPR_KEY"|base64 -d - > $HOME/.config/copr
         # upload to copr
@@ -166,8 +166,8 @@ jobs:
         - printf "%%define mychangelog %s\n" "$MYCHANGELOG" >> $HOME/rpmbuild/SPECS/wine-nine.spec
         - cat ./packaging/SPECS/wine-nine.spec >> $HOME/rpmbuild/SPECS/wine-nine.spec
         # create the SRPMs
-        - sudo docker run -it --rm -v $HOME/rpmbuild/:/home/rpmbuild/rpmbuild:z mgruener/rpmbuild rpmbuild -bs --define 'dist .fc28' rpmbuild/SPECS/wine-nine.spec
         - sudo docker run -it --rm -v $HOME/rpmbuild/:/home/rpmbuild/rpmbuild:z mgruener/rpmbuild rpmbuild -bs --define 'dist .fc29' rpmbuild/SPECS/wine-nine.spec
+        - sudo docker run -it --rm -v $HOME/rpmbuild/:/home/rpmbuild/rpmbuild:z mgruener/rpmbuild rpmbuild -bs --define 'dist .fc30' rpmbuild/SPECS/wine-nine.spec
         - mkdir -p $HOME/.config/
         - echo "$SIRO_COPR_KEY"|base64 -d - > $HOME/.config/copr
         # upload to copr
