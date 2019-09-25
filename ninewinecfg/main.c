@@ -612,8 +612,8 @@ static void load_debug_settings(HWND dialog)
             HeapFree(GetProcessHeap(), 0, value);
         }
 
+        FreeLibrary(hmod);
     }
-
 }
 #endif
 
