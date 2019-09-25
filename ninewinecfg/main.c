@@ -490,6 +490,8 @@ static void load_settings(HWND dialog)
 out:
     if (hmod)
         FreeLibrary(hmod);
+    if (handle)
+        dlclose(handle);
 
     free(path);
     free(err);
