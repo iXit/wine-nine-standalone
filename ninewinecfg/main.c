@@ -557,6 +557,7 @@ static BOOL ProcessCmdLine(WCHAR *cmdline, BOOL *result)
         switch (towupper(argv[i][1]))
         {
         case '?':
+        case 'H':
             ERR("\nSupported arguments: [-p][-e|-d][-n]\n" \
                 "\t-p Probe if the current setup is capable of using nine\n" \
                 "\t-e Enable nine\n" \
