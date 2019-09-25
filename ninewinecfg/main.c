@@ -497,6 +497,33 @@ out:
     free(err);
 }
 
+static BOOL nine_probe()
+{
+    HMODULE hmod;
+    LPDIRECT3DCREATE9EX Direct3DCreate9ExPtr;
+    IDirect3D9Ex *iface;
+    HRESULT hr;
+
+    hmod = LoadLibraryA(fn_nine_dll);
+    if (!hmod)
+        return FALSE;
+
+    Direct3DCreate9ExPtr = (LPDIRECT3DCREATE9EX)GetProcAddress(hmod, "Direct3DCreate9Ex");
+
+    if (!Direct3DCreate9ExPtr)
+    {
+        FreeLibrary(hmod);
+        return FALSE;
+    }
+
+    hr = Direct3DCreate9ExPtr(0, &iface);
+    if (SUCCEEDED(hr))
+        IDirect3DDevice9_Release(iface);
+
+    FreeLibrary(hmod);
+    return SUCCEEDED(hr);
+}
+
 static BOOL ProcessCmdLine(WCHAR *cmdline, BOOL *result)
 {
     WCHAR **argv;
@@ -530,7 +557,14 @@ static BOOL ProcessCmdLine(WCHAR *cmdline, BOOL *result)
         switch (towupper(argv[i][1]))
         {
         case '?':
-            ERR("\nSupported arguments: [ -e | -d ][ -n ]\n-e Enable nine\n-d Disable nine\n-n Do not call other arch exe\n");
+            ERR("\nSupported arguments: [-p][-e|-d][-n]\n" \
+                "\t-p Probe if the current setup is capable of using nine\n" \
+                "\t-e Enable nine\n" \
+                "\t-d Disable nine\n" \
+                "\t-n Do not call other arch exe\n");
+            return TRUE;
+        case 'P':
+            *result = nine_probe();
             return TRUE;
         case 'E':
             NineSet = TRUE;
