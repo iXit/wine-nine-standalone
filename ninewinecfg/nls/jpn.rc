@@ -1,0 +1,41 @@
+/* SPDX-License-Identifier: LGPL-2.1-or-later */
+/*
+ * Copyright 2019 Masanori Kakura
+ */
+
+#pragma code_page(65001) /* UTF-8 */
+
+STRINGTABLE LANGUAGE LANG_JAPANESE, SUBLANG_DEFAULT
+BEGIN
+    IDS_TAB_MAIN                             "全体設定"
+    IDS_TAB_ABOUT                            "情報"
+    IDS_TAB_DEBUG                            "デバッグ"
+
+    IDS_TEXT_UNKNOWN                         "不明"
+
+    IDS_GB_NINE_DEBUG                        "統計"
+    IDS_TEXT_BACKEND                         "Presentation バックエンド:"
+    IDS_TEXT_BACKEND_TIP_DRI2                "xorg.conf で 'Option \"DRI\" 3' を有効にしてください"
+
+    IDS_TEXT_PRESENTATION_IFACE              "Wine の presentation インターフェース バージョン:"
+
+    IDS_GB_LICENSE                           "ライセンス"
+    IDS_GB_AUTHORS                           "作者"
+    IDS_TEXT_MESA_DEP                        "Gallium Nine は MESA gallium グラフィックス ドライバを必要とします"
+
+    IDS_TEXT_LOAD_D3DADAPTER                 "d3d9adapter9 の読み込みに成功"
+    IDS_TEXT_D3D9_NINE_LOAD                  "d3d9-nine.dll が読み込み可能"
+    IDS_TEXT_CREATE_D3D9_DEV                 "Direct3D 9 デバイスの作成に成功"
+
+    IDS_BTN_ENABLE_NINE                      "Gallium Nine を有効にして D3D9 のグラフィック パフォーマンスを向上させる(&G)"
+
+    IDS_GB_NINE_SETTINGS                     "Gallium Nine の設定"
+    IDS_GB_INSTALL_STATE                     "インストールの状態"
+
+    IDS_NINECFG_TITLE                        "Nine 設定"
+
+    IDS_ERR_UNKNOWN                          "不明なエラーです"
+    IDS_ERR_OUTOFMEMORY                      "メモリ確保に失敗しました"
+    IDS_ERR_D3D_NOTAVAILABLE                 "対応する GPU が見つかりません。ハイブリッド グラフィックス構成の場合、まず DRI_PRIME=1 を試してください"
+END
+
