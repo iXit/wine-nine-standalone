@@ -9,15 +9,6 @@ STRINGTABLE LANGUAGE LANG_JAPANESE, SUBLANG_DEFAULT
 BEGIN
     IDS_TAB_MAIN                             "全体設定"
     IDS_TAB_ABOUT                            "情報"
-    IDS_TAB_DEBUG                            "デバッグ"
-
-    IDS_TEXT_UNKNOWN                         "不明"
-
-    IDS_GB_NINE_DEBUG                        "統計"
-    IDS_TEXT_BACKEND                         "Presentation バックエンド:"
-    IDS_TEXT_BACKEND_TIP_DRI2                "xorg.conf で 'Option \"DRI\" 3' を有効にしてください"
-
-    IDS_TEXT_PRESENTATION_IFACE              "Wine の presentation インターフェース バージョン:"
 
     IDS_GB_LICENSE                           "ライセンス"
     IDS_GB_AUTHORS                           "作者"

@@ -9,15 +9,6 @@ STRINGTABLE LANGUAGE LANG_ENGLISH, SUBLANG_DEFAULT
 BEGIN
     IDS_TAB_MAIN                             "Global options"
     IDS_TAB_ABOUT                            "About"
-    IDS_TAB_DEBUG                            "Debug"
-
-    IDS_TEXT_UNKNOWN                         "Unknown"
-
-    IDS_GB_NINE_DEBUG                        "Stats"
-    IDS_TEXT_BACKEND                         "Presentation backend:"
-    IDS_TEXT_BACKEND_TIP_DRI2                "Try to enable 'Option \"DRI\" 3' in your xorg.conf"
-
-    IDS_TEXT_PRESENTATION_IFACE              "Wine's presentation interface version:"
 
     IDS_GB_LICENSE                           "Licence"
     IDS_GB_AUTHORS                           "Authors"

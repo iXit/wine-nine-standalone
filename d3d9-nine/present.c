@@ -20,7 +20,6 @@
 
 #include "../common/debug.h"
 #include "../common/library.h"
-#include "../common/registry.h"
 #include "backend.h"
 #include "wndproc.h"
 #include "xcb_present.h"
@@ -1750,16 +1749,6 @@ BOOL present_has_d3dadapter(Display *gdi_display)
         ERR("No available backends.\n");
         goto cleanup;
     }
-
-#ifndef NDEBUG
-    char buf[16];
-    sprintf(buf, "%d.%d\n",
-            D3DADAPTER_DRIVER_PRESENT_VERSION_MAJOR,
-            D3DADAPTER_DRIVER_PRESENT_VERSION_MINOR);
-
-    if (!common_set_registry_string(reg_path_nine, reg_key_debug_wine_present_version, buf))
-        ERR("Failed to set registry key %s\n", reg_key_debug_wine_present_version);
-#endif
 
     return TRUE;
 

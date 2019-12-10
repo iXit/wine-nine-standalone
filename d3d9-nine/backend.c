@@ -121,14 +121,6 @@ struct dri_backend *backend_create(Display *dpy, int screen)
         {
             TRACE("Active backend: %s\n", backends[i]->name);
 
-#ifndef NDEBUG
-            if (!common_set_registry_string(reg_path_nine,
-                    reg_key_debug_active_backend, backends[i]->name))
-            {
-                ERR("Failed to set registry key %s\n", reg_key_debug_active_backend);
-            }
-#endif
-
             dri_backend->funcs = backends[i];
             return dri_backend;
         }

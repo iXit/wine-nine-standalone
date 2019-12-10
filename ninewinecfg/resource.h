@@ -52,20 +52,6 @@
 #define IDD_ABOUT                               50
 #define IDC_NINE_URL                            51
 
-#define IDD_DEBUG                               60
-#define IDS_TAB_DEBUG                           61
-#define IDC_GB_NINE_DEBUG                       62
-#define IDS_GB_NINE_DEBUG                       63
-#define IDC_TEXT_BACKEND                        64
-#define IDC_TEXT_BACKEND_NAME                   65
-#define IDC_TEXT_BACKEND_TIP                    66
-#define IDS_TEXT_BACKEND                        67
-#define IDS_TEXT_UNKNOWN                        68
-#define IDS_TEXT_BACKEND_TIP_DRI2               69
-#define IDC_TEXT_PRESENTATION_IFACE             70
-#define IDS_TEXT_PRESENTATION_IFACE             71
-#define IDC_TEXT_PRESENTATION_IFACE_VER         72
-
 #define IDS_ERR_UNKNOWN                        100
 #define IDS_ERR_OUTOFMEMORY                    101
 #define IDS_ERR_D3D_NOTAVAILABLE               102
