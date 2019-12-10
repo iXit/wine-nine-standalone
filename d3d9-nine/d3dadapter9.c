@@ -955,8 +955,8 @@ HRESULT d3dadapter9_new(Display *gdi_display, boolean ex, IDirect3D9Ex **ppOut)
 
     *ppOut = (IDirect3D9Ex *)This;
 
-    printf("\033[1;32mNative Direct3D 9 " NINE_VERSION " is active.\n"
-           "For more information visit " NINE_URL "\033[0m\n");
+    fprintf(stderr, "\033[1;32mNative Direct3D 9 " NINE_VERSION " is active.\n"
+                    "For more information visit " NINE_URL "\033[0m\n");
 
     return D3D_OK;
 }

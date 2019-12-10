@@ -84,7 +84,7 @@ BOOL backend_probe(Display *dpy)
         backends[i]->destroy(p);
 
         if (i != 0)
-            printf("\033[1;31mDRI3 backend not active (slower performance)\033[0m\n");
+            fprintf(stderr, "\033[1;31mDRI3 backend not active (slower performance)\033[0m\n");
 
         return TRUE;
     }

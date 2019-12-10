@@ -1753,8 +1753,8 @@ BOOL present_has_d3dadapter(Display *gdi_display)
     return TRUE;
 
 cleanup:
-    printf("\033[1;31mNative Direct3D 9 will be unavailable."
-           "\nFor more information visit " NINE_URL "\033[0m\n");
+    fprintf(stderr, "\033[1;31mNative Direct3D 9 will be unavailable."
+                    "\nFor more information visit " NINE_URL "\033[0m\n");
 
     if (handle)
     {
