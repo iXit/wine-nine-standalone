@@ -17,6 +17,6 @@ typedef struct IDirect3DShaderValidator9Impl
     LONG ref;
 } IDirect3DShaderValidator9Impl;
 
-const void *IDirect3DShaderValidator9Vtbl[6];
+extern const void *IDirect3DShaderValidator9Vtbl[6];
 
 #endif /* __NINE_SHADER_VALIDATOR_H */
