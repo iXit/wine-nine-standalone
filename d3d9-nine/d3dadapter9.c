@@ -525,19 +525,14 @@ static HRESULT WINAPI DECLSPEC_HOTPATCH d3dadapter9_CreateDeviceEx(struct d3dada
 
     {
         struct adapter_group *group = &ADAPTER_GROUP;
-        unsigned nparams, ordinal;
+        unsigned nparams;
 
         if (BehaviorFlags & D3DCREATE_ADAPTERGROUP_DEVICE)
-        {
             nparams = group->noutputs;
-            ordinal = 0;
-        }
         else
-        {
             nparams = 1;
-            ordinal = Adapter - This->map[Adapter].master;
-        }
-        hr = present_create_present_group(This->gdi_display, group->devname, ordinal,
+
+        hr = present_create_present_group(This->gdi_display, group->devname,
                 hFocusWindow, pPresentationParameters, nparams, &present, This->ex,
                 BehaviorFlags, group->dri_backend);
     }
@@ -768,7 +763,7 @@ static HRESULT fill_groups(struct d3dadapter9 *This)
                 return E_OUTOFMEMORY;
             }
 
-            for (k = 0; EnumDisplaySettingsExW(dd.DeviceName, k, &dm, 0); ++k)
+            for (k = 0; EnumDisplaySettingsExW(group->devname, k, &dm, 0); ++k)
             {
                 D3DDISPLAYMODEEX *mode = add_mode(This);
                 if (!out)

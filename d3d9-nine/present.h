@@ -13,7 +13,7 @@
 
 struct dri_backend;
 
-HRESULT present_create_present_group(Display *gdi_display, const WCHAR *device_name, UINT adapter,
+HRESULT present_create_present_group(Display *gdi_display, const WCHAR *device_name,
         HWND focus, D3DPRESENT_PARAMETERS *params, unsigned nparams, ID3DPresentGroup **group,
         boolean ex, DWORD BehaviorFlags, struct dri_backend *dri_backend);
 

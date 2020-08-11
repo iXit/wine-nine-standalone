@@ -1582,12 +1582,11 @@ static ID3DPresentGroupVtbl DRIPresentGroup_vtable = {
 };
 
 HRESULT present_create_present_group(Display *gdi_display, const WCHAR *device_name,
-        UINT adapter, HWND focus_wnd, D3DPRESENT_PARAMETERS *params,
+        HWND focus_wnd, D3DPRESENT_PARAMETERS *params,
         unsigned nparams, ID3DPresentGroup **group, boolean ex, DWORD BehaviorFlags,
         struct dri_backend *dri_backend)
 {
     struct DRIPresentGroup *This;
-    DISPLAY_DEVICEW dd;
     HRESULT hr;
     unsigned i;
 
@@ -1627,22 +1626,10 @@ HRESULT present_create_present_group(Display *gdi_display, const WCHAR *device_n
         return E_OUTOFMEMORY;
     }
 
-    if (nparams != 1)
-        adapter = 0;
-
     for (i = 0; i < This->npresent_backends; ++i)
     {
-        ZeroMemory(&dd, sizeof(dd));
-        dd.cb = sizeof(dd);
-        /* find final device name */
-        if (!EnumDisplayDevicesW(device_name, adapter + i, &dd, 0))
-        {
-            WARN("Couldn't find subdevice %d from `%s'\n",
-                 i, nine_dbgstr_w(device_name));
-        }
-
         /* create an ID3DPresent for it */
-        hr = present_create(gdi_display, dd.DeviceName, &params[i],
+        hr = present_create(gdi_display, device_name, &params[i],
                 focus_wnd, &This->present_backends[i], ex, This->no_window_changes,
                 This->dri_backend, This->major, This->minor);
         if (FAILED(hr))
