@@ -1396,6 +1396,7 @@ static HRESULT present_create(Display *gdi_display, const WCHAR *devname,
         return E_OUTOFMEMORY;
     }
 
+    lstrcpyW(This->devname, devname);
     This->gdi_display = gdi_display;
     This->vtable = &DRIPresent_vtable;
     This->refs = 1;
@@ -1463,8 +1464,6 @@ static HRESULT present_create(Display *gdi_display, const WCHAR *devname,
     This->params = *params;
 
     update_presentation_interval(This);
-
-    lstrcpyW(This->devname, devname);
 
     if (!PRESENTInit(gdi_display, &(This->present_priv)))
     {
