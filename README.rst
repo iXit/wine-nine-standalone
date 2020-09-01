@@ -40,7 +40,6 @@ Packages
 Your distribution may provide a package, avoiding the need to compile the code yourself. The exact usage instructions may vary in this case so check your distribution for the details. The currently known packages are:
 
 * Arch Linux - releases: `wine-nine <https://www.archlinux.org/packages/multilib/x86_64/wine-nine/>`_, snapshots: `gallium-nine-git (AUR) <https://aur.archlinux.org/packages/gallium-nine-git>`_
-* Fedora - releases: `wine-nine (Copr) <https://copr.fedorainfracloud.org/coprs/siro/wine-nine/>`_, snapshots: `wine-nine-unstable (Copr) <https://copr.fedorainfracloud.org/coprs/siro/wine-nine-unstable/>`_
 * Gentoo Linux - `app-emulation/gallium-nine-standalone <https://packages.gentoo.org/packages/app-emulation/gallium-nine-standalone>`_
 * Slackware Linux - `wine-nine-standalone <https://slackbuilds.org/apps/wine-nine-standalone/>`_
 
