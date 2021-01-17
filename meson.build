@@ -35,11 +35,9 @@ code = '''#ifndef __WINE__
 #error 1
 #endif'''
 
-if not cc.compiles(code, name: 'winelib check')
+if not cc.compiles(code, name: 'winegcc check')
   error('A WINE cross compiler is required')
 endif
-
-dep_wine = cc.find_library('wine')
 
 if not cc.has_header_symbol('windows.h', 'wine_get_unix_file_name')
   error('WINE headers not found')
