@@ -22,6 +22,11 @@ struct PRESENTPriv {
     XID window;
     uint64_t last_msc;
     uint64_t last_target;
+    int16_t last_x;
+    int16_t last_y;
+    uint16_t last_width;
+    uint16_t last_height;
+    unsigned last_depth;
     xcb_special_event_t *special_event;
     PRESENTPixmapPriv *first_present_priv;
     int pixmap_present_pending;
@@ -162,6 +167,17 @@ static void PRESENThandle_events(PRESENTpriv *present_priv, xcb_present_generic_
             }
             present_pixmap_priv->released = TRUE;
             present_priv->idle_notify_since_last_check = TRUE;
+            break;
+        }
+        case XCB_PRESENT_CONFIGURE_NOTIFY:
+        {
+            xcb_present_configure_notify_event_t *ce = (void *) ge;
+            if (present_priv->window == ce->window) {
+                present_priv->last_x = ce->x;
+                present_priv->last_y = ce->y;
+                present_priv->last_width = ce->width;
+                present_priv->last_height = ce->height;
+            }
             break;
         }
     }
@@ -339,6 +355,8 @@ static BOOL PRESENTPrivChangeWindow(PRESENTpriv *present_priv, XID window)
     xcb_void_cookie_t cookie;
     xcb_generic_error_t *error;
     xcb_present_event_t eid;
+    xcb_get_geometry_cookie_t cookie_geom;
+    xcb_get_geometry_reply_t *reply_geom;
 
     PRESENTForceReleases(present_priv);
     PRESENTFreeXcbQueue(present_priv);
@@ -346,8 +364,25 @@ static BOOL PRESENTPrivChangeWindow(PRESENTpriv *present_priv, XID window)
 
     if (window)
     {
+        /* We track geometry changes. Initialize the values */
+        cookie_geom = xcb_get_geometry(present_priv->xcb_connection, window);
+        reply_geom = xcb_get_geometry_reply(present_priv->xcb_connection, cookie_geom, NULL);
+        if (!reply_geom)
+        {
+            ERR("FAILED to get window size. Was the destination a window ?\n");
+            present_priv->window = 0;
+            return FALSE;
+        }
+        present_priv->last_x = reply_geom->x;
+        present_priv->last_y = reply_geom->y;
+        present_priv->last_width = reply_geom->width;
+        present_priv->last_height = reply_geom->height;
+        present_priv->last_depth = reply_geom->depth;
+        free(reply_geom);
+
         cookie = xcb_present_select_input_checked(present_priv->xcb_connection,
                 (eid = xcb_generate_id(present_priv->xcb_connection)), window,
+                XCB_PRESENT_EVENT_MASK_CONFIGURE_NOTIFY |
                 XCB_PRESENT_EVENT_MASK_COMPLETE_NOTIFY | XCB_PRESENT_EVENT_MASK_IDLE_NOTIFY);
 
         present_priv->special_event = xcb_register_for_special_xge(present_priv->xcb_connection,
@@ -409,6 +444,21 @@ void PRESENTDestroy(PRESENTpriv *present_priv)
     DeleteCriticalSection(&present_priv->mutex_xcb_wait);
 
     HeapFree(GetProcessHeap(), 0, present_priv);
+}
+
+BOOL PRESENTGetGeom(PRESENTpriv *present_priv, XID window, int *width, int *height, int *depth)
+{
+    /* It is ok to have one or two bad frames.
+     * So do not flush events nor lock the mutex. */
+    if (present_priv && present_priv->window == window)
+    {
+        *width = present_priv->last_width;
+        *height = present_priv->last_height;
+        *depth = present_priv->last_depth;
+        return TRUE;
+    }
+
+    return FALSE;
 }
 
 BOOL PRESENTPixmapCreate(PRESENTpriv *present_priv, int screen,

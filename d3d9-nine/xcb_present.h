@@ -28,6 +28,8 @@ BOOL PRESENTInit(Display *dpy, PRESENTpriv **present_priv);
  * This will take care than all pixmaps are released */
 void PRESENTDestroy(PRESENTpriv *present_priv);
 
+BOOL PRESENTGetGeom(PRESENTpriv *present_priv, XID window, int *width, int *height, int *depth);
+
 BOOL PRESENTPixmapCreate(PRESENTpriv *present_priv, int screen,
         Pixmap *pixmap, int width, int height, int stride, int depth,
         int bpp);
