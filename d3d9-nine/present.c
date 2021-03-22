@@ -84,9 +84,6 @@ struct d3d_drawable
     HWND wnd; /* HWND (for convenience) */
     RECT windowRect;
     POINT offset; /* offset of the client area compared to the X11 drawable */
-    unsigned int width;
-    unsigned int height;
-    unsigned int depth;
 };
 
 struct DRIPresent
@@ -580,9 +577,6 @@ static void get_drawable_offset(Display *gdi_display, struct d3d_drawable *d3d)
 {
     Drawable wineRoot;
     POINT pt;
-    Window Wroot;
-    int x, y;
-    unsigned int border_width;
 
     //TRACE("hwnd=%p\n", d3d->wnd);
 
@@ -599,13 +593,6 @@ static void get_drawable_offset(Display *gdi_display, struct d3d_drawable *d3d)
 
     if (!get_wine_drawable_from_wnd(GetDesktopWindow(), &wineRoot, NULL))
         return;
-
-    if (!XGetGeometry(gdi_display, d3d->drawable, &Wroot, &x, &y, &d3d->width, &d3d->height, &border_width, &d3d->depth))
-    {
-        d3d->width = 0;
-        d3d->height = 0;
-        d3d->depth= 0;
-    }
 
     /* The position of the top left client area compared to wine root window */
     pt.x = pt.y = 0;
@@ -1258,14 +1245,9 @@ static HRESULT WINAPI DRIPresent_GetWindowInfo( struct DRIPresent *This,
      * which won't switch to the game's resolution anymore, but instead scales
      * the game window to the root window. Only then can page flipping be used.
      */
-    if (!This->params.Windowed && This->d3d)
-        if (This->d3d->width > 0 && This->d3d->height > 0 && This->d3d->depth > 0)
-        {
-            *width = This->d3d->width;
-            *height = This->d3d->height;
-            *depth = This->d3d->depth;
-            return D3D_OK;
-        }
+    if (!This->params.Windowed && This->d3d &&
+        PRESENTGetGeom(This->present_priv, This->d3d->drawable, width, height, depth))
+        return D3D_OK;
 
     if (!hWnd)
         hWnd = draw_window;
