@@ -29,6 +29,7 @@ BOOL PRESENTInit(Display *dpy, PRESENTpriv **present_priv);
 void PRESENTDestroy(PRESENTpriv *present_priv);
 
 BOOL PRESENTGetGeom(PRESENTpriv *present_priv, XID window, int *width, int *height, int *depth);
+BOOL PRESENTGeomUpdated(PRESENTpriv *present_priv);
 
 BOOL PRESENTPixmapCreate(PRESENTpriv *present_priv, int screen,
         Pixmap *pixmap, int width, int height, int stride, int depth,

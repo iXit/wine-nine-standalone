@@ -989,7 +989,8 @@ static HRESULT WINAPI DRIPresent_PresentBuffer( struct DRIPresent *This,
      * would be to catch any window related change with a
      * listener. But it is complicated and this heuristic
      * is fast and should work well. */
-    if (windowRect.top != d3d->windowRect.top ||
+    if (PRESENTGeomUpdated(This->present_priv) ||
+        windowRect.top != d3d->windowRect.top ||
         windowRect.left != d3d->windowRect.left ||
         windowRect.bottom != d3d->windowRect.bottom ||
         windowRect.right != d3d->windowRect.right)

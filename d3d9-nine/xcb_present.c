@@ -22,11 +22,12 @@ struct PRESENTPriv {
     XID window;
     uint64_t last_msc;
     uint64_t last_target;
-    int16_t last_x;
+    int16_t last_x; /* Position of window relative to its parent */
     int16_t last_y;
-    uint16_t last_width;
+    uint16_t last_width; /* window size */
     uint16_t last_height;
     unsigned last_depth;
+    BOOL win_updated; /* Window received a config notify event */
     xcb_special_event_t *special_event;
     PRESENTPixmapPriv *first_present_priv;
     int pixmap_present_pending;
@@ -177,6 +178,8 @@ static void PRESENThandle_events(PRESENTpriv *present_priv, xcb_present_generic_
                 present_priv->last_y = ce->y;
                 present_priv->last_width = ce->width;
                 present_priv->last_height = ce->height;
+                /* Configure notify events arrive for all changes: stack order, etc. Not just x/y/width/height changes */
+                present_priv->win_updated = TRUE;
             }
             break;
         }
@@ -378,6 +381,7 @@ static BOOL PRESENTPrivChangeWindow(PRESENTpriv *present_priv, XID window)
         present_priv->last_width = reply_geom->width;
         present_priv->last_height = reply_geom->height;
         present_priv->last_depth = reply_geom->depth;
+        present_priv->win_updated = TRUE;
         free(reply_geom);
 
         cookie = xcb_present_select_input_checked(present_priv->xcb_connection,
@@ -459,6 +463,11 @@ BOOL PRESENTGetGeom(PRESENTpriv *present_priv, XID window, int *width, int *heig
     }
 
     return FALSE;
+}
+
+BOOL PRESENTGeomUpdated(PRESENTpriv *present_priv)
+{
+    return InterlockedExchange(&present_priv->win_updated, FALSE);
 }
 
 BOOL PRESENTPixmapCreate(PRESENTpriv *present_priv, int screen,
