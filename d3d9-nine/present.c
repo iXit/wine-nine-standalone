@@ -123,6 +123,8 @@ struct DRIPresent
     BOOL occluded;
     BOOL filter_messages;
     BOOL no_window_changes;
+    BOOL restore_screensaver;
+    HWND wrapped_wnd; /* basically focus_wnd but set at a different time */
     Display *gdi_display;
 
     UINT present_interval;
@@ -189,8 +191,10 @@ static void setup_fullscreen_window(struct DRIPresent *This, HWND hwnd, int w, i
     SetWindowLongW(hwnd, GWL_STYLE, style);
     SetWindowLongW(hwnd, GWL_EXSTYLE, style_ex);
 
+    /* TODO: wine doesn't always set 0, 0. Multi-monitor ? */
     SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, w, h,
-            SWP_FRAMECHANGED | SWP_SHOWWINDOW | SWP_NOACTIVATE);
+            SWP_FRAMECHANGED | SWP_NOACTIVATE |
+            (This->no_window_changes ? SWP_NOZORDER : SWP_SHOWWINDOW));
 
     This->filter_messages = filter_messages;
 }
@@ -213,32 +217,35 @@ static void move_fullscreen_window(struct DRIPresent *This, HWND hwnd, int w, in
     SetWindowLongW(hwnd, GWL_STYLE, style);
     SetWindowLongW(hwnd, GWL_EXSTYLE, style_ex);
     SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, w, h,
-            SWP_FRAMECHANGED | SWP_SHOWWINDOW | SWP_NOACTIVATE);
+            SWP_FRAMECHANGED | SWP_NOACTIVATE |
+            (This->no_window_changes ? SWP_NOZORDER : SWP_SHOWWINDOW));
+
     This->filter_messages = filter_messages;
 }
 
 /* see WINE's wined3d_device_restore_fullscreen_window() */
 static void restore_fullscreen_window(struct DRIPresent *This, HWND hwnd)
 {
+    /* See wined3d_swapchain_state_restore_from_fullscreen */
+    unsigned int window_pos_flags = SWP_FRAMECHANGED | SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOSIZE;
+    HWND window_pos_after = NULL;
     boolean filter_messages;
     LONG style, style_ex;
 
+    if (This->ex && !This->no_window_changes)
+    {
+        window_pos_after = (This->style_ex & WS_EX_TOPMOST) ? HWND_TOPMOST : HWND_NOTOPMOST;
+        window_pos_flags |= (This->style & WS_VISIBLE) ? SWP_SHOWWINDOW : SWP_HIDEWINDOW;
+        window_pos_flags &= ~SWP_NOZORDER;
+    }
     /* switch from fullscreen to window */
     style = GetWindowLongW(hwnd, GWL_STYLE);
     style_ex = GetWindowLongW(hwnd, GWL_EXSTYLE);
-    /* These flags are set by us, not the
-     * application, and we want to ignore them in the test below, since it's
-     * not the application's fault that they changed. Additionally, we want to
-     * preserve the current status of these flags (i.e. don't restore them) to
-     * more closely emulate the behavior of Direct3D, which leaves these flags
-     * alone when returning to windowed mode. */
+
     This->style ^= (This->style ^ style) & WS_VISIBLE;
     This->style_ex ^= (This->style_ex ^ style_ex) & WS_EX_TOPMOST;
 
-    /* Only restore the style if the application didn't modify it during the
-     * fullscreen phase. Some applications change it before calling Reset()
-     * when switching between windowed and fullscreen modes (HL2), some
-     * depend on the original style (Eve Online). */
+
     filter_messages = This->filter_messages;
     This->filter_messages = TRUE;
     if (style == fullscreen_style(This->style) &&
@@ -247,13 +254,41 @@ static void restore_fullscreen_window(struct DRIPresent *This, HWND hwnd)
         SetWindowLongW(hwnd, GWL_STYLE, This->style);
         SetWindowLongW(hwnd, GWL_EXSTYLE, This->style_ex);
     }
-    SetWindowPos(hwnd, 0, 0, 0, 0, 0, SWP_FRAMECHANGED |
-                 SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER |
-                 SWP_NOACTIVATE);
+    SetWindowPos(hwnd, window_pos_after, 0, 0, 0, 0, window_pos_flags);
     This->filter_messages = filter_messages;
 
     This->style = 0;
     This->style_ex = 0;
+}
+
+static BOOL acquire_focus_window(struct DRIPresent *This, HWND window)
+{
+    unsigned int screensaver_active;
+
+    if (!nine_register_window(window, This))
+    {
+        ERR("Failed to register window %p.\n", window);
+        return FALSE;
+    }
+
+    InterlockedExchangePointer((void **)&This->wrapped_wnd, window);
+    SetWindowPos(window, 0, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE);
+    SystemParametersInfoW(SPI_GETSCREENSAVEACTIVE, 0, &screensaver_active, 0);
+    if ((This->restore_screensaver = !!screensaver_active))
+        SystemParametersInfoW(SPI_SETSCREENSAVEACTIVE, FALSE, NULL, 0);
+
+    return TRUE;
+}
+
+static void release_focus_window(struct DRIPresent *This)
+{
+    if (This->wrapped_wnd) nine_unregister_window(This->wrapped_wnd);
+    InterlockedExchangePointer((void **)&This->wrapped_wnd, NULL);
+    if (This->restore_screensaver)
+    {
+        SystemParametersInfoW(SPI_SETSCREENSAVEACTIVE, TRUE, NULL, 0);
+        This->restore_screensaver = FALSE;
+    }
 }
 
 static HRESULT set_display_mode(struct DRIPresent *This, DEVMODEW *new_mode)
@@ -329,7 +364,9 @@ LRESULT device_process_message(struct DRIPresent *present, HWND window, BOOL uni
     if (message == WM_DESTROY)
     {
         TRACE("unregister window %p.\n", window);
-        (void) nine_unregister_window(window);
+        if (window != present->wrapped_wnd)
+            ERR("Receiving window %p not wrapped (%p)\n", window, present->wrapped_wnd);
+        release_focus_window(present);
     }
     else if (message == WM_DISPLAYCHANGE)
     {
@@ -708,7 +745,7 @@ static ULONG WINAPI DRIPresent_Release(struct DRIPresent *This)
     if (refs == 0)
     {
         /* dtor */
-        (void) nine_unregister_window(This->focus_wnd);
+        release_focus_window(This);
         if (This->d3d)
             destroy_d3dadapter_drawable(This->gdi_display, This->d3d->wnd);
         set_display_mode(This, &This->initial_mode);
@@ -770,14 +807,24 @@ static HRESULT WINAPI DRIPresent_SetPresentParameters(struct DRIPresent *This,
             (This->params.Windowed != params->Windowed) ||
             This->reapply_mode)
     {
+        if (This->params.Windowed && !params->Windowed)
+        {
+            /* Fullscreen apps need special event handling. We need
+             * to do that before we change the mode */
+            if (!acquire_focus_window(This, focus_window))
+                return D3DERR_INVALIDCALL;
+        }
+
         This->reapply_mode = FALSE;
 
+        /* Apply the display mode */
         if (!params->Windowed)
         {
+            /* Apply the target display mode if fullscreen */
             TRACE("Setting fullscreen mode: %dx%d@%d\n", params->BackBufferWidth,
                   params->BackBufferHeight, params->FullScreen_RefreshRateInHz);
 
-            /* switch display mode */
+            /* switch display mode TODO use pFullscreenDisplayMode instead if given */
             ZeroMemory(&new_mode, sizeof(DEVMODEW));
             new_mode.dmPelsWidth = params->BackBufferWidth;
             new_mode.dmPelsHeight = params->BackBufferHeight;
@@ -797,6 +844,7 @@ static HRESULT WINAPI DRIPresent_SetPresentParameters(struct DRIPresent *This,
         }
         else if(!This->params.Windowed && params->Windowed)
         {
+            /* No more fullscreen, reset mode */
             TRACE("Setting fullscreen mode: %dx%d@%d\n", This->initial_mode.dmPelsWidth,
                   This->initial_mode.dmPelsHeight, This->initial_mode.dmDisplayFrequency);
 
@@ -812,12 +860,6 @@ static HRESULT WINAPI DRIPresent_SetPresentParameters(struct DRIPresent *This,
         {
             if (!params->Windowed)
             {
-                /* switch from window to fullscreen */
-                if (!nine_register_window(focus_window, This))
-                    return D3DERR_INVALIDCALL;
-
-                SetWindowPos(focus_window, 0, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE);
-
                 setup_fullscreen_window(This, params->hDeviceWindow,
                         params->BackBufferWidth, params->BackBufferHeight);
             }
@@ -829,6 +871,7 @@ static HRESULT WINAPI DRIPresent_SetPresentParameters(struct DRIPresent *This,
                 /* switch from fullscreen to fullscreen */
                 filter_messages = This->filter_messages;
                 This->filter_messages = TRUE;
+                /* Idem TODO for 0, 0 pos (multi-monitor) */
                 MoveWindow(params->hDeviceWindow, 0, 0,
                         params->BackBufferWidth,
                         params->BackBufferHeight,
@@ -841,8 +884,10 @@ static HRESULT WINAPI DRIPresent_SetPresentParameters(struct DRIPresent *This,
                 restore_fullscreen_window(This, params->hDeviceWindow);
             }
 
-            if (params->Windowed && !nine_unregister_window(focus_window))
-                ERR("Window %p is not registered with nine.\n", focus_window);
+            /* No more fullscreen and we are finished sending events.
+             * -> unregister */
+            if (params->Windowed)
+                release_focus_window(This);
         }
         This->params.Windowed = params->Windowed;
     }
@@ -1398,6 +1443,7 @@ static HRESULT present_create(Display *gdi_display, const WCHAR *devname,
     This->major = major;
     This->minor = minor;
     This->focus_wnd = focus_wnd;
+    This->wrapped_wnd = NULL;
     This->ex = ex;
     This->no_window_changes = no_window_changes;
     This->dri_backend = dri_backend;
@@ -1413,10 +1459,8 @@ static HRESULT present_create(Display *gdi_display, const WCHAR *devname,
     if (!params->Windowed) {
         focus_window = This->focus_wnd ? This->focus_wnd : params->hDeviceWindow;
 
-        if (!nine_register_window(focus_window, This))
+        if (!acquire_focus_window(This, focus_window))
             return D3DERR_INVALIDCALL;
-
-        SetWindowPos(focus_window, 0, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE);
 
         /* switch display mode */
         ZeroMemory(&new_mode, sizeof(DEVMODEW));
@@ -1434,7 +1478,7 @@ static HRESULT present_create(Display *gdi_display, const WCHAR *devname,
         hr = set_display_mode(This, &new_mode);
         if (FAILED(hr))
         {
-            nine_unregister_window(focus_window);
+            release_focus_window(This);
             HeapFree(GetProcessHeap(), 0, This);
             return hr;
         }
