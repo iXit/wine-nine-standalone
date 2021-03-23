@@ -1013,8 +1013,8 @@ static HRESULT WINAPI DRIPresent_PresentBuffer( struct DRIPresent *This,
         {
             dest_translate.top = pDestRect->top + offset.top;
             dest_translate.left = pDestRect->left + offset.left;
-            dest_translate.bottom = pDestRect->bottom + offset.bottom;
-            dest_translate.right = pDestRect->right + offset.right;
+            dest_translate.bottom = pDestRect->bottom + offset.top;
+            dest_translate.right = pDestRect->right + offset.left;
             pDestRect = (const RECT *) &dest_translate;
         }
     }
