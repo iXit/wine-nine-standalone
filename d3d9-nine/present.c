@@ -1017,6 +1017,8 @@ static HRESULT WINAPI DRIPresent_PresentBuffer( struct DRIPresent *This,
             dest_translate.right = pDestRect->right + offset.left;
             pDestRect = (const RECT *) &dest_translate;
         }
+        TRACE("Presenting with pDestRect=%s\n",
+              nine_dbgstr_rect(pDestRect));
     }
 
     if (!PRESENTPixmapPrepare(d3d->drawable, buffer->present_pixmap_priv))
