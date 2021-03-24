@@ -8,6 +8,16 @@
  *                David Heidelberger
  * Copyright 2014-2015 Axel Davy
  * Copyright 2015 Patrick Rudolph
+ * Some pieces of code come from wined3d:
+ * Copyright 2002 Lionel Ulmer
+ * Copyright 2002-2005 Jason Edmeades
+ * Copyright 2003-2004 Raphael Junqueira
+ * Copyright 2004 Christian Costa
+ * Copyright 2005 Oliver Stieber
+ * Copyright 2006-2008 Stefan Dösinger for CodeWeavers
+ * Copyright 2006-2008 Henri Verbeet
+ * Copyright 2007 Andrew Riedi
+ * Copyright 2009-2011 Henri Verbeet for CodeWeavers
  */
 
 #include <d3dadapter/drm.h>
