@@ -361,6 +361,14 @@ LRESULT device_process_message(struct DRIPresent *present, HWND window, BOOL uni
             return DefWindowProcA(window, message, wparam, lparam);
     }
 
+    /* In fullscreen mode, the style is not supposed to affect appearance (because
+     * exclusive fullscreen). However there is no public API to get fullscreen mode
+     * and thus wine doesn't implement any way to get it. Thus fullscreen is emulated
+     * with a specific style. When apps change the style, do not pass them this message,
+     * such that the window doesn't get borders */
+    if (message == WM_NCCALCSIZE && wparam == TRUE)
+        return 0;
+
     if (message == WM_DESTROY)
     {
         TRACE("unregister window %p.\n", window);
