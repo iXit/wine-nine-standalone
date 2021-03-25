@@ -68,7 +68,7 @@ jobs:
         - export PATH="/tmp/build/bin:$PATH"
         # update meson via python3-pip
         - pip3 install --user setuptools
-        - pip3 install --user --upgrade pip
+        - pip3 install --user --upgrade "pip==20.3.4"
         - pip3 install --user "meson==0.46"
       script:
         - ./release.sh -o "$RELEASE_TARBALL" -- -Ddri2=true -Ddistro-independent=true
