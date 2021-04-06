@@ -5,6 +5,8 @@ SRC=`dirname $(readlink -f $0)`
 
 PKG_CONFIG_32=
 PKG_CONFIG_64=
+test -z "$WINE32_LIBDIR" && WINE32_LIBDIR=/nonexistant
+test -z "$WINE64_LIBDIR" && WINE64_LIBDIR=/nonexistant
 
 . /etc/os-release
 
@@ -50,11 +52,13 @@ fi
 
 printf '%s\n' "found $i compatible distro"
 
-sed "s/@PKG_CONFIG@/$PKG_CONFIG_32/" \
+sed -e "s|@PKG_CONFIG@|$PKG_CONFIG_32|" \
+	-e "s|@WINE32_LIBDIR@|$WINE32_LIBDIR|" \
 	< $SRC/tools/cross-wine32.in \
 	> $SRC/tools/cross-wine32
 
-sed "s/@PKG_CONFIG@/$PKG_CONFIG_64/" \
+sed -e "s|@PKG_CONFIG@|$PKG_CONFIG_64|" \
+	-e "s|@WINE64_LIBDIR@|$WINE64_LIBDIR|" \
 	< $SRC/tools/cross-wine64.in \
 	> $SRC/tools/cross-wine64
 

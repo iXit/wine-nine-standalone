@@ -6,7 +6,7 @@ pkgconfig = '@PKG_CONFIG@'
 
 [properties]
 c_args = ['-m64']
-c_link_args = ['-m64', '-mwindows']
+c_link_args = ['-m64', '-mwindows', '-L@WINE64_LIBDIR@']
 needs_exe_wrapper = true
 
 [host_machine]
