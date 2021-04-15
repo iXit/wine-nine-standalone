@@ -32,6 +32,8 @@ jobs:
           pip3 install --user 'meson==0.46'
       - name: Checkout
         uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
       - name: Setup environment
         run: >
           if test "${GITHUB_REF:0:10}" = "refs/tags/"; then
