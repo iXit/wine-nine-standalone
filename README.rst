@@ -69,6 +69,14 @@ The DRI3 backend is the preferred one and has the lowest CPU and memory overhead
 As fallback for legacy platforms the DRI2 backend can be used, which has more CPU overhead and a bigger memory footprint.
 The DRI2 fallback relies on mesa's EGL which provides EGLImages.
 
+Intel Drivers
+-------------
+Gallium Nine could be used with the new Crocus driver (included since Mesa 21.2) on older Shader model 3.0 aka feature level 9_3 compatible Intel gen4-7 graphics (GMA X3000, GMA 4500, HD 2000-5000; year 2007-2014).
+
+Use the environment variable ``MESA_LOADER_DRIVER_OVERRIDE=crocus`` to force using Crocus instead of i965.
+
+All newer Intel iGPU hardware (Broadwell+) is supported through the already working Iris driver.
+
 Debugging
 ---------
 You can use the environment variable ``D3D_BACKEND`` to force one of the supported backends:
