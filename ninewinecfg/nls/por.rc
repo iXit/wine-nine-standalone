@@ -1,0 +1,29 @@
+/* SPDX-License-Identifier: LGPL-2.1-or-later */
+
+#pragma code_page(65001) /* UTF-8 */
+
+STRINGTABLE LANGUAGE LANG_PORTUGUESE, SUBLANG_PORTUGUESE
+BEGIN
+    IDS_TAB_MAIN                             "Opções globais"
+    IDS_TAB_ABOUT                            "Sobre"
+
+    IDS_GB_LICENSE                           "Licença"
+    IDS_GB_AUTHORS                           "Autores"
+    IDS_TEXT_MESA_DEP                        "Gallium Nine requer um driver gráfico MESA gallium"
+
+    IDS_TEXT_LOAD_D3DADAPTER                 "O carregamento do d3d9adapter9 foi bem-sucedido"
+    IDS_TEXT_D3D9_NINE_LOAD                  "d3d9-nine.dll pode ser carregado"
+    IDS_TEXT_CREATE_D3D9_DEV                 "Criação de dispositivo Direct3D 9 foi bem-sucedida"
+
+    IDS_BTN_ENABLE_NINE                      "Ative &Gallium Nine para melhor desempenho gráfico D3D9"
+
+    IDS_GB_NINE_SETTINGS                     "Configurações do Gallium Nine"
+    IDS_GB_INSTALL_STATE                     "Status de instalação"
+
+    IDS_NINECFG_TITLE                        "Configuração do Nine"
+
+    IDS_ERR_UNKNOWN                          "Erro desconhecido"
+    IDS_ERR_OUTOFMEMORY                      "Sem memória"
+    IDS_ERR_D3D_NOTAVAILABLE                 "Nenhuma GPU compatível foi encontrada. Em um sistema com múltiplas GPUs, tente usar DRI_PRIME=1"
+END
+
