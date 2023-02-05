@@ -15,14 +15,13 @@ jobs:
           sudo apt-get update -y
       - name: Install dependencies
         run: >
-          sudo apt-get install -f libwine-dev &&
           sudo apt-get install -y
           meson
           pkg-config
           wine64-tools
           gcc-multilib
           libc6-dev:amd64
-          libwine-dev:amd64
+          libwine-dev
           libd3dadapter9-mesa-dev:amd64
           libx11-dev:amd64
           libx11-xcb-dev:amd64
@@ -34,7 +33,6 @@ jobs:
           libgl1-mesa-dev:amd64
           libegl1-mesa-dev:amd64
           libc6-dev:i386
-          libwine-dev:i386
           libd3dadapter9-mesa-dev:i386
           libx11-dev:i386
           libx11-xcb-dev:i386
