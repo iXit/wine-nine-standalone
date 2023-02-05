@@ -3,7 +3,7 @@ name: Build
 on:
   push:
     branches:
-      - Proton_G9
+      - main
   - pull_request
 
 jobs:
