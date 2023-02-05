@@ -21,7 +21,7 @@ jobs:
           sudo apt-get install -y
           gcc-multilib
           ninja-build
-          libwine-dev
+          libwine-dev:amd64
           libwine-dev:i386
           libegl1-mesa-dev
           libegl1-mesa-dev:i386
