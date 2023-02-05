@@ -1,7 +1,9 @@
 name: Build
 
 on:
-  - push
+  push:
+    branches:
+      - Proton_G9
   - pull_request
 
 jobs:
