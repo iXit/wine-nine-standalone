@@ -12,27 +12,38 @@ jobs:
       - name: Setup multiarch
         run: |
           sudo dpkg --add-architecture i386
-          sudo mkdir -pm755 /etc/apt/keyrings
-          sudo wget -O /etc/apt/keyrings/winehq-archive.key https://dl.winehq.org/wine-builds/winehq.key
-          sudo wget -NP /etc/apt/sources.list.d/ https://dl.winehq.org/wine-builds/ubuntu/dists/kinetic/winehq-kinetic.sources
           sudo apt-get update -y
       - name: Install dependencies
         run: >
           sudo apt-get install -y
+          meson
+          pkg-config
+          wine64-tools
           gcc-multilib
-          ninja-build
-          libwine-dev
-          libegl1-mesa-dev
-          libegl1-mesa-dev:i386
-          libgl1-mesa-dev
-          libgl1-mesa-dev:i386
-          libd3dadapter9-mesa-dev
+          libc6-dev:amd64
+          libwine-dev:amd64
+          libd3dadapter9-mesa-dev:amd64
+          libx11-dev:amd64
+          libx11-xcb-dev:amd64
+          libxcb1-dev:amd64
+          libxcb-dri3-dev:amd64
+          libxcb-present-dev:amd64
+          libxcb-xfixes0-dev:amd64
+          libxcb-dri2-0-dev:amd64
+          libgl1-mesa-dev:amd64
+          libegl1-mesa-dev:amd64
+          libc6-dev:i386
+          libwine-dev:i386
           libd3dadapter9-mesa-dev:i386
-      - name: Install meson
-        run: |
-          pip3 install --user setuptools
-          pip3 install --user --upgrade 'pip==20.3.4'
-          pip3 install --user 'meson==0.46'
+          libx11-dev:i386
+          libx11-xcb-dev:i386
+          libxcb1-dev:i386
+          libxcb-dri3-dev:i386
+          libxcb-present-dev:i386
+          libxcb-xfixes0-dev:i386
+          libxcb-dri2-0-dev:i386
+          libgl1-mesa-dev:i386
+          libegl1-mesa-dev:i386
       - name: Checkout
         uses: actions/checkout@v2
         with:
@@ -48,10 +59,7 @@ jobs:
         env:
           WINE32_LIBDIR: /usr/lib/i386-linux-gnu/wine
         run: ./release.sh -o "${RELEASE_TARBALL}" -- -Ddri2=true -Ddistro-independent=true
-      - name: Release
-        uses: softprops/action-gh-release@v1
-        if: startsWith(github.ref, 'refs/tags/')
+      - uses: actions/upload-artifact@v2
         with:
-          files: ${{ env.RELEASE_TARBALL }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          name: test_out
+          path: ./
