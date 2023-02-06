@@ -48,6 +48,7 @@ jobs:
       - name: Install dependencies workaround
         run: |
           sudo apt-get -y download libwine-dev:i386
+          chmod +X libwine-dev**.deb
           sudo dpkg -i --force-depends libwine-dev**.deb
       - name: Checkout
         uses: actions/checkout@v2
