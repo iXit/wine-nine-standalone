@@ -45,6 +45,10 @@ jobs:
           libxcb-dri2-0-dev:i386
           libgl1-mesa-dev:i386
           libegl1-mesa-dev:i386
+      - name: Install dependencies workaround
+        run: |
+          sudo apt-get -y download libwine-dev:i386
+          sudo dpkg -i --force-depends libwine-dev**.deb
       - name: Checkout
         uses: actions/checkout@v2
         with:
