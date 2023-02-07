@@ -11,6 +11,7 @@ jobs:
     steps:
       - name: Setup multiarch
         run: |
+          sudo add-apt-repository ppa:oibaf/graphics-drivers
           sudo dpkg --add-architecture i386
           sudo apt-get update -y
       - name: Install dependencies
