@@ -21,8 +21,7 @@ jobs:
           wine64-tools
           gcc-multilib
           libc6-dev:amd64
-          libwine-dev
-          libd3dadapter9-mesa-dev:amd64
+          mesa-common-dev:amd64
           libx11-dev:amd64
           libx11-xcb-dev:amd64
           libxcb1-dev:amd64
@@ -33,7 +32,7 @@ jobs:
           libgl1-mesa-dev:amd64
           libegl1-mesa-dev:amd64
           libc6-dev:i386
-          libd3dadapter9-mesa-dev:i386
+          mesa-common-dev:i386
           libx11-dev:i386
           libx11-xcb-dev:i386
           libxcb1-dev:i386
@@ -43,10 +42,6 @@ jobs:
           libxcb-dri2-0-dev:i386
           libgl1-mesa-dev:i386
           libegl1-mesa-dev:i386
-      - name: Install dependencies workaround
-        run: |
-          sudo apt-get -y download libwine-dev:i386
-          sudo dpkg -i --force-depends libwine-dev**i386.deb
       - name: Checkout
         uses: actions/checkout@v2
         with:
