@@ -5,7 +5,7 @@ on:
   - pull_request
 
 jobs:
-  build:
+  build_1804:
     runs-on: ubuntu-18.04
     steps:
       - name: Setup multiarch
@@ -31,7 +31,7 @@ jobs:
           pip3 install --user --upgrade 'pip==20.3.4'
           pip3 install --user 'meson==0.46'
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
       - name: Setup environment
@@ -52,3 +52,70 @@ jobs:
           files: ${{ env.RELEASE_TARBALL }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: ubuntu-18.04-bin
+          path: ${{ env.RELEASE_TARBALL }}
+
+  build_2204:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Setup environment
+        run: >
+          if test "${GITHUB_REF:0:10}" = "refs/tags/"; then
+            echo "RELEASE_TARBALL=/tmp/gallium-nine-standalone-${GITHUB_REF:10}.tar.gz" >> $GITHUB_ENV
+          else
+            echo "RELEASE_TARBALL=/tmp/gallium-nine-standalone-${GITHUB_SHA:0:8}.tar.gz" >> $GITHUB_ENV
+          fi
+      - name: Setup multiarch and Wine repo
+        run: |
+          sudo dpkg --add-architecture i386
+          sudo wget -O /etc/apt/keyrings/winehq-archive.key https://dl.winehq.org/wine-builds/winehq.key
+          sudo wget -NP /etc/apt/sources.list.d/ https://dl.winehq.org/wine-builds/ubuntu/dists/jammy/winehq-jammy.sources
+          sudo apt-get update -y
+      - name: Install dependencies
+        run: >
+          sudo apt-get install -y
+          meson
+          gcc-multilib
+          winehq-stable
+          wine-stable-dev
+          libdrm-dev:i386
+          libx11-dev:i386
+          libx11-xcb-dev:i386
+          libxcb-present-dev:i386
+          libxcb-dri3-dev:i386
+          libxcb-dri2-0-dev:i386
+          libxcb-xfixes0-dev:i386
+          libegl1-mesa-dev:i386
+          libgl1-mesa-dev:i386
+          libd3dadapter9-mesa-dev:i386
+          libdrm-dev
+          libx11-dev
+          libx11-xcb-dev
+          libxcb-present-dev
+          libxcb-dri3-dev
+          libxcb-dri2-0-dev
+          libxcb-xfixes0-dev
+          libegl1-mesa-dev
+          libgl1-mesa-dev
+          libd3dadapter9-mesa-dev
+      - name: Compile
+        run: ./release.sh -o "${RELEASE_TARBALL}" -- -Ddri2=true -Ddistro-independent=true
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: ${{ env.RELEASE_TARBALL }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: ubuntu-22.04-bin
+          path: ${{ env.RELEASE_TARBALL }}
