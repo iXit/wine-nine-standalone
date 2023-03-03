@@ -6,8 +6,16 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     steps:
+      - name: Fix broken github setup
+        # https://github.com/actions/runner-images/issues/4589
+        run: >
+          sudo dpkg -l |
+          awk '/ii  lib.*deb.sury.org/ {gsub(/:.*/, s, $2); print $2}' |
+          xargs apt show -a |
+          awk '/Package:/ {p=$2} /APT-Sources: .*focal\/main/ {print p"/focal"}' |
+          sudo xargs eatmydata apt install --allow-downgrades
       - name: Setup multiarch
         run: |
           sudo dpkg --add-architecture i386
@@ -16,22 +24,29 @@ jobs:
         run: >
           sudo apt-get install -y
           gcc-multilib
-          ninja-build
+          meson
+          libwine
+          libwine:i386
           libwine-dev
           libwine-dev:i386
+          libdrm-dev
+          libdrm-dev:i386
+          libx11-xcb-dev
+          libx11-xcb-dev:i386
+          libxcb-present-dev
+          libxcb-present-dev:i386
+          libxcb-dri3-dev
+          libxcb-dri3-dev:i386
+          libxcb-dri2-0-dev
+          libxcb-dri2-0-dev:i386
           libegl1-mesa-dev
           libegl1-mesa-dev:i386
           libgl1-mesa-dev
           libgl1-mesa-dev:i386
           libd3dadapter9-mesa-dev
           libd3dadapter9-mesa-dev:i386
-      - name: Install meson
-        run: |
-          pip3 install --user setuptools
-          pip3 install --user --upgrade 'pip==20.3.4'
-          pip3 install --user 'meson==0.46'
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
       - name: Setup environment
@@ -42,9 +57,12 @@ jobs:
             echo "RELEASE_TARBALL=/tmp/gallium-nine-standalone-${GITHUB_SHA:0:8}.tar.gz" >> $GITHUB_ENV
           fi
       - name: Compile
-        env:
-          WINE32_LIBDIR: /usr/lib/i386-linux-gnu/wine
         run: ./release.sh -o "${RELEASE_TARBALL}" -- -Ddri2=true -Ddistro-independent=true
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: build
+          path: ${{ env.RELEASE_TARBALL }}
       - name: Release
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
