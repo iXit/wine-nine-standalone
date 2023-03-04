@@ -27,8 +27,8 @@ echo "additional meson args: $MESONARGS"
 
 $SRC/bootstrap.sh
 
-TMP=`mktemp -d`
-PREFIX="$TMP/gallium-nine-standalone"
+mkdir out_temp
+PREFIX="./out_temp/gallium-nine-standalone"
 
 meson \
 	--cross-file "$SRC/tools/cross-wine64" \
@@ -37,9 +37,9 @@ meson \
 	--bindir bin64 \
 	--libdir lib64 \
 	$MESONARGS \
-	"$TMP/build64"
+	"./out_temp/build64"
 
-ninja -C "$TMP/build64" install
+ninja -C "./out_temp/build64" install
 
 meson \
 	--cross-file "$SRC/tools/cross-wine32" \
@@ -48,14 +48,14 @@ meson \
 	--bindir bin32 \
 	--libdir lib32 \
 	$MESONARGS \
-	"$TMP/build32"
+	"./out_temp/build32"
 
-ninja -C "$TMP/build32" install
+ninja -C "./out_temp/build32" install
 
 install -m 644 "$SRC/LICENSE" "$PREFIX/"
 install -m 644 "$SRC/README.rst" "$PREFIX/"
 install -m 755 "$SRC/tools/nine-install.sh" "$PREFIX/"
-tar --owner=nine:1000 --group=nine:1000 -C "$TMP" -czf "$OUT" gallium-nine-standalone
+tar --owner=nine:1000 --group=nine:1000 -C "./out_temp" -czf "$OUT" gallium-nine-standalone
 
 printf "\nenjoy your release: $OUT\n"
 
