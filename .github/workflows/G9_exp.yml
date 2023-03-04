@@ -12,40 +12,38 @@ jobs:
       - name: Setup multiarch
         run: |
           sudo dpkg --add-architecture i386
-          sudo wget -O /etc/apt/keyrings/winehq-archive.key https://dl.winehq.org/wine-builds/winehq.key
-          sudo wget -NP /etc/apt/sources.list.d/ https://dl.winehq.org/wine-builds/ubuntu/dists/jammy/winehq-jammy.sources
           sudo apt-get update -y
       - name: Install dependencies
         run: >
           sudo apt-get install -y
-          meson
           gcc-multilib
-          winehq-stable
-          wine-stable-dev
-          libdrm-dev:i386
-          libx11-dev:i386
-          libx11-xcb-dev:i386
-          libxcb-present-dev:i386
-          libxcb-dri3-dev:i386
-          libxcb-dri2-0-dev:i386
-          libxcb-xfixes0-dev:i386
-          libegl1-mesa-dev:i386
-          libgl1-mesa-dev:i386
-          libd3dadapter9-mesa-dev:i386
+          libc6-dev:i386
+          meson
+          libwine
+          libwine:i386
+          libwine-dev
           libdrm-dev
-          libx11-dev
+          libdrm-dev:i386
           libx11-xcb-dev
+          libx11-xcb-dev:i386
           libxcb-present-dev
+          libxcb-present-dev:i386
           libxcb-dri3-dev
+          libxcb-dri3-dev:i386
           libxcb-dri2-0-dev
-          libxcb-xfixes0-dev
+          libxcb-dri2-0-dev:i386
           libegl1-mesa-dev
+          libegl1-mesa-dev:i386
           libgl1-mesa-dev
+          libgl1-mesa-dev:i386
           libd3dadapter9-mesa-dev
+          libd3dadapter9-mesa-dev:i386
       - name: Install dependencies workaround
         run: |
-          sudo apt-get -y download libwine-dev:i386
-          sudo dpkg -i --force-depends libwine-dev**.deb
+          # libwine-dev and libwine-dev:i386 conflict with each other
+          # copy the native 64bit one to /tmp, which also avoids a winegcc multiarch bug
+          sudo cp -av /usr/lib/x86_64-linux-gnu/wine /tmp/wine64
+          sudo apt-get install -y libwine-dev:i386
       - name: Checkout
         uses: actions/checkout@v3
         with:
