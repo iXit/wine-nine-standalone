@@ -29,6 +29,7 @@
 #include "resource.h"
 
 static const char * const fn_nine_dll = "d3d9-nine.dll";
+static const char * const fn_backup_dll = "d3d9-nine.bak";
 static const char * const fn_d3d9_dll = "d3d9.dll";
 static const char * const fn_nine_exe = "ninewinecfg.exe";
 
@@ -165,6 +166,37 @@ static BOOL file_exist(LPCSTR filename, BOOL link)
     return ret;
 }
 
+static BOOL rename_file(LPCSTR OldPath, LPCSTR NewPath)
+{
+    BOOL ret;
+    char *src = unix_filename(OldPath);
+    if (!src)
+        return FALSE;
+
+    char *dst = unix_filename(NewPath);
+    if (!dst)
+    {
+        HeapFree(GetProcessHeap(), 0, src);
+        return FALSE;
+    }
+
+    if (!rename(src, dst))
+    {
+        ret = TRUE;
+        TRACE("Renamed from %s to %s\n", nine_dbgstr_a(src),
+              nine_dbgstr_a(dst));
+    } else {
+        ret = FALSE;
+        ERR("Failed to rename from %s to %s\n", nine_dbgstr_a(src),
+            nine_dbgstr_a(dst));
+    }
+
+    HeapFree(GetProcessHeap(), 0, src);
+    HeapFree(GetProcessHeap(), 0, dst);
+
+    return ret;
+}
+
 static BOOL remove_file(LPCSTR filename)
 {
     BOOL ret;
@@ -211,22 +243,21 @@ static BOOL create_symlink(LPCSTR target, LPCSTR filename)
     return ret;
 }
 
-static BOOL is_symlink(LPCSTR filename)
+static BOOL is_nine_symlink(LPCSTR filename)
 {
-    BOOL ret;
+    ssize_t ret;
     char *fn = unix_filename(filename);
-    struct stat sb;
+    CHAR buf[MAX_PATH];
 
     if (!fn)
         return FALSE;
 
-    ret = !lstat(fn, &sb) && S_ISLNK(sb.st_mode);
+    ret = readlink(fn, buf, sizeof(buf));
+    if ((ret < strlen(fn_nine_dll)) || (ret == sizeof(buf)))
+        return FALSE;
 
-    TRACE("%s: %d\n", nine_dbgstr_a(fn), ret);
-
-    HeapFree(GetProcessHeap(), 0, fn);
-
-    return ret;
+    buf[ret] = 0;
+    return !strcmp(buf + ret - strlen(fn_nine_dll), fn_nine_dll);
 }
 
 static BOOL nine_get_system_path(CHAR *pOut, DWORD SizeOut)
@@ -282,18 +313,26 @@ static void set_dlg_string(HWND hwnd, int dlg_id, int res_id)
 /*
  * Gallium nine
  */
-static BOOL nine_get(void)
+static BOOL nine_registry_enabled(void)
 {
     BOOL ret = FALSE;
     LPSTR value;
-
-    CHAR buf[MAX_PATH];
 
     if (common_get_registry_string(reg_path_dll_overrides, reg_key_d3d9, &value))
     {
         ret = !strcmp(value, reg_value_override);
         HeapFree(GetProcessHeap(), 0, value);
     }
+
+    return ret;
+}
+
+static BOOL nine_get(void)
+{
+    CHAR buf[MAX_PATH];
+
+    if (!nine_registry_enabled())
+        return FALSE;
 
     if (!nine_get_system_path(buf, sizeof(buf)))
     {
@@ -303,29 +342,12 @@ static BOOL nine_get(void)
     strcat(buf, "\\");
     strcat(buf, fn_d3d9_dll);
 
-    if (!ret && is_symlink(buf))
-    {
-        /* Sanity: Remove symlink if any */
-        ERR("removing obsolete symlink\n");
-        remove_file(buf);
-        return FALSE;
-    }
-
-    ret = is_symlink(buf);
-    if (ret && !file_exist(buf, FALSE))
-    {
-        /* broken symlink */
-        remove_file(buf);
-        ERR("removing dead symlink\n");
-        return FALSE;
-    }
-
-    return ret;
+    return is_nine_symlink(buf) && file_exist(buf, FALSE);
 }
 
 static void nine_set(BOOL status, BOOL NoOtherArch)
 {
-    CHAR dst[MAX_PATH];
+    CHAR dst[MAX_PATH], dst_back[MAX_PATH];
 
     /* Prevent infinite recursion if called from other arch already */
     if (!NoOtherArch)
@@ -358,7 +380,9 @@ static void nine_set(BOOL status, BOOL NoOtherArch)
         return;
     }
     strcat(dst, "\\");
+    strcpy(dst_back, dst);
     strcat(dst, fn_d3d9_dll);
+    strcat(dst_back, fn_backup_dll);
 
     if (status)
     {
@@ -366,7 +390,12 @@ static void nine_set(BOOL status, BOOL NoOtherArch)
 
         /* Sanity: Always recreate symlink */
         if (file_exist(dst, TRUE))
-            remove_file(dst);
+        {
+            if (!file_exist(dst_back, TRUE))
+                rename_file(dst, dst_back);
+            else
+                remove_file(dst);
+        }
 
         hmod = LoadLibraryExA(fn_nine_dll, NULL, DONT_RESOLVE_DLL_REFERENCES);
         if (hmod)
@@ -385,7 +414,12 @@ static void nine_set(BOOL status, BOOL NoOtherArch)
             LocalFree(msg);
         }
     } else {
-        remove_file(dst);
+        if (is_nine_symlink(dst))
+        {
+            remove_file(dst);
+            if (file_exist(dst_back, TRUE))
+                rename_file(dst_back, dst);
+        }
     }
 }
 
