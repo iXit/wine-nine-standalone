@@ -57,6 +57,7 @@ jobs:
           fi
       - name: Compile
         env:
+          WINE64_LIBDIR: /tmp/wine64
           WINE32_LIBDIR: /usr/lib/i386-linux-gnu/wine
         run: ./release.sh -o "${RELEASE_TARBALL}" -- -Ddri2=true -Ddistro-independent=true
       - uses: actions/upload-artifact@v3
