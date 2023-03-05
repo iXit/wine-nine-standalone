@@ -55,8 +55,8 @@ ninja -C "$TMP/build32" install
 install -m 644 "$SRC/LICENSE" "$PREFIX/"
 install -m 644 "$SRC/README.rst" "$PREFIX/"
 install -m 755 "$SRC/tools/nine-install.sh" "$PREFIX/"
-tar --owner=nine:1000 --group=nine:1000 -C "$TMP" -czf "$OUT" gallium-nine-standalone
+# tar --owner=nine:1000 --group=nine:1000 -C "$TMP" -czf "$OUT" gallium-nine-standalone
 
-printf "\nenjoy your release: $OUT\n"
+# printf "\nenjoy your release: $OUT\n"
 
 exit 0
