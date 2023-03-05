@@ -128,7 +128,7 @@ static int get_current_mode(struct d3dadapter9 *This, UINT Adapter)
             continue;
 
         TRACE("current mode %d (%ux%ux%u)\n", i,
-              m.dmPelsWidth, m.dmPelsHeight, m.dmBitsPerPel);
+              (UINT)m.dmPelsWidth, (UINT)m.dmPelsHeight, (UINT)m.dmBitsPerPel);
 
         return i;
     }
@@ -143,14 +143,14 @@ static HRESULT WINAPI d3dadapter9_CheckDeviceFormat(struct d3dadapter9 *This,
 static ULONG WINAPI d3dadapter9_AddRef(struct d3dadapter9 *This)
 {
     ULONG refs = InterlockedIncrement(&This->refs);
-    TRACE("%p increasing refcount to %u.\n", This, refs);
+    TRACE("%p increasing refcount to %u.\n", This, (UINT)refs);
     return refs;
 }
 
 static ULONG WINAPI d3dadapter9_Release(struct d3dadapter9 *This)
 {
     ULONG refs = InterlockedDecrement(&This->refs);
-    TRACE("%p decreasing refcount to %u.\n", This, refs);
+    TRACE("%p decreasing refcount to %u.\n", This, (UINT)refs);
     if (refs == 0)
     {
         /* dtor */
@@ -264,7 +264,8 @@ static HRESULT WINAPI d3dadapter9_GetAdapterIdentifier(struct d3dadapter9 *This,
                 ERR("VideoPciVendorID is not a DWORD\n");
             RegCloseKey(regkey);
 
-            TRACE("DeviceId:VendorId overridden: %04X:%04X\n", pIdentifier->DeviceId, pIdentifier->VendorId);
+            TRACE("DeviceId:VendorId overridden: %04X:%04X\n",
+                  (UINT)pIdentifier->DeviceId, (UINT)pIdentifier->VendorId);
         }
     }
     return hr;
@@ -793,7 +794,7 @@ static HRESULT fill_groups(struct d3dadapter9 *This)
                     default:
                         remove_mode(This);
                         WARN("Unknown format (%u bpp) in display %d, monitor "
-                             "%d, mode %d.\n", dm.dmBitsPerPel, i, j, k);
+                             "%d, mode %d.\n", (UINT)dm.dmBitsPerPel, i, j, k);
                         goto end_mode;
                 }
 

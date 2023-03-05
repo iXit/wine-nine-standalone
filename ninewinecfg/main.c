@@ -59,23 +59,23 @@ static DWORD executeCmdline(LPSTR cmdline)
     if (!CreateProcessA(NULL, cmdline, NULL, NULL,
         FALSE, 0, NULL, NULL, &si, &pi ))
     {
-        ERR("CreateProcessA failed, error=%d", GetLastError());
+        ERR("CreateProcessA failed, error=%d\n", (int)GetLastError());
         return ~0u;
     }
 
     if (WaitForSingleObject( pi.hProcess, INFINITE ) != WAIT_OBJECT_0)
     {
-        ERR("WaitForSingleObject failed, error=%d", GetLastError());
+        ERR("WaitForSingleObject failed, error=%d\n", (int)GetLastError());
         return ~0u;
     }
 
     if (!GetExitCodeProcess( pi.hProcess, &exit_code ))
     {
-        ERR("GetExitCodeProcess failed, error=%d", GetLastError());
+        ERR("GetExitCodeProcess failed, error=%d\n", (int)GetLastError());
         return ~0u;
     }
 
-    TRACE("Exit code: %u\n", exit_code);
+    TRACE("Exit code: %u\n", (UINT)exit_code);
 
     return exit_code;
 }

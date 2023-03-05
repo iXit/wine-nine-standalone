@@ -94,7 +94,7 @@ BOOL WINAPI DllMain(HINSTANCE inst, DWORD reason, void *reserved)
  */
 int WINAPI D3DPERF_BeginEvent(D3DCOLOR color, const WCHAR *name)
 {
-    TRACE("color 0x%08x, name %s.\n", color, nine_dbgstr_w(name));
+    TRACE("color 0x%08x, name %s.\n", (UINT)color, nine_dbgstr_w(name));
 
     return D3DPERF_event_level++;
 }
@@ -125,7 +125,7 @@ DWORD WINAPI D3DPERF_GetStatus(void)
  */
 void WINAPI D3DPERF_SetOptions(DWORD options)
 {
-  FIXME("(%#x) : stub\n", options);
+  FIXME("(%#x) : stub\n", (UINT)options);
 }
 
 /***********************************************************************
@@ -143,7 +143,7 @@ BOOL WINAPI D3DPERF_QueryRepeatFrame(void)
  */
 void WINAPI D3DPERF_SetMarker(D3DCOLOR color, const WCHAR *name)
 {
-    FIXME("color 0x%08x, name %s stub!\n", color, nine_dbgstr_w(name));
+    FIXME("color 0x%08x, name %s stub!\n", (UINT)color, nine_dbgstr_w(name));
 }
 
 /***********************************************************************
@@ -151,5 +151,5 @@ void WINAPI D3DPERF_SetMarker(D3DCOLOR color, const WCHAR *name)
  */
 void WINAPI D3DPERF_SetRegion(D3DCOLOR color, const WCHAR *name)
 {
-    FIXME("color 0x%08x, name %s stub!\n", color, nine_dbgstr_w(name));
+    FIXME("color 0x%08x, name %s stub!\n", (UINT)color, nine_dbgstr_w(name));
 }

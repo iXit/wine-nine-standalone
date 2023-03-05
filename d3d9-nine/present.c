@@ -314,7 +314,8 @@ static HRESULT set_display_mode(struct DRIPresent *This, DEVMODEW *new_mode)
            || (current_mode.dmDisplayFrequency != new_mode->dmDisplayFrequency
            && (new_mode->dmFields & DM_DISPLAYFREQUENCY)))
     {
-        TRACE("changing display settings to %ux%u\n", new_mode->dmPelsWidth, new_mode->dmPelsHeight);
+        TRACE("changing display settings to %ux%u\n",
+              (UINT)new_mode->dmPelsWidth, (UINT)new_mode->dmPelsHeight);
 
         hr = ChangeDisplaySettingsExW(This->devname, new_mode, 0, CDS_FULLSCREEN, NULL);
         if (hr != DISP_CHANGE_SUCCESSFUL)
@@ -327,13 +328,13 @@ static HRESULT set_display_mode(struct DRIPresent *This, DEVMODEW *new_mode)
                 hr = ChangeDisplaySettingsExW(This->devname, new_mode, 0, CDS_FULLSCREEN, NULL);
                 if (hr != DISP_CHANGE_SUCCESSFUL)
                 {
-                    ERR("ChangeDisplaySettingsExW failed with 0x%08X\n", hr);
+                    ERR("ChangeDisplaySettingsExW failed with 0x%08x\n", (int)hr);
                     return D3DERR_INVALIDCALL;
                 }
             }
             else
             {
-                ERR("ChangeDisplaySettingsExW failed with 0x%08X\n", hr);
+                ERR("ChangeDisplaySettingsExW failed with 0x%08x\n", (int)hr);
                 return D3DERR_INVALIDCALL;
             }
         }
@@ -653,7 +654,7 @@ static void get_drawable_offset(Display *gdi_display, struct d3d_drawable *d3d)
     pt.x = pt.y = 0;
     if (!ClientToScreen(d3d->wnd, &pt))
     {
-        ERR("ClientToScreen failed: 0x%x\n", GetLastError());
+        ERR("ClientToScreen failed: %d\n", (int)GetLastError());
         return;
     }
     TRACE("Relative coord client area: %s\n", nine_dbgstr_point(&pt));
@@ -742,14 +743,14 @@ static void release_d3d_drawable(struct d3d_drawable *d3d)
 static ULONG WINAPI DRIPresent_AddRef(struct DRIPresent *This)
 {
     ULONG refs = InterlockedIncrement(&This->refs);
-    TRACE("%p increasing refcount to %u.\n", This, refs);
+    TRACE("%p increasing refcount to %u.\n", This, (UINT)refs);
     return refs;
 }
 
 static ULONG WINAPI DRIPresent_Release(struct DRIPresent *This)
 {
     ULONG refs = InterlockedDecrement(&This->refs);
-    TRACE("%p decreasing refcount to %u.\n", This, refs);
+    TRACE("%p decreasing refcount to %u.\n", This, (UINT)refs);
     if (refs == 0)
     {
         /* dtor */
@@ -853,8 +854,10 @@ static HRESULT WINAPI DRIPresent_SetPresentParameters(struct DRIPresent *This,
         else if(!This->params.Windowed && params->Windowed)
         {
             /* No more fullscreen, reset mode */
-            TRACE("Setting fullscreen mode: %dx%d@%d\n", This->initial_mode.dmPelsWidth,
-                  This->initial_mode.dmPelsHeight, This->initial_mode.dmDisplayFrequency);
+            TRACE("Setting fullscreen mode: %ux%u@%u\n",
+                  (UINT)This->initial_mode.dmPelsWidth,
+                  (UINT)This->initial_mode.dmPelsHeight,
+                  (UINT)This->initial_mode.dmDisplayFrequency);
 
             hr = set_display_mode(This, &This->initial_mode);
             if (FAILED(hr))
@@ -1175,7 +1178,7 @@ static HRESULT WINAPI DRIPresent_GetDisplayMode( struct DRIPresent *This,
         case 24: pMode->Format = D3DFMT_R8G8B8; break;
         case 16: pMode->Format = D3DFMT_R5G6B5; break;
         default:
-            WARN("Unknown display format with %u bpp.\n", dm.dmBitsPerPel);
+            WARN("Unknown display format with %u bpp.\n", (UINT)dm.dmBitsPerPel);
             pMode->Format = D3DFMT_UNKNOWN;
     }
 
@@ -1186,7 +1189,7 @@ static HRESULT WINAPI DRIPresent_GetDisplayMode( struct DRIPresent *This,
         case DMDO_180:     *pRotation = D3DDISPLAYROTATION_180; break;
         case DMDO_270:     *pRotation = D3DDISPLAYROTATION_270; break;
         default:
-            WARN("Unknown display rotation %u.\n", dm.dmDisplayOrientation);
+            WARN("Unknown display rotation %u.\n", (UINT)dm.dmDisplayOrientation);
             *pRotation = D3DDISPLAYROTATION_IDENTITY;
     }
 
@@ -1533,14 +1536,14 @@ static HRESULT present_create(Display *gdi_display, const WCHAR *devname,
 static ULONG WINAPI DRIPresentGroup_AddRef(struct DRIPresentGroup *This)
 {
     ULONG refs = InterlockedIncrement(&This->refs);
-    TRACE("%p increasing refcount to %u.\n", This, refs);
+    TRACE("%p increasing refcount to %u.\n", This, (UINT)refs);
     return refs;
 }
 
 static ULONG WINAPI DRIPresentGroup_Release(struct DRIPresentGroup *This)
 {
     ULONG refs = InterlockedDecrement(&This->refs);
-    TRACE("%p decreasing refcount to %u.\n", This, refs);
+    TRACE("%p decreasing refcount to %u.\n", This, (UINT)refs);
     if (refs == 0)
     {
         unsigned i;
