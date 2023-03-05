@@ -27,7 +27,7 @@ struct PRESENTPriv {
     uint16_t last_width; /* window size */
     uint16_t last_height;
     unsigned last_depth;
-    BOOL win_updated; /* Window received a config notify event */
+    LONG win_updated; /* Window received a config notify event */
     xcb_special_event_t *special_event;
     PRESENTPixmapPriv *first_present_priv;
     int pixmap_present_pending;
