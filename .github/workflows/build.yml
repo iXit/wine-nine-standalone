@@ -16,19 +16,22 @@ jobs:
           xargs apt show -a |
           awk '/Package:/ {p=$2} /APT-Sources: .*focal\/main/ {print p"/focal"}' |
           sudo xargs eatmydata apt install --allow-downgrades
-      - name: Setup multiarch
+      - name: Setup repositories
         run: |
           sudo dpkg --add-architecture i386
+          sudo wget -O /etc/apt/keyrings/winehq-archive.key https://dl.winehq.org/wine-builds/winehq.key
+          sudo wget -NP /etc/apt/sources.list.d/ https://dl.winehq.org/wine-builds/ubuntu/dists/focal/winehq-focal.sources
           sudo apt-get update -y
       - name: Install dependencies
         run: >
           sudo apt-get install -y
           gcc-multilib
           meson
-          libwine
-          libwine:i386
-          libwine-dev
-          libwine-dev:i386
+          winehq-stable=6.0.0~focal-1
+          wine-stable=6.0.0~focal-1
+          wine-stable-amd64=6.0.0~focal-1
+          wine-stable-i386=6.0.0~focal-1
+          wine-stable-dev=6.0.0~focal-1
           libdrm-dev
           libdrm-dev:i386
           libx11-xcb-dev
