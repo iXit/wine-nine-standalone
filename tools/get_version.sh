@@ -4,7 +4,7 @@ MAJOR=0
 MINOR=9
 BUILD=0
 REVISION=`git rev-list --count HEAD 2>/dev/null || echo "0"`
-STAGE="devel"
+STAGE="release"
 
 printf "$MAJOR.$MINOR.$BUILD.$REVISION-$STAGE"
 
