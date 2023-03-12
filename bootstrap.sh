@@ -56,6 +56,10 @@ for i in $ID $ID_LIKE; do
 			PKG_CONFIG_32=pkg-config
 			PKG_CONFIG_64=x86_64-solus-linux-gnu-pkg-config
 			;;
+		nixos)
+			PKG_CONFIG_32=pkg-config
+			PKG_CONFIG_64=pkg-config
+			;;
 		*)
 			continue
 			;;
