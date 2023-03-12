@@ -1,7 +1,7 @@
 #!/bin/sh -e
 # SPDX-License-Identifier: LGPL-2.1-or-later
 
-SRC=`dirname $(readlink -f $0)`
+SRC="$(dirname "$(readlink -f "$0")")"
 
 PKG_CONFIG_32=
 PKG_CONFIG_64=
@@ -54,12 +54,12 @@ printf '%s\n' "found $i compatible distro"
 
 sed -e "s|@PKG_CONFIG@|$PKG_CONFIG_32|" \
 	-e "s|@WINE32_LIBDIR@|$WINE32_LIBDIR|" \
-	< $SRC/tools/cross-wine32.in \
-	> $SRC/tools/cross-wine32
+	< "$SRC"/tools/cross-wine32.in \
+	> "$SRC"/tools/cross-wine32
 
 sed -e "s|@PKG_CONFIG@|$PKG_CONFIG_64|" \
 	-e "s|@WINE64_LIBDIR@|$WINE64_LIBDIR|" \
-	< $SRC/tools/cross-wine64.in \
-	> $SRC/tools/cross-wine64
+	< "$SRC"/tools/cross-wine64.in \
+	> "$SRC"/tools/cross-wine64
 
 exit 0
