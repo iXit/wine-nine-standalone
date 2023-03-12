@@ -8,7 +8,27 @@ PKG_CONFIG_64=
 test -z "$WINE32_LIBDIR" && WINE32_LIBDIR=/nonexistant
 test -z "$WINE64_LIBDIR" && WINE64_LIBDIR=/nonexistant
 
-. /etc/os-release
+ID=
+ID_LIKE=
+while test -n "${1:-}"; do
+	case "$1" in
+		--distro)
+			shift
+			if test -n "${1:-}"; then
+				ID=$1
+			else
+				echo "Required DISTRO missing"
+				exit 1
+			fi
+			;;
+		*)
+			echo "Unrecognized option: $1"
+			exit 1
+			;;
+	esac
+	shift
+done
+test -z "$ID" && . /etc/os-release
 
 for i in $ID $ID_LIKE; do
 	case $i in
