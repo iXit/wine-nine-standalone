@@ -33,8 +33,7 @@ meson \
 	--cross-file "$SRC/tools/cross-wine64" \
 	--buildtype "release" \
 	--prefix "$PREFIX" \
-	--bindir bin64 \
-	--libdir lib64 \
+	--libdir '' \
 	"$@" \
 	"$TMP/build64"
 
@@ -44,8 +43,7 @@ meson \
 	--cross-file "$SRC/tools/cross-wine32" \
 	--buildtype "release" \
 	--prefix "$PREFIX" \
-	--bindir bin32 \
-	--libdir lib32 \
+	--libdir '' \
 	"$@" \
 	"$TMP/build32"
 
