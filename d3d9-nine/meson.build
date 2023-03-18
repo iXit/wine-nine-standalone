@@ -50,11 +50,10 @@ d3d9_dll = shared_library(
 
 d3d9_fake = shared_library(
   'd3d9-nine',
-  objects        : d3d9_dll.extract_all_objects(),
+  [
+    d3d9_res,
+  ],
   name_prefix    : '',
   name_suffix    : 'dll.fake',
-  link_with      : [
-                     libd3d9common,
-                   ],
   install        : true,
 )
