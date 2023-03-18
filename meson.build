@@ -57,6 +57,16 @@ wrc = [
         '-o', '@OUTPUT@',
       ]
 
+wine_version = run_command(
+  [
+    find_program('winebuild'),
+    '--version',
+  ],
+  check : true,
+).stdout().split()[-1]
+
+sed = find_program('sed')
+
 if cc.has_function('dlopen')
   dep_dl = null_dep
 else
