@@ -4,7 +4,8 @@ project(
   'Gallium Nine Standalone',
   ['c'],
   version : run_command(
-              find_program('tools/get_version.sh', native : true)
+              find_program('tools/get_version.sh', native : true),
+              check : true,
             ).stdout(),
   license : 'LGPL2.1+',
   meson_version : '>= 0.46',
