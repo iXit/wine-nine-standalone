@@ -4,6 +4,7 @@ ar = 'ar'
 strip = 'strip'
 pkgconfig = '@PKG_CONFIG@'
 
+# This throws a deprecation warning, but fixing that breaks CI
 [properties]
 c_args = ['-m64']
 c_link_args = ['-m64', '-mwindows', '-L@WINE64_LIBDIR@']
