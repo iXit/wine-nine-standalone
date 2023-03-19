@@ -31,6 +31,12 @@
 
 static const char * const fn_nine_dll = "d3d9-nine.dll";
 static const char * const fn_forwarder_dll = "d3d9-nine-forwarder.dll";
+static const char * const fn_nine_symlinks[] = {
+    fn_forwarder_dll,
+    fn_nine_dll, /* Unix module installed to the prefix */
+    "d3d9-nine.dll.so", /* System install or WINEDLLPATH */
+};
+static const size_t fn_nine_symlinks_len = sizeof(fn_nine_symlinks) / sizeof(fn_nine_symlinks[0]);
 static const char * const fn_backup_dll = "d3d9-nine.bak";
 static const char * const fn_d3d9_dll = "d3d9.dll";
 static const char * const fn_nine_exe = "ninewinecfg.exe";
@@ -247,6 +253,7 @@ static BOOL create_symlink(LPCSTR target, LPCSTR filename)
 
 static BOOL is_nine_symlink(LPCSTR filename)
 {
+    int i;
     ssize_t ret;
     char *fn = unix_filename(filename);
     CHAR buf[MAX_PATH];
@@ -255,11 +262,22 @@ static BOOL is_nine_symlink(LPCSTR filename)
         return FALSE;
 
     ret = readlink(fn, buf, sizeof(buf));
-    if ((ret < strlen(fn_forwarder_dll)) || (ret == sizeof(buf)))
+    if (ret == sizeof(buf))
         return FALSE;
-
     buf[ret] = 0;
-    return !strcmp(buf + ret - strlen(fn_forwarder_dll), fn_forwarder_dll);
+
+    for (i = 0; i < fn_nine_symlinks_len; i++)
+    {
+        const char * const name = fn_nine_symlinks[i];
+        size_t len = strlen(name);
+        if (ret < len)
+            continue;
+
+        if (!strcmp(buf + ret - len, name))
+            return TRUE;
+    }
+
+    return FALSE;
 }
 
 static BOOL nine_get_system_path(CHAR *pOut, DWORD SizeOut)
