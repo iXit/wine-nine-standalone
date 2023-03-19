@@ -53,7 +53,7 @@ wrc = [
         '-DNINE_REVISION=' + version[3],
         '-DNINE_VERSION="v' + meson.project_version() + '"',
         '-DNINE_PROJECT="' + meson.project_name() + '"',
-        '-i', '@INPUT@',
+        '-i', '@INPUT0@',
         '-o', '@OUTPUT@',
       ]
 
