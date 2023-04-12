@@ -31,7 +31,8 @@ ninewinecfg_exe = executable(
                      dep_comctl32,
                      dep_ole32,
                    ],
-  install        : true
+  install        : true,
+  install_dir    : so_dir,
 )
 
 ninewinecfg_fake = executable(
@@ -41,5 +42,20 @@ ninewinecfg_fake = executable(
   ],
   name_prefix    : '',
   name_suffix    : 'exe.fake',
+  install        : false,
+)
+
+# Hack to rename the installed file
+# Starting with Wine 6.22, winegcc recognizes -Wb,--fake-module which should be preferred.
+custom_target(
+  'ninewinecfg.exe',
+  input          : ninewinecfg_fake,
+  output         : 'ninewinecfg.exe',
   install        : true,
+  install_dir    : pe_dir,
+  command        : [
+                     'cp',
+                     '@INPUT@',
+                     '@OUTPUT@',
+                   ],
 )
