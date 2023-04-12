@@ -2,14 +2,19 @@
 
 ninewinecfg_res = custom_target(
   'ninewinecfg.res',
-  input        : 'ninewinecfg.rc',
+  input        : [
+                   'ninewinecfg.rc',
+                   d3d9_forwarder,
+                 ],
   output       : 'ninewinecfg.res',
   depend_files : [
                    'resource.h',
                    'ninewinecfg.manifest',
                    'nls/',
                  ],
-  command      : wrc,
+  command      : wrc + [
+                   '-D_FORWARDER_DLL="@INPUT1@"',
+                 ],
 )
 
 ninewinecfg_exe = executable(
