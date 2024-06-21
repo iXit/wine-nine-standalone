@@ -9,6 +9,8 @@ pkgconfig = '@PKG_CONFIG@'
 c_args = ['-m64']
 c_link_args = ['-m64', '-mwindows', '-L@WINE64_LIBDIR@']
 needs_exe_wrapper = true
+pe_dir = 'x86_64-windows'
+so_dir = 'x86_64-unix'
 
 [host_machine]
 system = 'linux'
