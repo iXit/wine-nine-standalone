@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <errno.h>
 #include <dlfcn.h>
 #include <wctype.h>
 
@@ -29,6 +30,13 @@
 #include "resource.h"
 
 static const char * const fn_nine_dll = "d3d9-nine.dll";
+static const char * const fn_forwarder_dll = "d3d9-nine-forwarder.dll";
+static const char * const fn_nine_symlinks[] = {
+    fn_forwarder_dll,
+    fn_nine_dll, /* Unix module installed to the prefix */
+    "d3d9-nine.dll.so", /* System install or WINEDLLPATH */
+};
+static const size_t fn_nine_symlinks_len = sizeof(fn_nine_symlinks) / sizeof(fn_nine_symlinks[0]);
 static const char * const fn_backup_dll = "d3d9-nine.bak";
 static const char * const fn_d3d9_dll = "d3d9.dll";
 static const char * const fn_nine_exe = "ninewinecfg.exe";
@@ -245,6 +253,7 @@ static BOOL create_symlink(LPCSTR target, LPCSTR filename)
 
 static BOOL is_nine_symlink(LPCSTR filename)
 {
+    int i;
     ssize_t ret;
     char *fn = unix_filename(filename);
     CHAR buf[MAX_PATH];
@@ -253,11 +262,22 @@ static BOOL is_nine_symlink(LPCSTR filename)
         return FALSE;
 
     ret = readlink(fn, buf, sizeof(buf));
-    if ((ret < strlen(fn_nine_dll)) || (ret == sizeof(buf)))
+    if (ret == sizeof(buf))
         return FALSE;
-
     buf[ret] = 0;
-    return !strcmp(buf + ret - strlen(fn_nine_dll), fn_nine_dll);
+
+    for (i = 0; i < fn_nine_symlinks_len; i++)
+    {
+        const char * const name = fn_nine_symlinks[i];
+        size_t len = strlen(name);
+        if (ret < len)
+            continue;
+
+        if (!strcmp(buf + ret - len, name))
+            return TRUE;
+    }
+
+    return FALSE;
 }
 
 static BOOL nine_get_system_path(CHAR *pOut, DWORD SizeOut)
@@ -345,6 +365,56 @@ static BOOL nine_get(void)
     return is_nine_symlink(buf) && file_exist(buf, FALSE);
 }
 
+static BOOL nine_install_forwarder(void)
+{
+    BOOL ret = TRUE;
+    HGLOBAL res_handle = NULL;
+    HRSRC res;
+    char * res_data;
+    DWORD res_size;
+    CHAR buf[MAX_PATH];
+    char * unix_path;
+    FILE * dll_handle;
+
+    if (!nine_get_system_path(buf, sizeof(buf)))
+    {
+        ERR("Failed to get system path\n");
+        return FALSE;
+    }
+    strcat(buf, "\\");
+    strcat(buf, fn_forwarder_dll);
+    unix_path = unix_filename(buf);
+    if (!unix_path)
+        return FALSE;
+
+    if (!(res = FindResourceA(NULL, MAKEINTRESOURCE(ID_FORWARDER_DLL), RT_RCDATA)))
+        abort();
+    if (!(res_handle = LoadResource(NULL, res)))
+        abort();
+    res_data = LockResource(res_handle);
+    res_size = SizeofResource(NULL, res);
+
+    if ((dll_handle = fopen(unix_path, "wb")) == NULL)
+    {
+        ERR("Failed to open %s (%s): %s\n", buf, unix_path, strerror(errno));
+        ret = FALSE;
+        goto done;
+    }
+
+    if (fwrite(res_data, 1, res_size, dll_handle) != res_size)
+    {
+        ERR("Failed to write forwarder: %s\n", strerror(errno));
+        ret = FALSE;
+        goto close_dll;
+    }
+
+close_dll:
+    fclose(dll_handle);
+done:
+    HeapFree(GetProcessHeap(), 0, unix_path);
+    return ret;
+}
+
 static void nine_set(BOOL status, BOOL NoOtherArch)
 {
     CHAR dst[MAX_PATH], dst_back[MAX_PATH];
@@ -386,7 +456,11 @@ static void nine_set(BOOL status, BOOL NoOtherArch)
 
     if (status)
     {
-        HMODULE hmod;
+        if (!nine_install_forwarder())
+        {
+            ERR("Failed to install forwarder\n");
+            return;
+        }
 
         /* Sanity: Always recreate symlink */
         if (file_exist(dst, TRUE))
@@ -397,22 +471,7 @@ static void nine_set(BOOL status, BOOL NoOtherArch)
                 remove_file(dst);
         }
 
-        hmod = LoadLibraryExA(fn_nine_dll, NULL, DONT_RESOLVE_DLL_REFERENCES);
-        if (hmod)
-        {
-            Dl_info info;
-
-            if (dladdr(hmod, &info) && info.dli_fname)
-                create_symlink(info.dli_fname, dst);
-            else
-                ERR("dladdr failed to get file path\n");
-
-            FreeLibrary(hmod);
-        } else {
-            LPWSTR msg = load_message(GetLastError());
-            ERR("Couldn't load %s: %s\n", fn_nine_dll, nine_dbgstr_w(msg));
-            LocalFree(msg);
-        }
+        create_symlink(fn_forwarder_dll, dst);
     } else {
         if (is_nine_symlink(dst))
         {

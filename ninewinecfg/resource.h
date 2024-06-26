@@ -56,4 +56,6 @@
 #define IDS_ERR_OUTOFMEMORY                    101
 #define IDS_ERR_D3D_NOTAVAILABLE               102
 
+#define ID_FORWARDER_DLL                       200
+
 #endif /* __NINECFG_RESOURCE_H */
