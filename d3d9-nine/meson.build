@@ -57,3 +57,46 @@ d3d9_fake = shared_library(
   name_suffix    : 'dll.fake',
   install        : true,
 )
+
+if wine_version.version_compare('>= 7.3')
+  d3d9_forwarder_builtin = shared_library(
+    'd3d9-nine-forwarder',
+    [
+      d3d9_res,
+    ],
+    name_prefix    : '',
+    name_suffix    : 'dll.builtin',
+    install        : false,
+    vs_module_defs : 'd3d9-nine-forwarder.spec',
+    objects        : 'd3d9-nine-forwarder.spec',
+    link_args      : [
+                       '-Wb,--data-only',
+                       '-Wb,--filename=d3d9',
+                     ],
+  )
+
+  # Wine checks for a string in the header to identify builtin DLLs.
+  # Work around this with a simple substitution.
+  d3d9_forwarder = custom_target(
+    'd3d9-nine-forwarder.dll',
+    input          : d3d9_forwarder_builtin,
+    output         : 'd3d9-nine-forwarder.dll',
+    install        : false,
+    command        : [
+                       sed,
+                       '-e', 's|Wine builtin DLL|Nine forwarder  |',
+                       '@INPUT@',
+                     ],
+    capture : true,
+  )
+else
+  # Support for building data-only modules was added in wine 7.3.
+  # For binary releases, use a prebuilt version (without resources).
+  # This is a small (8KiB) and reproducible file that contains
+  # no executable code, so it shouldn't be a problem.
+  if target_machine.cpu_family() == 'x86_64'
+    d3d9_forwarder = files('d3d9-nine-forwarder64.dll')
+  else
+    d3d9_forwarder = files('d3d9-nine-forwarder32.dll')
+  endif
+endif

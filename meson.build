@@ -53,9 +53,19 @@ wrc = [
         '-DNINE_REVISION=' + version[3],
         '-DNINE_VERSION="v' + meson.project_version() + '"',
         '-DNINE_PROJECT="' + meson.project_name() + '"',
-        '-i', '@INPUT@',
+        '-i', '@INPUT0@',
         '-o', '@OUTPUT@',
       ]
+
+wine_version = run_command(
+  [
+    find_program('winebuild'),
+    '--version',
+  ],
+  check : true,
+).stdout().split()[-1]
+
+sed = find_program('sed')
 
 if cc.has_function('dlopen')
   dep_dl = null_dep
