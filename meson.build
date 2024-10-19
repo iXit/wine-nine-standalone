@@ -8,7 +8,7 @@ project(
               check : true,
             ).stdout(),
   license : 'LGPL2.1+',
-  meson_version : '>= 0.46',
+  meson_version : '>= 0.49',
   default_options : [
     'buildtype=debugoptimized',
     'b_ndebug=if-release',
@@ -128,6 +128,9 @@ endif
 foreach arg : pp_args
   add_project_arguments(arg, language : ['c'])
 endforeach
+
+pe_dir = get_option('libdir') / 'wine' / meson.get_cross_property('pe_dir')
+so_dir = get_option('libdir') / 'wine' / meson.get_cross_property('so_dir')
 
 subdir('common')
 subdir('d3d9-nine')

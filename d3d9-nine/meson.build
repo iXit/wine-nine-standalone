@@ -44,6 +44,7 @@ d3d9_dll = shared_library(
                      dep_user32,
                    ],
   install        : true,
+  install_dir    : so_dir,
   vs_module_defs : 'd3d9.spec',
   objects        : 'd3d9.spec',
 )
@@ -55,5 +56,20 @@ d3d9_fake = shared_library(
   ],
   name_prefix    : '',
   name_suffix    : 'dll.fake',
+  install        : false,
+)
+
+# Hack to rename the installed file
+# Starting with Wine 6.22, winegcc recognizes -Wb,--fake-module which should be preferred.
+custom_target(
+  'd3d9-nine.dll',
+  input          : d3d9_fake,
+  output         : 'd3d9-nine.dll',
   install        : true,
+  install_dir    : pe_dir,
+  command        : [
+                     'cp',
+                     '@INPUT@',
+                     '@OUTPUT@',
+                   ],
 )
